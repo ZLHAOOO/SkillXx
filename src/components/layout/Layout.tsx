@@ -55,7 +55,7 @@ export function Layout() {
       <div
         data-tauri-drag-region
         className="absolute top-0 left-0 right-0 z-50 pointer-events-none cursor-grab"
-        style={{ height: 52, WebkitAppRegion: "drag" as const }}
+        style={{ height: 52, WebkitAppRegion: "drag" } as React.CSSProperties}
       />
       <Sidebar />
       <main className="flex-1 overflow-auto bg-background relative">
