@@ -6,6 +6,10 @@ on:
     tags:
       - 'v*'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  CARGO_TERM_COLOR: always
+
 jobs:
   build-tauri:
     permissions:
@@ -36,31 +40,45 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
 
-      - name: setup node
+      - name: Debug Git state
+        shell: bash
+        run: |
+          git --version
+          git status
+          git rev-parse --is-inside-work-tree
+          git rev-parse HEAD
+          git describe --tags --always || true
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
-      - name: install Rust stable
+      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.rust_target }}
 
-      - name: install create-dmg
+      - name: Install create-dmg
         if: startsWith(matrix.platform, 'macos-')
         run: brew install create-dmg
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "./src-tauri"
+          workspaces: "./src-tauri -> target"
 
-      - name: install frontend dependencies
+      - name: Install frontend dependencies
         run: npm ci
 
-      - name: build tauri app
+      - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
