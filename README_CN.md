@@ -3,7 +3,7 @@
 > **一款统一的 AI 编码助手技能管理桌面应用。**
 > 无缝管理、同步和分享 **Claude Code、Codex、Opencode** 等 AI 工具的技能。
 
-![Version](https://img.shields.io/badge/version-2.1.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.0.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
 [English](./README.md)
 
@@ -18,11 +18,12 @@
 - **🎯 统一管理**：将所有 AI 技能集中在一个安全的位置。
 - **🔄 智能同步**：自动软链接管理，确保您的工具始终拥有最新版本的技能，无需文件复制。
 - **🎛️ 精细控制**：可以为特定工具单独启用或禁用技能，而不删除原始文件。
-- **⚡ 高性能**：基于 **Rust** 和 **Tauri 2.0** 构建，轻量且极速。
+- **🌐 多语言显示**：自定义技能名称和简介的显示语言（原始/中文/英文），支持一键 AI 翻译。
+- **⚡ 高性能**：基于 **Rust** 和 **Tauri 2.0** 构建，轻量且极速，支持配置缓存。
 - **🛡️ 跨平台**：原生支持 macOS、Windows 和 Linux。
 - **🔌 多工具支持**：开箱即用支持 **Claude Code、Codex、Opencode**，可扩展支持更多工具。
 - **🧩 自定义工具**：可添加带有自定义路径和可选图标的专属工具。
-- **🎨 现代界面**：基于 React 19、Tailwind CSS v4 和 Radix UI 构建的美观界面。
+- **🎨 现代界面**：基于 React 19、Tailwind CSS v4 和 Radix UI 构建的简约美观界面。
 
 ## 📥 下载
 
@@ -62,11 +63,21 @@ WEBKIT_DISABLE_COMPOSITING_MODE=1 ./SkillX_1.0.1_amd64.AppImage
 - **UI 组件**: [Radix UI](https://www.radix-ui.com/)
 - **编辑器**: [Monaco Editor](https://microsoft.github.io/monaco-editor/)
 
-## 📅 路线图
+## 📅 v3.0.0 更新内容
+
+- **🌐 多语言显示**：自定义技能名称和简介的显示语言（原始/中文/英文）
+- **🤖 一键翻译**：使用 LLM 自动翻译技能名称和简介
+- **✏️ 自定义显示名称**：编辑技能在列表中的显示方式，不修改原始文件
+- **🔒 安全加固**：文件路径验证、CSP 策略、URL 校验
+- **⚡ 性能优化**：配置缓存机制，提升响应速度
+- **🎨 UI 优化**：简约化设计，改进侧边栏、卡片和设置页面
+
+## 🗺️ 路线图
 
 我们正在持续改进 SkillX，以下是我们的计划：
 
 - [x] 核心功能（如软链接同步、多工具支持）。
+- [x] 多语言显示和一键翻译功能。
 - [ ] 社区中心 — 分享和下载社区贡献的技能等。
 - [ ] 云同步，换设备时一键迁移现有技能等。
 - [ ] 插件系统，支持更多 AI 工具扩展。

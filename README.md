@@ -3,7 +3,7 @@
 > **A unified desktop application for managing AI coding assistant skills.**
 > Seamlessly organize, sync, and share skills for **Claude Code, Codex, Opencode** and other AI tools.
 
-![Version](https://img.shields.io/badge/version-2.1.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.0.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
 [中文说明](./README_CN.md)
 
@@ -18,11 +18,12 @@ It uses a powerful **symlink synchronization mechanism**, allowing you to write 
 - **🎯 Unified Management**: Centralize all your AI skills in one secure location.
 - **🔄 Smart Synchronization**: Automatic symlink management ensures your tools always have the latest version of your skills without file duplication.
 - **🎛️ Granular Control**: Enable or disable specific skills for individual tools without deleting the original files.
-- **⚡ High Performance**: Built with **Rust** and **Tauri 2.0** for a lightweight, blazing-fast experience.
+- **🌐 Multi-Language Display**: Customize skill names and descriptions in different languages (Original/Chinese/English) with one-click AI translation.
+- **⚡ High Performance**: Built with **Rust** and **Tauri 2.0** for a lightweight, blazing-fast experience with config caching.
 - **🛡️ Cross-Platform**: Native support for macOS, Windows, and Linux.
 - **🔌 Multi-Tool Support**: Out-of-the-box support for **Claude Code, Codex, Opencode** and extensible to others.
 - **🧩 Custom Tools**: Add your own tools with custom paths and optional icons.
-- **🎨 Modern UI**: Beautiful interface built with React 19, Tailwind CSS v4, and Radix UI.
+- **🎨 Modern UI**: Beautiful, minimalist interface built with React 19, Tailwind CSS v4, and Radix UI.
 
 ## 📥 Download
 
@@ -64,11 +65,21 @@ Designed for developers who care about performance and stability:
 - **UI Components**: [Radix UI](https://www.radix-ui.com/)
 - **Editor**: [Monaco Editor](https://microsoft.github.io/monaco-editor/)
 
-## 📅 Roadmap
+## 📅 What's New in v3.0.0
+
+- **🌐 Multi-Language Display**: Customize skill names and descriptions in different languages (Original/Chinese/English)
+- **🤖 One-Click Translation**: AI-powered translation for skill names and descriptions using LLM
+- **✏️ Custom Display Names**: Edit how skills appear in the list without modifying original files
+- **🔒 Security Enhancements**: File path validation, CSP policy, and URL verification
+- **⚡ Performance Improvements**: Config caching for faster response times
+- **🎨 UI Optimization**: Minimalist design with improved sidebar, cards, and settings page
+
+## 🗺️ Roadmap
 
 We are actively working on making SkillX better. Here is what we are planning:
 
 - [x] Core features (e.g., soft link synchronization, multi-tool support).
+- [x] Multi-language display and one-click translation.
 - [ ] Community Hub – Share and download community-contributed Skills, etc.
 - [ ] Cloud synchronization, allowing one-click migration of existing Skills and more when changing devices.
 - [ ] Plugin system to support more AI tool extensions.
