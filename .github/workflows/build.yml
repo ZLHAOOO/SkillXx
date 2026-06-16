@@ -1,0 +1,81 @@
+name: "Build & Release"
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-latest"
+            args: "--target aarch64-apple-darwin"
+            rust_target: "aarch64-apple-darwin"
+            artifact_name: "skillx-macos-aarch64"
+            artifact_paths: |
+              src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.dmg
+          - platform: "macos-15-intel"
+            args: "--target x86_64-apple-darwin"
+            rust_target: "x86_64-apple-darwin"
+            artifact_name: "skillx-macos-x64"
+            artifact_paths: |
+              src-tauri/target/x86_64-apple-darwin/release/bundle/**/*.dmg
+          - platform: "windows-latest"
+            args: ""
+            rust_target: ""
+            artifact_name: "skillx-windows-latest"
+            artifact_paths: |
+              src-tauri/target/release/bundle/**/*.exe
+              src-tauri/target/release/bundle/**/*.msi
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: install create-dmg
+        if: startsWith(matrix.platform, 'macos-')
+        run: brew install create-dmg
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri"
+
+      - name: install frontend dependencies
+        run: npm ci
+
+      - name: build tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: "SkillX v__VERSION__"
+          releaseBody: "See the assets to download this version and install."
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_paths }}
+          retention-days: 1
+          if-no-files-found: error
