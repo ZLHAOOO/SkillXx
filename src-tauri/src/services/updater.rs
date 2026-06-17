@@ -1,8 +1,10 @@
 use crate::models::update::{DownloadProgress, DownloadStatus, GithubRelease, UpdateInfo};
+use futures_util::StreamExt;
 use semver::Version;
 use serde::Deserialize;
 use std::error::Error;
 use std::path::PathBuf;
+use tauri::Emitter;
 
 const REPO_OWNER: &str = "ZLHAOOO";
 const REPO_NAME: &str = "SkillX";

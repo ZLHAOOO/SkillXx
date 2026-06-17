@@ -887,7 +887,7 @@ pub async fn translate_skill_name_desc(
     let input = SkillTranslationInput {
         name: skill.name.clone(),
         description: skill.description.clone().unwrap_or_default(),
-        content_md: String::new(), // We only need name and description
+        content_md: Some(String::new()), // We only need name and description
     };
 
     let result = translation::translate_skill(&provider, &target_lang, input, false).await?;
@@ -969,7 +969,7 @@ pub async fn translate_skill_names_batch(
             let input = SkillTranslationInput {
                 name: skill.name.clone(),
                 description: skill.description.clone().unwrap_or_default(),
-                content_md: String::new(),
+                content_md: Some(String::new()),
             };
 
             match translation::translate_skill(
@@ -994,7 +994,7 @@ pub async fn translate_skill_names_batch(
 
     while let Some(result) = tasks.join_next().await {
         match result {
-            Ok((_, Ok(id), data))) => {
+            Ok((_, Ok(id), data)) => {
                 // Parse the translated name and description
                 if let Some((name, desc)) = data.split_once('|') {
                     let metadata_key = format!("global:{}", id.split(':').last().unwrap_or(&id));
