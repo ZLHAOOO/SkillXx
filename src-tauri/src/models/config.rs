@@ -136,6 +136,8 @@ impl Default for UserPreferences {
             show_sync_notifications: true,
             remove_links_when_disabling_tool: false,
             github_token: None,
+            skill_display_name_lang: default_skill_display_lang(),
+            skill_display_desc_lang: default_skill_display_desc_lang(),
         }
     }
 }
@@ -387,6 +389,7 @@ mod tests {
             "react-playground".to_string(),
             SkillMetadata {
                 tags: vec!["react".to_string(), "frontend".to_string()],
+                ..Default::default()
             },
         );
         config.skill_metadata = metadata;
@@ -398,6 +401,7 @@ mod tests {
             restored.skill_metadata.get("react-playground"),
             Some(&SkillMetadata {
                 tags: vec!["react".to_string(), "frontend".to_string()],
+                ..Default::default()
             })
         );
     }
