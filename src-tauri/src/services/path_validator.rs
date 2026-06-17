@@ -54,7 +54,7 @@ fn normalize_path(path: &Path) -> Option<PathBuf> {
 
     for component in path.components() {
         match component {
-            std::path::Component::Normal(".") => {}
+            std::path::Component::Normal(s) if s == std::path::Path::new(".").as_os_str() => {}
             std::path::Component::ParentDir => {
                 components.pop();
             }
