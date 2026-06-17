@@ -27,3 +27,6 @@ npm-debug.log*
 # Rust
 Cargo.lock
 **/*.rs.bk
+
+# Nested git repos
+skillx-git/
