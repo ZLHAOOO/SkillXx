@@ -1131,6 +1131,19 @@ export function Skills() {
     return { global: globalCount, project: projectCount };
   }, [unifiedItems]);
 
+  const scopeTabs = useMemo(() => {
+    const tabs: Array<{ value: "all" | "global" | "project"; label: string; count: number }> = [
+      { value: "all", label: t("skills.scopeFilterAll"), count: unifiedItems.length },
+    ];
+    if (scopeFilterCounts.global > 0) {
+      tabs.push({ value: "global", label: t("skills.scopeGlobal"), count: scopeFilterCounts.global });
+    }
+    if (scopeFilterCounts.project > 0) {
+      tabs.push({ value: "project", label: t("skills.scopeProject"), count: scopeFilterCounts.project });
+    }
+    return tabs;
+  }, [scopeFilterCounts, t, unifiedItems.length]);
+
   const filteredUnifiedItems = useMemo(() => filterUnifiedSkillItems(unifiedItems, {
     searchQuery,
     selectedTags,
@@ -2330,6 +2343,77 @@ export function Skills() {
           </>
         }
       />
+
+      <nav
+        aria-label={t("skills.scopeFilterAll")}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: "10px 32px",
+          borderBottom: "1px solid var(--border)",
+          backgroundColor: "var(--background)",
+          flexShrink: 0,
+        }}
+      >
+        {scopeTabs.map((tab) => {
+          const active = scopeFilter === tab.value;
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setScopeFilter(tab.value)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "6px 14px",
+                fontSize: "13px",
+                fontWeight: active ? 600 : 500,
+                color: active ? "var(--primary-foreground)" : "var(--muted-foreground)",
+                backgroundColor: active ? "var(--foreground)" : "transparent",
+                border: active ? "none" : "1px solid var(--border)",
+                borderRadius: "999px",
+                cursor: "pointer",
+                transition: "background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease",
+                whiteSpace: "nowrap",
+              }}
+              onMouseEnter={(e) => {
+                if (!active) {
+                  e.currentTarget.style.color = "var(--foreground)";
+                  e.currentTarget.style.backgroundColor =
+                    "color-mix(in srgb, var(--foreground) 6%, transparent)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  e.currentTarget.style.color = "var(--muted-foreground)";
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }
+              }}
+            >
+              <span>{tab.label}</span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  opacity: active ? 0.85 : 0.7,
+                  padding: "1px 7px",
+                  borderRadius: "999px",
+                  backgroundColor: active
+                    ? "rgba(255, 255, 255, 0.15)"
+                    : "color-mix(in srgb, var(--foreground) 6%, transparent)",
+                  minWidth: "20px",
+                  textAlign: "center",
+                  lineHeight: 1.4,
+                }}
+              >
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
 
       <main
         ref={listContainerRef}
