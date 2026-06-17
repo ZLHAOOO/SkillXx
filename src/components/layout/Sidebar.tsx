@@ -7,15 +7,80 @@ import { checkUpdate } from "@/services/updater";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { UpdateInfo } from "@/types";
 import { getSidebarChromeMetrics } from "./sidebarChrome";
-import { Sparkles, Wrench, Store, Cog, MessageCircle } from "lucide-react";
+import { Sparkles, Wrench, Store, Cog, MessageCircle, type LucideIcon } from "lucide-react";
 
-const navItems = [
-  { path: "/", labelKey: "nav.skills" as const, icon: Sparkles },
-  { path: "/tools", labelKey: "nav.tools" as const, icon: Wrench },
-  { path: "/marketplace", labelKey: "nav.marketplace" as const, icon: Store },
-  { path: "/settings", labelKey: "nav.settings" as const, icon: Cog },
-  { path: "/feedback", labelKey: "nav.feedback" as const, icon: MessageCircle },
+interface NavItem {
+  path: string;
+  labelKey: "nav.skills" | "nav.tools" | "nav.marketplace" | "nav.settings" | "nav.feedback";
+  icon: LucideIcon;
+}
+
+const navItems: NavItem[] = [
+  { path: "/", labelKey: "nav.skills", icon: Sparkles },
+  { path: "/tools", labelKey: "nav.tools", icon: Wrench },
+  { path: "/marketplace", labelKey: "nav.marketplace", icon: Store },
+  { path: "/settings", labelKey: "nav.settings", icon: Cog },
+  { path: "/feedback", labelKey: "nav.feedback", icon: MessageCircle },
 ];
+
+function SidebarNavButton({ item, label }: { item: NavItem; label: string }) {
+  const [hovered, setHovered] = useState(false);
+  const Icon = item.icon;
+
+  return (
+    <NavLink
+      to={item.path}
+      end={item.path === "/"}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={({ isActive }) => {
+        const backgroundColor = isActive
+          ? "var(--foreground)"
+          : hovered
+            ? "color-mix(in srgb, var(--foreground) 6%, transparent)"
+            : "transparent";
+        return {
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          padding: "9px 12px",
+          fontSize: "13px",
+          fontWeight: isActive ? 600 : 500,
+          color: isActive
+            ? "var(--primary-foreground)"
+            : hovered
+              ? "var(--foreground)"
+              : "var(--muted-foreground)",
+          backgroundColor,
+          borderRadius: "10px",
+          textDecoration: "none",
+          boxShadow: isActive ? "0 1px 2px rgba(15, 23, 42, 0.12)" : "none",
+          transition: "background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease",
+          cursor: "pointer",
+        };
+      }}
+    >
+      {({ isActive }) => (
+        <>
+          <Icon
+            size={16}
+            strokeWidth={isActive ? 2.2 : 1.8}
+            style={{ flexShrink: 0 }}
+          />
+          <span
+            style={{
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {label}
+          </span>
+        </>
+      )}
+    </NavLink>
+  );
+}
 
 export function Sidebar() {
   const { t } = useTranslation();
@@ -70,26 +135,13 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2" style={{ padding: chromeMetrics.navPadding }}>
-        <ul className="list-none m-0 p-0 space-y-0.5">
-          {navItems.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  `flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] no-underline transition-all duration-150 ${
-                    isActive
-                      ? "font-medium text-foreground bg-sidebar-accent"
-                      : "text-muted-foreground hover:text-foreground hover:bg-black/[0.03]"
-                  }`
-                }
-              >
-                <item.icon size={15} strokeWidth={1.8} />
-                <span>{t(item.labelKey)}</span>
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+      <nav
+        className="flex-1 flex flex-col"
+        style={{ padding: chromeMetrics.navPadding, gap: "6px" }}
+      >
+        {navItems.map((item) => (
+          <SidebarNavButton key={item.path} item={item} label={t(item.labelKey)} />
+        ))}
       </nav>
 
       {/* Bottom section */}
