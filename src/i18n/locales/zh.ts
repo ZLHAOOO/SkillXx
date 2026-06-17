@@ -425,11 +425,6 @@ export const zh = {
     privacyPolicy: "隐私政策",
     starOnGithub: "在 GitHub 上 Star",
     starOnGithubDesc: "如果这个项目对你有帮助，欢迎在 GitHub 给个 Star ⭐",
-    support: "赞赏",
-    supportDesc: "如果这个项目对你有帮助，欢迎扫码赞赏支持。",
-    wechatRewardCode: "微信赞赏码",
-    alipayRewardCode: "支付宝赞赏码",
-    kofiSupport: "或通过 Ko-fi 支持：",
     // AI Translation
     llmTitle: "AI 翻译",
     llmDesc: "配置 OpenAI 兼容的大模型，用于翻译 Skill 内容",
@@ -619,14 +614,7 @@ export const zh = {
     },
     contactTitle: "2. 其他联系渠道",
     contact: {
-      wechatLabel: "微信",
-      wechatDesc: "可通过微信号(yeheboo)联系我，请备注：{note}",
       emailLabel: "邮箱",
-      groupHint: "也可以直接扫码加入群聊；如果二维码失效，可先通过上方微信或邮箱联系我。",
-      wechatGroupLabel: "微信群",
-      wechatGroupDesc: "扫码加入微信群",
-      feishuGroupLabel: "飞书群",
-      feishuGroupDesc: "扫码加入飞书群",
     },
   },
   telemetry: {

@@ -2,8 +2,6 @@ import { FormEvent, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "@/i18n";
-import feishuGroupQrCode from "@/assets/group/feishuqun.png";
-import wechatGroupQrCode from "@/assets/group/weixinqun.png";
 import { submitFeedback } from "@/services/feedback";
 import {
   FEEDBACK_CONTACT_TYPES,
@@ -11,22 +9,13 @@ import {
   getFeedbackContactValuePlaceholderKey,
   validateFeedbackContact,
 } from "@/services/feedbackContact";
-import {
-  FEEDBACK_GROUP_CONTACT_CHANNELS,
-  type FeedbackGroupContactChannelId,
-} from "@/services/feedbackDirectContacts";
 import { PageHeader } from "@/components/ui/page-header";
 import { ToastContainer, useToast } from "@/components/ui/toast";
 import type { FeedbackContactType } from "@/types";
 
 const GITHUB_ISSUES_URL =
   "https://github.com/jiweiyeah/SkillX/issues/new/choose";
-const CONTACT_EMAIL = "freeourdays@gmail.com";
-const WECHAT_NOTE = "skillx";
-const GROUP_CONTACT_QR_CODE_MAP: Record<FeedbackGroupContactChannelId, string> = {
-  wechatGroup: wechatGroupQrCode,
-  feishuGroup: feishuGroupQrCode,
-};
+const CONTACT_EMAIL = "zlhaooo@foxmail.com";
 
 export function Feedback() {
   const { t, language } = useTranslation();
@@ -401,26 +390,6 @@ export function Feedback() {
           <FeedbackCard>
             <div style={{ padding: "20px 0" }}>
               <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "10px",
-                  marginBottom: "12px",
-                }}
-              >
-                <span
-                  style={{ color: "var(--muted-foreground)", minWidth: "52px" }}
-                >
-                  {t("feedback.contact.wechatLabel")}
-                </span>
-                <span style={{ color: "var(--foreground)", lineHeight: 1.6 }}>
-                  {t("feedback.contact.wechatDesc").replace(
-                    "{note}",
-                    WECHAT_NOTE,
-                  )}
-                </span>
-              </div>
-              <div
                 style={{ display: "flex", alignItems: "center", gap: "10px" }}
               >
                 <span
@@ -444,40 +413,6 @@ export function Feedback() {
                 >
                   {CONTACT_EMAIL}
                 </a>
-              </div>
-              <div
-                style={{
-                  marginTop: "18px",
-                  paddingTop: "18px",
-                  borderTop: "1px solid var(--border)",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "12px",
-                    lineHeight: 1.6,
-                    color: "var(--muted-foreground)",
-                    marginBottom: "12px",
-                  }}
-                >
-                  {t("feedback.contact.groupHint")}
-                </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                    gap: "12px",
-                  }}
-                >
-                  {FEEDBACK_GROUP_CONTACT_CHANNELS.map((channel) => (
-                    <ContactQrCard
-                      key={channel.id}
-                      title={t(channel.labelKey)}
-                      description={t(channel.descriptionKey)}
-                      imageSrc={GROUP_CONTACT_QR_CODE_MAP[channel.id]}
-                    />
-                  ))}
-                </div>
               </div>
             </div>
           </FeedbackCard>
@@ -560,63 +495,4 @@ function FeedbackCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-interface ContactQrCardProps {
-  title: string;
-  description: string;
-  imageSrc: string;
-}
 
-function ContactQrCard({
-  title,
-  description,
-  imageSrc,
-}: ContactQrCardProps) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "10px",
-        padding: "16px",
-        borderRadius: "10px",
-        border: "1px solid var(--border)",
-        background:
-          "linear-gradient(180deg, var(--background) 0%, var(--secondary) 100%)",
-      }}
-    >
-      <img
-        src={imageSrc}
-        alt={title}
-        style={{
-          width: "100%",
-          maxWidth: "160px",
-          aspectRatio: "1 / 1",
-          borderRadius: "8px",
-          border: "1px solid var(--border)",
-          backgroundColor: "#ffffff",
-          objectFit: "contain",
-        }}
-      />
-      <div
-        style={{
-          fontSize: "13px",
-          fontWeight: 600,
-          color: "var(--foreground)",
-        }}
-      >
-        {title}
-      </div>
-      <div
-        style={{
-          fontSize: "12px",
-          lineHeight: 1.5,
-          textAlign: "center",
-          color: "var(--muted-foreground)",
-        }}
-      >
-        {description}
-      </div>
-    </div>
-  );
-}
