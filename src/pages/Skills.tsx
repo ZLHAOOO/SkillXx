@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from "react";
 import { useDebouncedCallback } from "use-debounce";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { confirm, open } from "@tauri-apps/plugin-dialog";
@@ -886,6 +887,14 @@ export function Skills() {
     () => sortUnifiedSkillItems(filteredUnifiedItems, searchQuery),
     [filteredUnifiedItems, searchQuery],
   );
+
+  // 列表虚拟化 - 只渲染可见区域内的技能卡片
+  const virtualizer = useVirtualizer({
+    count: sortedUnifiedItems.length,
+    getScrollElement: () => listContainerRef.current,
+    estimateSize: () => 180, // 估计每个卡片的高度
+    overscan: 5, // 预渲染 5 个额外的卡片
+  });
 
   const actionableToolIds = useMemo(
     () => getActionableToolIds(tools),
@@ -2231,12 +2240,15 @@ export function Skills() {
               {hasActiveSkillFilters ? t("skills.noMatch") : t("skills.noSkills")}
             </div>
           ) : (
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-              gap: "16px",
-            }}>
-              {sortedUnifiedItems.map((item) => {
+            <div
+              style={{
+                height: virtualizer.getTotalSize(),
+                width: "100%",
+                position: "relative",
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualItem) => {
+                const item = sortedUnifiedItems[virtualItem.index];
                 const canOpen = Boolean(item.openPath);
                 const translationKey = item.kind === "skill" && item.skill
                   ? makeTranslationKey(item.skill.instance_id, language)
@@ -2266,61 +2278,71 @@ export function Skills() {
                   : 0;
 
                 return (
-                  <SkillCard
+                  <div
                     key={item.key}
-                    item={item}
-                    isBatchManageMode={isBatchManageMode}
-                    isBatchSelected={selectedBatchItemKeys.has(item.key)}
-                    canOpen={canOpen}
-                    cardTitle={cardTitle}
-                    description={description}
-                    previewChips={previewChips}
-                    fileProgressText={fileProgressText}
-                    fileProgressPercent={fileProgressPercent}
-                    isTranslatedView={isTranslatedView}
-                    translated={translated}
-                    tools={tools}
-                    deletingSkill={deletingSkill}
-                    deletingGroupId={deletingGroupId}
-                    translatingIds={translatingIds}
-                    skillTranslationProgress={skillTranslationProgress}
-                    onOpen={() => void handleOpenUnifiedItem(item)}
-                    onToggleBatchSelection={() => handleToggleBatchItemSelection(item.key)}
-                    onEdit={() => {
-                      if (item.kind === "skill" && item.skill) {
-                        openSkillEditor(item.skill.instance_id, "tools");
-                      } else if (item.kind === "group") {
-                        openGroupEditor(item.id);
-                      }
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualItem.start}px)`,
                     }}
-                    onEditDisplay={() => {
-                      if (item.kind === "skill" && item.skill) {
-                        openDisplayNameEditor(item.skill);
-                      }
-                    }}
-                    onDelete={() => {
-                      if (item.kind === "skill" && item.skill) {
-                        void handleDelete(item.skill);
-                      } else if (item.kind === "group") {
-                        void handleDeleteGroup(item);
-                      }
-                    }}
-                    onTranslate={() => {
-                      if (item.kind === "skill" && item.skill) {
-                        if (translated && translationKey) {
-                          translation.setView(translationKey, isTranslatedView ? "original" : "translated");
-                        } else {
-                          void handleTranslateSkill(item.skill);
+                  >
+                    <SkillCard
+                      item={item}
+                      isBatchManageMode={isBatchManageMode}
+                      isBatchSelected={selectedBatchItemKeys.has(item.key)}
+                      canOpen={canOpen}
+                      cardTitle={cardTitle}
+                      description={description}
+                      previewChips={previewChips}
+                      fileProgressText={fileProgressText}
+                      fileProgressPercent={fileProgressPercent}
+                      isTranslatedView={isTranslatedView}
+                      translated={translated}
+                      tools={tools}
+                      deletingSkill={deletingSkill}
+                      deletingGroupId={deletingGroupId}
+                      translatingIds={translatingIds}
+                      skillTranslationProgress={skillTranslationProgress}
+                      onOpen={() => void handleOpenUnifiedItem(item)}
+                      onToggleBatchSelection={() => handleToggleBatchItemSelection(item.key)}
+                      onEdit={() => {
+                        if (item.kind === "skill" && item.skill) {
+                          openSkillEditor(item.skill.instance_id, "tools");
+                        } else if (item.kind === "group") {
+                          openGroupEditor(item.id);
                         }
-                      }
-                    }}
-                    onRetranslate={() => {
-                      if (item.kind === "skill" && item.skill) {
-                        void handleTranslateSkill(item.skill, true);
-                      }
-                    }}
-                    t={t}
-                  />
+                      }}
+                      onEditDisplay={() => {
+                        if (item.kind === "skill" && item.skill) {
+                          openDisplayNameEditor(item.skill);
+                        }
+                      }}
+                      onDelete={() => {
+                        if (item.kind === "skill" && item.skill) {
+                          void handleDelete(item.skill);
+                        } else if (item.kind === "group") {
+                          void handleDeleteGroup(item);
+                        }
+                      }}
+                      onTranslate={() => {
+                        if (item.kind === "skill" && item.skill) {
+                          if (translated && translationKey) {
+                            translation.setView(translationKey, isTranslatedView ? "original" : "translated");
+                          } else {
+                            void handleTranslateSkill(item.skill);
+                          }
+                        }
+                      }}
+                      onRetranslate={() => {
+                        if (item.kind === "skill" && item.skill) {
+                          void handleTranslateSkill(item.skill, true);
+                        }
+                      }}
+                      t={t}
+                    />
+                  </div>
                 );
               })}
             </div>
