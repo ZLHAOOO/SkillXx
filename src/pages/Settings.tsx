@@ -786,7 +786,7 @@ export function Settings() {
                     marginBottom: '2px',
                   }}>
                     <a
-                      href="https://github.com/ZLHAOOO/SkillX"
+                      href="https://github.com/ZLHAOOO/SkillXx"
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
@@ -842,8 +842,8 @@ export function Settings() {
               <div style={{ marginBottom: '12px' }}>
                 <a
                   href={language === 'zh'
-                    ? "https://github.com/ZLHAOOO/SkillX/blob/main/PRIVACY_CN.md"
-                    : "https://github.com/ZLHAOOO/SkillX/blob/main/PRIVACY.md"
+                    ? "https://github.com/ZLHAOOO/SkillXx/blob/main/PRIVACY_CN.md"
+                    : "https://github.com/ZLHAOOO/SkillXx/blob/main/PRIVACY.md"
                   }
                   target="_blank"
                   rel="noopener noreferrer"
@@ -876,7 +876,7 @@ export function Settings() {
                   {t("settings.starOnGithubDesc")}
                 </div>
                 <a
-                  href="https://github.com/ZLHAOOO/SkillX"
+                  href="https://github.com/ZLHAOOO/SkillXx"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
