@@ -1,5 +1,9 @@
 # SkillX
 
+<p align="center">
+  <img src="./assets/logo.png" alt="SkillX Logo" width="128" />
+</p>
+
 > **A unified desktop application for managing AI coding assistant skills.**
 > Seamlessly organize, sync, and share skills for **Claude Code, Codex, Opencode** and other AI tools.
 
@@ -73,17 +77,6 @@ Designed for developers who care about performance and stability:
 - **🔒 Security Enhancements**: File path validation, CSP policy, and URL verification
 - **⚡ Performance Improvements**: Config caching for faster response times
 - **🎨 UI Optimization**: Minimalist design with improved sidebar, cards, and settings page
-
-## 🗺️ Roadmap
-
-We are actively working on making SkillX better. Here is what we are planning:
-
-- [x] Core features (e.g., soft link synchronization, multi-tool support).
-- [x] Multi-language display and one-click translation.
-- [ ] Community Hub – Share and download community-contributed Skills, etc.
-- [ ] Cloud synchronization, allowing one-click migration of existing Skills and more when changing devices.
-- [ ] Plugin system to support more AI tool extensions.
-- [ ] Integrated AI chat interface for testing Skills directly within the application.
 
 ## 🙏 Acknowledgments
 
