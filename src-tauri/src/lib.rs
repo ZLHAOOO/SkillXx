@@ -18,8 +18,8 @@ use commands::{
     read_directory_tree, read_file, refresh_editors, refresh_skills, refresh_tools,
     remove_skill_package, save_config, save_llm_provider, scan_existing_skills, search_marketplace,
     set_tool_enabled, submit_feedback, sync_marketplace_installed_skills, test_llm_provider,
-    toggle_marketplace_source, translate_marketplace_skill, translate_skill, translate_skill_files,
-    translate_skill_name_desc, translate_skill_names_batch, translate_skills_batch,
+    toggle_marketplace_source, translate_skill, translate_skill_files,
+    translate_skill_name_desc, translate_skill_names_batch,
     translate_text_content, update_custom_tool, update_tool_paths, write_file,
 };
 use services::{AppCache, MarketplaceCache};

@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub mod auth;
 pub mod config;
 pub mod editors;
@@ -12,10 +13,6 @@ pub mod sync;
 pub mod tools;
 pub mod updater;
 
-pub use auth::{
-    exchange_github_auth, exchange_google_auth, get_auth_profile, logout_auth, start_github_auth,
-    start_google_auth,
-};
 pub use config::{get_config, is_initialized, mark_initialized, save_config};
 pub use editors::{
     detect_available_editors, get_available_editors, open_in_editor, refresh_editors,
@@ -25,9 +22,9 @@ pub use files::{read_directory_tree, read_file, write_file};
 pub use llm::{
     clear_llm_provider, clear_translation_cache, get_cached_marketplace_translations,
     get_cached_skill_translations, get_cached_text_translation, get_llm_provider,
-    save_llm_provider, test_llm_provider, translate_marketplace_skill, translate_skill,
+    save_llm_provider, test_llm_provider, translate_skill,
     translate_skill_files, translate_skill_name_desc, translate_skill_names_batch,
-    translate_skills_batch, translate_text_content,
+    translate_text_content,
 };
 pub use marketplace::{
     check_marketplace_updates_if_stale, fetch_marketplace_skill_descriptions,

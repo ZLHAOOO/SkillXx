@@ -417,6 +417,7 @@ pub async fn translate_skill_files(
 }
 
 #[tauri::command]
+#[allow(dead_code)]
 pub async fn translate_marketplace_skill(
     input: MarketplaceTranslationInput,
     target_lang: String,
@@ -486,6 +487,7 @@ fn determine_concurrency(provider: &LlmProvider) -> usize {
 }
 
 #[tauri::command]
+#[allow(dead_code)]
 pub async fn translate_skills_batch(
     instance_ids: Vec<String>,
     target_lang: String,

@@ -7,7 +7,6 @@ pub mod skill_package;
 pub mod tool;
 pub mod update;
 
-pub use auth::{AuthProfile, AuthSession};
 pub use config::{
     AppConfig, CustomToolConfig, LlmProvider, ProjectBinding, SkillMetadata, ToolConfig,
 };
@@ -20,4 +19,3 @@ pub use marketplace::{
 pub use skill::{MarketplaceMeta, Skill, SkillScope, SkillSource, VaultMeta};
 pub use skill_package::{InstalledSkillPackage, SkillPackageMeta};
 pub use tool::{Tool, ToolDefinition, ToolSource, SUPPORTED_TOOLS};
-pub use update::DownloadProgress;

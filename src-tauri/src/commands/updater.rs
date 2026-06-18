@@ -1,5 +1,4 @@
 use crate::models::update::UpdateInfo;
-use crate::models::DownloadProgress;
 use crate::services::{updater, ConfigManager};
 use serde::Serialize;
 
@@ -25,6 +24,7 @@ pub async fn check_update(app_handle: tauri::AppHandle) -> Result<UpdateInfo, St
 }
 
 #[derive(Serialize)]
+#[allow(dead_code)]
 pub struct DownloadProgressEvent {
     percent: f64,
     downloaded: u64,
