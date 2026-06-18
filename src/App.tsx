@@ -9,6 +9,7 @@ import { Settings } from "@/pages/Settings";
 import { EditorPage } from "@/pages/Editor";
 import { Welcome } from "@/pages/Welcome";
 import { useInitialization } from "@/hooks/useInitialization";
+import { useScrollIndicator } from "@/hooks/useScrollIndicator";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { SkillTranslationProvider } from "@/hooks/useSkillTranslation";
 import { I18nProvider, Language } from "@/i18n";
@@ -20,6 +21,7 @@ type Theme = "light" | "dark" | "system";
 
 function App() {
   const { isInitialized, isLoading: initLoading, markInitialized } = useInitialization();
+  useScrollIndicator();
   const [language, setLanguage] = useState<Language>("en");
   const [theme, setTheme] = useState<Theme>("system");
   const [fontFamily, setFontFamily] = useState<FontFamilyPreset>("system");

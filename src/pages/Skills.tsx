@@ -96,6 +96,8 @@ import { ProjectBindingsDialog } from "./ProjectBindingsDialog";
 import { SkillManageDialog, CreateSkillDialog, DisplayNameEditorDialog } from "@/components/skills/dialogs";
 import { SkillCard } from "@/components/skills/SkillCard";
 import { useSkillsData } from "@/hooks/skills/useSkillsData";
+import { useSkillFilter } from "@/hooks/skills/useSkillFilter";
+import { useSkillActions } from "@/hooks/skills/useSkillActions";
 
 function getToolDisplayName(toolId: string, tools: Tool[]): string {
   const tool = tools.find((t) => t.id === toolId);
@@ -210,8 +212,6 @@ export function Skills() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [untaggedOnly, setUntaggedOnly] = useState(false);
   const [scopeFilter, setScopeFilter] = useState<"all" | "global" | "project">("all");
-  const [togglingSkill, setTogglingSkill] = useState<string | null>(null);
-  const [deletingSkill, setDeletingSkill] = useState<string | null>(null);
   const [toolEditorSkillId, setToolEditorSkillId] = useState<string | null>(null);
   const [toolEditorQuery, setToolEditorQuery] = useState("");
   const [toolEditorEnabledOnly, setToolEditorEnabledOnly] = useState(false);
@@ -225,7 +225,6 @@ export function Skills() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showProjectBindingsDialog, setShowProjectBindingsDialog] = useState(false);
   const [pendingProjectBinding, setPendingProjectBinding] = useState<ProjectBinding | null>(null);
-  const [creating, setCreating] = useState(false);
   const [projectBindingsSaving, setProjectBindingsSaving] = useState(false);
   const [showTagFilterMenu, setShowTagFilterMenu] = useState(false);
   const [skillEditorTab, setSkillEditorTab] = useState<SkillEditorTab>("tools");
@@ -251,6 +250,45 @@ export function Skills() {
     refreshData: dataRefreshData,
     reloadData: dataReloadData,
   } = useSkillsData();
+
+  // Custom hook for filtering and search
+  const {
+    searchQuery: filterSearchQuery,
+    setSearchQuery: setFilterSearchQuery,
+    selectedTags: filterSelectedTags,
+    setSelectedTags: setFilterSelectedTags,
+    untaggedOnly: filterUntaggedOnly,
+    setUntaggedOnly: setFilterUntaggedOnly,
+    scopeFilter: filterScopeFilter,
+    setScopeFilter: setFilterScopeFilter,
+    unifiedItems: filterUnifiedItems,
+    sortedUnifiedItems: filterSortedUnifiedItems,
+    hasActiveSkillFilters: filterHasActiveSkillFilters,
+  } = useSkillFilter({ skills: dataSkills, skillPackages: dataSkillPackages, tools: dataTools, config: dataConfig, t });
+
+  // Custom hook for skill actions (create, delete, toggle)
+  const {
+    togglingSkill: actionTogglingSkill,
+    deletingSkill: actionDeletingSkill,
+    creating: actionCreating,
+    handleCreateSkill: actionHandleCreateSkill,
+    handleDelete: actionHandleDelete,
+    handleToggle: actionHandleToggle,
+    handleBulkToggle: actionHandleBulkToggle,
+  } = useSkillActions({
+    skills: dataSkills,
+    tools: dataTools,
+    config: dataConfig,
+    addToast,
+    refreshData: dataReloadData,
+    t,
+  });
+
+  // Alias hook state for use in component
+  const togglingSkill = actionTogglingSkill;
+  const deletingSkill = actionDeletingSkill;
+  const creating = actionCreating;
+
   const skillMetadata = config?.skill_metadata;
   const listContainerRef = useRef<HTMLElement | null>(null);
   const hasRestoredScrollRef = useRef(false);
@@ -589,24 +627,7 @@ export function Skills() {
     }
   }, [translation, config, skills, addToast, reloadData, t]);
 
-  const handleToggle = async (instanceId: string, skillName: string, toolId: string, enabled: boolean) => {
-    const toggleKey = `${instanceId}:${toolId}`;
-    setTogglingSkill(toggleKey);
-    try {
-      if (enabled) {
-        await invoke("enable_skill", { instanceId, toolId });
-        addToast(t("skills.enableSuccess").replace("{skill}", skillName).replace("{tool}", getToolDisplayName(toolId, tools)), "success");
-      } else {
-        await invoke("disable_skill", { instanceId, toolId });
-        addToast(t("skills.disableSuccess").replace("{skill}", skillName).replace("{tool}", getToolDisplayName(toolId, tools)), "success");
-      }
-      await reloadData();
-    } catch (err) {
-      addToast(err instanceof Error ? err.message : String(err), "error");
-    } finally {
-      setTogglingSkill(null);
-    }
-  };
+  const handleToggle = actionHandleToggle;
 
   const openSkillEditor = useCallback((skillIdentity: string, tab: SkillEditorTab = "tools") => {
     setToolEditorSkillId(skillIdentity);
@@ -643,69 +664,7 @@ export function Skills() {
     setTagDraft("");
   }, []);
 
-  const handleBulkToggle = useCallback(async (skill: Skill, visibleToolIds: string[]) => {
-    const bulkMode = getSkillBulkToggleMode(visibleToolIds, skill.enabled, tools);
-    const targetToolIds = getSkillBulkToggleTargets(visibleToolIds, skill.enabled, tools, bulkMode);
-    if (targetToolIds.length === 0) {
-      return;
-    }
-
-    const enabled = bulkMode === "enable";
-    const confirmed = await confirm(
-      t(getSkillBulkToggleConfirmKey(bulkMode)).replace("{count}", String(targetToolIds.length)),
-      {
-        title: t("skills.bulkConfirmTitle"),
-        kind: "warning",
-      },
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    setBulkTogglingSkillId(skill.instance_id);
-
-    setSkills((prevSkills) =>
-      prevSkills.map((item) => {
-        if (item.instance_id !== skill.instance_id) {
-          return item;
-        }
-
-        const nextEnabled = { ...item.enabled };
-        targetToolIds.forEach((toolId) => {
-          nextEnabled[toolId] = enabled;
-        });
-
-        return { ...item, enabled: nextEnabled };
-      }),
-    );
-
-    try {
-      const command = enabled ? "enable_skill" : "disable_skill";
-      const results = await Promise.allSettled(
-        targetToolIds.map((toolId) => invoke(command, { instanceId: skill.instance_id, toolId })),
-      );
-
-      const failedCount = results.filter((result) => result.status === "rejected").length;
-      const changedCount = targetToolIds.length - failedCount;
-
-      if (changedCount > 0) {
-        const successMessage = enabled ? t("skills.bulkEnableSuccess") : t("skills.bulkDisableSuccess");
-        addToast(successMessage.replace("{count}", String(changedCount)), "success");
-      }
-
-      if (failedCount > 0) {
-        const failedMessage = t("skills.bulkTogglePartialFailed").replace("{count}", String(failedCount));
-        addToast(failedMessage, "error");
-      }
-
-      await reloadData();
-    } catch (err) {
-      addToast(err instanceof Error ? err.message : String(err), "error");
-      await reloadData();
-    } finally {
-      setBulkTogglingSkillId(null);
-    }
-  }, [addToast, reloadData, t, tools]);
+  const handleBulkToggle = actionHandleBulkToggle;
 
   const handleTranslateSkill = useCallback(
     async (skill: Skill, force: boolean = false) => {
@@ -836,63 +795,9 @@ export function Skills() {
     [translation, language, addToast, updateToast, removeToast, t],
   );
 
-  const handleDelete = async (skill: Skill) => {
-    const confirmed = await confirm(t("skills.deleteConfirm").replace("{name}", skill.name), {
-      title: t("skills.delete"),
-      kind: "warning",
-    });
-    if (!confirmed) return;
+  const handleDelete = actionHandleDelete;
 
-    setDeletingSkill(skill.instance_id);
-    try {
-      await invoke("delete_skill", { instanceId: skill.instance_id });
-      if (toolEditorSkillId === skill.instance_id) {
-        closeSkillEditor();
-      }
-      if (config && hasSkillMetadataEntry(skill, config.skill_metadata)) {
-        const nextConfig: AppConfig = {
-          ...config,
-          skill_metadata: removeSkillMetadataEntry(skill, config.skill_metadata),
-        };
-        try {
-          await invoke("save_config", { config: nextConfig });
-          setConfig(nextConfig);
-        } catch (cleanupError) {
-          addToast(cleanupError instanceof Error ? cleanupError.message : String(cleanupError), "error");
-        }
-      }
-      addToast(t("skills.deleteSuccess").replace("{name}", skill.name), "success");
-      await reloadData();
-    } catch (err) {
-      addToast(err instanceof Error ? err.message : String(err), "error");
-    } finally {
-      setDeletingSkill(null);
-    }
-  };
-
-  const handleCreateSkill = async (skillName: string, skillDescription: string) => {
-    setCreating(true);
-    try {
-      const newSkill = await invoke<Skill>("create_skill", {
-        name: skillName,
-        description: skillDescription || null,
-      });
-      addToast(t("skills.createSuccess").replace("{name}", skillName), "success");
-      setShowCreateDialog(false);
-
-      const editorId = config?.preferences?.default_editor || "builtin";
-      if (editorId === "builtin") {
-        navigate(`/editor?root=${encodeURIComponent(newSkill.path)}`);
-      } else {
-        await invoke("open_in_editor", { editorId, path: newSkill.path });
-        await reloadData();
-      }
-    } catch (err) {
-      addToast(err instanceof Error ? err.message : String(err), "error");
-    } finally {
-      setCreating(false);
-    }
-  };
+  const handleCreateSkill = actionHandleCreateSkill;
 
   const unifiedItems = useMemo(() => buildUnifiedSkillItems({
     skills,

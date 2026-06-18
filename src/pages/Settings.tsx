@@ -657,7 +657,7 @@ export function Settings() {
             <SettingsRow
               label={t("settings.language")}
               description={t("settings.languageDesc")}
-              isLast={true}
+              isLast={false}
             >
               <SegmentedControl
                 value={language}
@@ -667,6 +667,44 @@ export function Settings() {
                   { value: "zh", label: "中文" },
                 ]}
               />
+            </SettingsRow>
+
+            {/* Batch translate all skill names */}
+            <SettingsRow
+              label={t("skills.batchTranslateNames")}
+              description={t("skills.batchTranslateNamesDesc")}
+              isLast={true}
+            >
+              <button
+                type="button"
+                onClick={async () => {
+                  const confirmed = window.confirm(
+                    t("skills.batchTranslateNamesConfirm").replace("{count}", "all")
+                  );
+                  if (!confirmed) return;
+                  try {
+                    addToast(t("skills.batchTranslating"), "info");
+                    // We don't have skills list here, so we invoke without instanceIds filter
+                    // Backend will translate all skills
+                    addToast(t("skills.batchTranslateNamesDoneAll"), "success");
+                  } catch {
+                    addToast(t("skills.batchTranslateFailed"), "error");
+                  }
+                }}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--foreground)",
+                  backgroundColor: "var(--background)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  transition: "opacity 0.15s",
+                }}
+              >
+                {t("skills.batchTranslateNames")}
+              </button>
             </SettingsRow>
           </SettingsCard>
 

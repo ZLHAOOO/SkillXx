@@ -53,7 +53,8 @@ export function Layout() {
 
   return (
     <div
-      className="flex h-screen relative bg-background"
+      className="flex h-screen relative"
+      style={{ backgroundColor: "var(--secondary)" }}
     >
       {/* Draggable titlebar region for macOS - covers main content top area */}
       <div
