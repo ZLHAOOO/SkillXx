@@ -5,10 +5,9 @@ import {
   buildUnifiedSkillItems,
   buildUnifiedItemTagSummaries,
   filterUnifiedSkillItems,
-  getUntaggedSkillsCount,
-  hasSelectableTagFilters,
   sortUnifiedSkillItems,
 } from "@/pages/skills/buildUnifiedSkillItems";
+import { getUntaggedSkillsCount, hasSelectableTagFilters } from "@/pages/skills/skillTags";
 import { type Skill, type InstalledSkillPackage, type Tool, type AppConfig } from "@/types";
 
 interface UseSkillFilterProps {
@@ -16,6 +15,7 @@ interface UseSkillFilterProps {
   skillPackages: InstalledSkillPackage[];
   tools: Tool[];
   config: AppConfig | null;
+  searchQuery?: string; // 可选的外部搜索查询（用于防抖）
   t: (key: TranslationPath) => string;
 }
 
@@ -46,9 +46,13 @@ export function useSkillFilter({
   skillPackages,
   tools,
   config,
+  searchQuery: externalSearchQuery,
   t,
 }: UseSkillFilterProps): UseSkillFilterReturn {
-  const [searchQuery, setSearchQuery] = useState("");
+  // 如果没有外部搜索查询，使用内部状态
+  const [internalSearchQuery, setInternalSearchQuery] = useState("");
+  const searchQuery = externalSearchQuery ?? internalSearchQuery;
+  const setSearchQuery = externalSearchQuery ? () => {} : setInternalSearchQuery;
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [untaggedOnly, setUntaggedOnly] = useState(false);
   const [scopeFilter, setScopeFilter] = useState<"all" | "global" | "project">("all");

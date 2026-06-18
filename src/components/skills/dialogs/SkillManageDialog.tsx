@@ -5,7 +5,7 @@ import { normalizeSkillTags } from "@/pages/skills/skillTags";
 
 type SkillEditorTab = "tools" | "tags";
 
-function SkillManageDialog({
+export function SkillManageDialog({
   skillName,
   skillDescription,
   activeTab,

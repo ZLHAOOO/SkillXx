@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { type TranslationPath } from "@/i18n";
 import { type UnifiedSkillListItem } from "@/pages/skills/buildUnifiedSkillItems";
 import { type Tool } from "@/types";
@@ -34,7 +34,8 @@ interface SkillCardProps {
   t: (key: TranslationPath) => string;
 }
 
-export function SkillCard({
+// 使用 React.memo 优化，只在关键 props 变化时重新渲染
+function SkillCardComponent({
   item,
   isBatchManageMode,
   isBatchSelected,
@@ -658,3 +659,7 @@ function getUnifiedItemMetaLabel(item: UnifiedSkillListItem, t: (key: Translatio
 
   return `${t("skills.enabledFor")} ${summary.enabledCount}/${summary.totalCount}`;
 }
+
+// 使用 React.memo 优化，只在关键 props 变化时重新渲染
+export const SkillCard = memo(SkillCardComponent);
+
