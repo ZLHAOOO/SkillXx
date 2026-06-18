@@ -1,187 +1,198 @@
-: SkillCardActionMenuProps) {
-  const [open, setOpen] = useState(false);
+import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
+import { invoke } from "@tauri-apps/api/core";
+import { confirm, open } from "@tauri-apps/plugin-dialog";
+import { ToastContainer, useToast } from "@/components/ui/toast";
+import { RefreshButton } from "@/components/ui/refresh-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageLoader } from "@/components/ui/loading";
+import {
+  MODAL_LAYER_Z_INDEX,
+} from "@/constants/modal";
+import {
+  AppConfig,
+  BatchSetSkillToolsRequest,
+  BatchSetSkillToolsResponse,
+  InstalledSkillPackage,
+  ProjectBinding,
+  Skill,
+  Tool,
+} from "@/types";
+import { useTranslation, TranslationPath } from "@/i18n";
+import {
+  useSkillTranslation,
+  makeTranslationKey,
+  type SkillFileTranslationProgress,
+} from "@/hooks/useSkillTranslation";
+import { TranslateIconButton } from "@/components/translation/TranslateIconButton";
+import { formatTranslationError } from "@/lib/formatTranslationError";
+import { getSkillColor } from "@/lib/getSkillColor";
+import {
+  applyTagFilterAction,
+  getGroupMetadataKey,
+  getGroupTags,
+  getTagFilterSelectionSummary,
+  getSkillMetadataKey,
+  getSkillTagsForSkill,
+  getUntaggedSkillsCount,
+  hasSelectableTagFilters,
+  normalizeSkillTags,
+  updateMetadataTags,
+  updateSkillTagsForSkill,
+  hasSkillMetadataEntry,
+  removeSkillMetadataEntry,
+  migrateSkillMetadataToInstanceIds,
+} from "./skills/skillTags";
+import { orderToolIdsForSkill } from "./skills/orderToolIds";
+import { getEnabledToolIds } from "./skills/getEnabledToolIds";
+import {
+  getSkillBulkToggleConfirmKey,
+  getSkillBulkToggleMode,
+  getSkillBulkToggleTargets,
+} from "./skills/bulkToggleSkillTools";
+import {
+  buildUnifiedSkillItems,
+  buildUnifiedItemTagSummaries,
+  filterUnifiedSkillItems,
+  getGroupBulkModeState,
+  getGroupToolLabel,
+  getGroupToolVisualState,
+  removeGroupSkillMetadataEntries,
+  shouldShowGroupToolInEnabledOnly,
+  type UnifiedSkillListItem,
+  sortUnifiedSkillItems,
+} from "./skills/buildUnifiedSkillItems";
+import {
+  saveSkillsListScrollOffset,
+  takeSkillsListScrollOffset,
+} from "./skills/skillsListScrollState";
+import {
+  buildBatchTargets,
+  getSelectedBatchItems,
+  pruneBatchSelectionToAvailable,
+  selectVisibleBatchItems,
+  summarizeBatchSelection,
+  toggleBatchSelection,
+} from "./skills/batchManageSelection";
+import { getActionableToolIds } from "./skills/getActionableToolIds";
+import { BatchManageToolsDialog } from "./skills/BatchManageToolsDialog";
+import { buildBatchToolStateSummaries } from "./skills/buildBatchToolStates";
+import {
+  buildGroupBulkToolActionPlan,
+  buildGroupSingleToolActionRequest,
+} from "./skills/groupToolBatchActions";
+import {
+  buildSkillsHeaderActionLayout,
+  type SkillsHeaderActionId,
+} from "./skills/headerActionLayout";
+import {
+  buildProjectBindingFromSkillsDir,
+  hasProjectSkillsDirConflict,
+  resolveActiveProjectId,
+  resolveNextActiveProjectIdAfterAddition,
+  resolveNextProjectBindingsAfterRemoval,
+} from "./projectBindings";
+import { ProjectBindingsDialog } from "./ProjectBindingsDialog";
+import { SkillManageDialog, CreateSkillDialog, DisplayNameEditorDialog } from "@/components/skills/dialogs";
+import { SkillCard } from "@/components/skills/SkillCard";
+import { useSkillsData } from "@/hooks/skills/useSkillsData";
+
+function getToolDisplayName(toolId: string, tools: Tool[]): string {
+  const tool = tools.find((t) => t.id === toolId);
+  if (tool) return tool.name;
+  return toolId;
+}
+
+function buildTagFilterMenuItemStyle(active: boolean): CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "12px",
+    width: "100%",
+    padding: "8px 10px",
+    fontSize: "12px",
+    fontWeight: 500,
+    color: active ? "var(--primary)" : "var(--foreground)",
+    backgroundColor: active ? "rgba(9, 105, 218, 0.08)" : "var(--background)",
+    border: active ? "1px solid rgba(9, 105, 218, 0.28)" : "1px solid var(--border)",
+    borderRadius: "8px",
+    cursor: "pointer",
+    textAlign: "left",
+  };
+}
+
+type SkillEditorTab = "tools" | "tags";
+
+type SkillCardActionMenuProps = {
+  deleting: boolean;
+  editLabel: string;
+  editDisplayLabel: string;
+  deleteLabel: string;
+  moreActionsLabel: string;
+  onEdit: () => void;
+  onEditDisplay: () => void;
+  onDelete: () => void;
+};
+
+function renderPreviewChips(chips: string[], overflowCount: number) {
+  if (chips.length === 0 && overflowCount === 0) {
+    return null;
+  }
 
   return (
-    <div style={{ position: "relative", flexShrink: 0 }}>
-      <button
-        type="button"
-        aria-label={moreActionsLabel}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((current) => !current);
-        }}
-        disabled={deleting}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: "30px",
-          height: "30px",
-          padding: 0,
-          borderRadius: "8px",
-          border: "none",
-          backgroundColor: "transparent",
-          color: "var(--muted-foreground)",
-          cursor: deleting ? "wait" : "pointer",
-          opacity: deleting ? 0.6 : 1,
-          transition: "color 0.15s ease, background-color 0.15s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.color = "var(--foreground)";
-          e.currentTarget.style.backgroundColor = "rgba(15, 23, 42, 0.04)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = "var(--muted-foreground)";
-          e.currentTarget.style.backgroundColor = "transparent";
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="5" cy="12" r="1.8" />
-          <circle cx="12" cy="12" r="1.8" />
-          <circle cx="19" cy="12" r="1.8" />
-        </svg>
-      </button>
-
-      {open && (
-        <>
-          <button
-            type="button"
-            aria-label={moreActionsLabel}
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-            }}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "transparent",
-              border: "none",
-              padding: 0,
-              margin: 0,
-              cursor: "default",
-            }}
-          />
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: "absolute",
-              top: "calc(100% + 8px)",
-              right: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: "2px",
-              minWidth: "132px",
-              padding: "4px",
-              backgroundColor: "var(--popover)",
-              border: "1px solid var(--border)",
-              borderRadius: "8px",
-              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.25)",
-              backdropFilter: "blur(10px)",
-              zIndex: MODAL_LAYER_Z_INDEX,
-            }}
-          >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen(false);
-                onEdit();
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                width: "100%",
-                padding: "10px 12px",
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "var(--popover-foreground)",
-                backgroundColor: "transparent",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                textAlign: "left",
-                transition: "background-color 0.15s ease, color 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--foreground) 8%, transparent)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-            >
-              {editLabel}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen(false);
-                onEditDisplay();
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                width: "100%",
-                padding: "10px 12px",
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "var(--popover-foreground)",
-                backgroundColor: "transparent",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                textAlign: "left",
-                transition: "background-color 0.15s ease, color 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--foreground) 8%, transparent)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-            >
-              {editDisplayLabel}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen(false);
-                onDelete();
-              }}
-              disabled={deleting}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                width: "100%",
-                padding: "10px 12px",
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "#dc2626",
-                backgroundColor: "transparent",
-                border: "none",
-                borderRadius: "6px",
-                cursor: deleting ? "wait" : "pointer",
-                textAlign: "left",
-                opacity: deleting ? 0.6 : 1,
-                transition: "background-color 0.15s ease, color 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(220, 38, 38, 0.08)";
-                e.currentTarget.style.color = "#b91c1c";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.color = "#dc2626";
-              }}
-            >
-              {deleteLabel}
-            </button>
-          </div>
-        </>
+    <>
+      {chips.map((chip) => (
+        <span
+          key={chip}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px",
+            fontSize: "11px",
+            fontWeight: 500,
+            color: "var(--primary)",
+            backgroundColor: "color-mix(in srgb, var(--primary) 10%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--primary) 25%, transparent)",
+            borderRadius: "999px",
+            padding: "3px 8px",
+            lineHeight: 1.2,
+          }}
+        >
+          {chip}
+        </span>
+      ))}
+      {overflowCount > 0 && (
+        <span
+          style={{
+            fontSize: "11px",
+            fontWeight: 500,
+            color: "var(--muted-foreground)",
+            padding: "3px 0",
+          }}
+        >
+          +{overflowCount}
+        </span>
       )}
-    </div>
+    </>
   );
+}
+
+function getUnifiedItemMetaLabel(item: UnifiedSkillListItem, t: (key: TranslationPath) => string) {
+  if (item.kind === "group") {
+    return t("skills.groupMembersCount").replace("{count}", String(item.memberCount ?? 0));
+  }
+
+  const summary = item.toolSummary;
+  if (!summary || summary.state === "none") {
+    return t("skills.noToolsEnabled");
+  }
+
+  if (summary.state === "all") {
+    return t("skills.allEnabled");
+  }
+
+  return `${t("skills.enableFor")} ${summary.enabledCount}/${summary.totalCount}`;
 }
 
 export function Skills() {
@@ -228,6 +239,18 @@ export function Skills() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { toasts, addToast, updateToast, removeToast } = useToast();
+
+  // Custom hook for data management
+  const {
+    skills: dataSkills,
+    skillPackages: dataSkillPackages,
+    tools: dataTools,
+    config: dataConfig,
+    initialLoading: dataInitialLoading,
+    refreshing: dataRefreshing,
+    refreshData: dataRefreshData,
+    reloadData: dataReloadData,
+  } = useSkillsData();
   const skillMetadata = config?.skill_metadata;
   const listContainerRef = useRef<HTMLElement | null>(null);
   const hasRestoredScrollRef = useRef(false);
@@ -2569,3 +2592,6 @@ export function Skills() {
     </div>
   );
 }
+
+
+
