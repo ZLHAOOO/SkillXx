@@ -452,3 +452,23 @@ export interface PollClientState {
   voterId: string | null;
   votedOptions: Record<string, string>;
 }
+
+// Platform marketplace types
+export interface PlatformSkill {
+  name: string;
+  slug: string;
+  author: string;
+  description: string;
+  downloads: number;
+  platform: "skillhub" | "clawhub";
+}
+
+export interface PlatformInstallResult {
+  success: boolean;
+  message: string;
+}
+
+export interface CliInstallResult {
+  success: boolean;
+  message: string;
+}

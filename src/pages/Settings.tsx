@@ -19,7 +19,6 @@ import { getEditorIcon } from "@/assets/editors";
 import { FontFamilyPreset, normalizeFontFamilyPreset } from "@/lib/fontFamily";
 
 import { Toggle } from "@/components/ui/toggle";
-import { AuthButton } from "@/components/auth/AuthButton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
 import { ToastContainer, useToast } from "@/components/ui/toast";
@@ -581,6 +580,18 @@ export function Settings() {
               </div>
             </SettingsRow>
 
+            {/* CLI Tools Installation */}
+            <SettingsRow
+              label="第三方平台 CLI"
+              description="安装 SkillHub 和 ClawHub 的命令行工具，用于搜索和安装第三方技能"
+              isLast={marketplaceRows.length === 0}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <CliToolInstaller tool="skillhub" label="SkillHub CLI" />
+                <CliToolInstaller tool="clawhub" label="ClawHub CLI" />
+              </div>
+            </SettingsRow>
+
             {marketplaceRows.length === 0 ? (
               <div style={{
                 padding: '16px 0',
@@ -667,28 +678,6 @@ export function Settings() {
               addToast={addToast}
               t={t}
             />
-          </SettingsCard>
-
-          {/* Account & Cloud Sync */}
-          <SectionTitle>{t("settings.account")}</SectionTitle>
-          <SettingsCard>
-            <SettingsRow
-              label={t("settings.accountStatus")}
-              description={t("settings.accountDesc")}
-              isLast={true}
-            >
-              <AuthButton variant="inline" />
-            </SettingsRow>
-
-            
-
-            
-
-            
-
-            
-
-            
           </SettingsCard>
 
           {/* About Section */}
@@ -1369,6 +1358,78 @@ function Field({
         <span style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>
           {hint}
         </span>
+      )}
+    </div>
+  );
+}
+
+function CliToolInstaller({ tool, label }: { tool: string; label: string }) {
+  const { addToast } = useToast();
+  const [installed, setInstalled] = useState<boolean | null>(null);
+  const [installing, setInstalling] = useState(false);
+
+  useEffect(() => {
+    checkInstalled();
+  }, []);
+
+  const checkInstalled = async () => {
+    try {
+      const result = await invoke<boolean>("check_cli_installed", { tool });
+      setInstalled(result);
+    } catch (err) {
+      setInstalled(false);
+    }
+  };
+
+  const handleInstall = async () => {
+    setInstalling(true);
+    try {
+      const result = await invoke<{ success: boolean; message: string }>("install_cli_tool", { tool });
+      if (result.success) {
+        addToast(`${label} 安装成功`, "success");
+        setInstalled(true);
+      } else {
+        addToast(result.message, "error");
+      }
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : String(err), "error");
+    } finally {
+      setInstalling(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <span style={{ fontSize: '12px', color: 'var(--foreground)', minWidth: '100px' }}>
+        {label}
+      </span>
+      {installed === null ? (
+        <span style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>检查中...</span>
+      ) : installed ? (
+        <span style={{ fontSize: '12px', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          已安装
+        </span>
+      ) : (
+        <button
+          onClick={handleInstall}
+          disabled={installing}
+          style={{
+            padding: '4px 10px',
+            fontSize: '11px',
+            fontWeight: 500,
+            color: 'var(--primary-foreground)',
+            backgroundColor: 'var(--primary)',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: installing ? 'not-allowed' : 'pointer',
+            opacity: installing ? 0.6 : 1,
+          }}
+        >
+          {installing ? '安装中...' : '一键安装'}
+        </button>
       )}
     </div>
   );

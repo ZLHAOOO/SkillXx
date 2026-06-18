@@ -5,6 +5,7 @@ pub mod feedback;
 pub mod files;
 pub mod llm;
 pub mod marketplace;
+pub mod platform_marketplace;
 pub mod skill_packages;
 pub mod skills;
 pub mod sync;
@@ -33,6 +34,9 @@ pub use marketplace::{
     fetch_marketplace_skills, fetch_skill_file_content, fetch_skill_files, get_marketplace_sources,
     install_marketplace_skill, install_marketplace_skill_by_ref, sync_marketplace_installed_skills,
     toggle_marketplace_source,
+};
+pub use platform_marketplace::{
+    check_cli_installed, install_cli_tool, install_from_platform, search_marketplace,
 };
 pub use skill_packages::{
     install_skill_package_from_path, list_skill_packages, remove_skill_package,

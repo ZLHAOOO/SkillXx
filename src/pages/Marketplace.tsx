@@ -33,6 +33,9 @@ import { getMarketplaceMetaChipStyle } from "@/components/marketplace/marketplac
 import { MODAL_LAYER_Z_INDEX, MODAL_OVERLAY_COLOR } from "@/constants/modal";
 import { getSkillColor } from "@/lib/getSkillColor";
 import { formatTranslationError } from "@/lib/formatTranslationError";
+import { SearchBar } from "@/components/marketplace/SearchBar";
+import { PlatformSkillCard } from "@/components/marketplace/PlatformSkillCard";
+import type { PlatformSkill, PlatformInstallResult } from "@/types";
 
 const DESCRIPTION_BATCH_SIZE = 12;
 const DIRECT_GITHUB_INSTALL_ID = "__github_direct_install__";
@@ -84,6 +87,11 @@ export function Marketplace() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [searching, setSearching] = useState(false);
   const [descriptionHydrationTick, setDescriptionHydrationTick] = useState(0);
+
+  // Platform search state
+  const [platformSearchResults, setPlatformSearchResults] = useState<PlatformSkill[]>([]);
+  const [platformSearching, setPlatformSearching] = useState(false);
+  const [installingPlatformSkill, setInstallingPlatformSkill] = useState<string | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const listRequestSeqRef = useRef(0);
   const remoteLoadSeqRef = useRef(0);
@@ -509,6 +517,77 @@ export function Marketplace() {
     updatingAll,
   ]);
 
+  // Platform search handler
+  const handlePlatformSearch = useCallback(async (platform: string, query: string) => {
+    setPlatformSearching(true);
+    setPlatformSearchResults([]);
+    try {
+      const results = await invoke<PlatformSkill[]>("search_marketplace", {
+        platform,
+        query,
+      });
+      setPlatformSearchResults(results);
+    } catch (err) {
+      addToast(
+        err instanceof Error ? err.message : String(err),
+        "error"
+      );
+    } finally {
+      setPlatformSearching(false);
+    }
+  }, [addToast]);
+
+  // Platform install handler
+  const handlePlatformInstall = useCallback(async (skill: PlatformSkill) => {
+    setInstallingPlatformSkill(skill.slug);
+    try {
+      const result = await invoke<PlatformInstallResult>("install_from_platform", {
+        platform: skill.platform,
+        slug: skill.slug,
+      });
+      if (result.success) {
+        addToast(`已安装 ${skill.name}`, "success");
+        // Refresh local skills list
+        await loadSkills({ forceRefresh: true, page: 1 });
+      } else {
+        addToast(result.message, "error");
+      }
+    } catch (err) {
+      addToast(
+        err instanceof Error ? err.message : String(err),
+        "error"
+      );
+    } finally {
+      setInstallingPlatformSkill(null);
+    }
+  }, [addToast, loadSkills]);
+
+  // Install by URL handler
+  const handleInstallByUrl = useCallback(async (_platform: string, url: string) => {
+    setPlatformSearching(true);
+    try {
+      const result = await invoke<PlatformInstallResult>("install_marketplace_skill_by_ref", {
+        reference: {
+          name: "",
+          repo_url: url,
+        },
+      });
+      if (result.success) {
+        addToast("技能安装成功", "success");
+        await loadSkills({ forceRefresh: true, page: 1 });
+      } else {
+        addToast(result.message || "安装失败", "error");
+      }
+    } catch (err) {
+      addToast(
+        err instanceof Error ? err.message : String(err),
+        "error"
+      );
+    } finally {
+      setPlatformSearching(false);
+    }
+  }, [addToast, loadSkills]);
+
   const handleTranslateMarketSkill = useCallback(
     async (skill: MarketplaceSkill, event: MouseEvent | null, force: boolean = false) => {
       event?.stopPropagation();
@@ -906,6 +985,74 @@ export function Marketplace() {
 
       <main style={{ flex: 1, overflow: 'auto', padding: '12px 20px' }}>
         <div style={{ maxWidth: '1200px' }}>
+          {/* Platform Search Section */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: '24px',
+            paddingTop: '8px',
+          }}>
+            <SearchBar onSearch={handlePlatformSearch} onInstallByUrl={handleInstallByUrl} loading={platformSearching} />
+          </div>
+
+          {/* Platform Search Results */}
+          {platformSearchResults.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '12px',
+              }}>
+                <h3 style={{
+                  margin: 0,
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: 'var(--foreground)',
+                }}>
+                  搜索结果
+                </h3>
+                <button
+                  onClick={() => setPlatformSearchResults([])}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '12px',
+                    color: 'var(--muted-foreground)',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  清除
+                </button>
+              </div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '12px',
+              }}>
+                {platformSearchResults.map((skill) => (
+                  <PlatformSkillCard
+                    key={skill.slug}
+                    skill={skill}
+                    onInstall={handlePlatformInstall}
+                    installing={installingPlatformSkill === skill.slug}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {platformSearching && platformSearchResults.length === 0 && (
+            <div style={{
+              textAlign: 'center',
+              padding: '40px 20px',
+              color: 'var(--muted-foreground)',
+            }}>
+              搜索中...
+            </div>
+          )}
+
           {availableTags.length > 0 && (
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
               {availableTags.map((tag) => {
