@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy, type CSSProperties } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
@@ -77,7 +77,6 @@ import {
   toggleBatchSelection,
 } from "./skills/batchManageSelection";
 import { getActionableToolIds } from "./skills/getActionableToolIds";
-import { BatchManageToolsDialog } from "./skills/BatchManageToolsDialog";
 import { buildBatchToolStateSummaries } from "./skills/buildBatchToolStates";
 import {
   buildGroupBulkToolActionPlan,
@@ -94,8 +93,12 @@ import {
   resolveNextActiveProjectIdAfterAddition,
   resolveNextProjectBindingsAfterRemoval,
 } from "./projectBindings";
-import { ProjectBindingsDialog } from "./ProjectBindingsDialog";
-import { SkillManageDialog, CreateSkillDialog, DisplayNameEditorDialog } from "@/components/skills/dialogs";
+// 懒加载大型组件 - 按需加载，提升初始加载速度
+const ProjectBindingsDialog = lazy(() => import("./ProjectBindingsDialog").then(mod => ({ default: mod.ProjectBindingsDialog })));
+const SkillManageDialog = lazy(() => import("@/components/skills/dialogs/SkillManageDialog").then(mod => ({ default: mod.SkillManageDialog })));
+const CreateSkillDialog = lazy(() => import("@/components/skills/dialogs/CreateSkillDialog").then(mod => ({ default: mod.CreateSkillDialog })));
+const DisplayNameEditorDialog = lazy(() => import("@/components/skills/dialogs/DisplayNameEditorDialog").then(mod => ({ default: mod.DisplayNameEditorDialog })));
+const BatchManageToolsDialog = lazy(() => import("./skills/BatchManageToolsDialog").then(mod => ({ default: mod.BatchManageToolsDialog })));
 import { SkillCard } from "@/components/skills/SkillCard";
 import { useSkillsData } from "@/hooks/skills/useSkillsData";
 import { useSkillFilter } from "@/hooks/skills/useSkillFilter";
@@ -2372,6 +2375,7 @@ export function Skills() {
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
+      <Suspense fallback={null}>
       {toolEditorSkill && (
         <SkillManageDialog
           skillName={toolEditorSkill.name}
@@ -2548,6 +2552,7 @@ export function Skills() {
           t={t}
         />
       )}
+      </Suspense>
     </div>
   );
 }
