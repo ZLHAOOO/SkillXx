@@ -260,14 +260,6 @@ export function Skills() {
 
   // Custom hook for filtering and search
   const {
-    searchQuery: filterSearchQuery,
-    setSearchQuery: setFilterSearchQuery,
-    selectedTags: filterSelectedTags,
-    setSelectedTags: setFilterSelectedTags,
-    untaggedOnly: filterUntaggedOnly,
-    setUntaggedOnly: setFilterUntaggedOnly,
-    scopeFilter: filterScopeFilter,
-    setScopeFilter: setFilterScopeFilter,
     unifiedItems: filterUnifiedItems,
     sortedUnifiedItems: filterSortedUnifiedItems,
     hasActiveSkillFilters: filterHasActiveSkillFilters,
@@ -277,6 +269,9 @@ export function Skills() {
     tools: dataTools,
     config: dataConfig,
     searchQuery: debouncedSearchQuery, // 使用防抖后的搜索查询
+    selectedTags,
+    untaggedOnly,
+    scopeFilter,
     t,
   });
 
@@ -2359,7 +2354,7 @@ export function Skills() {
           emptyLabel={t("skills.noToolsInFilter")}
           onQueryChange={setToolEditorQuery}
           onEnabledOnlyChange={setToolEditorEnabledOnly}
-          onToggle={(toolId, enabled) => handleToggle(toolEditorSkill.instance_id, toolEditorSkill.name, toolId, enabled)}
+          onToggle={(toolId, enabled) => handleToggle(toolEditorSkill.instance_id, toolId, enabled)}
           onBulkToggle={() => handleBulkToggle(toolEditorSkill, toolEditorFilteredToolIds)}
           tags={toolEditorTags}
           tagDraft={tagDraft}
