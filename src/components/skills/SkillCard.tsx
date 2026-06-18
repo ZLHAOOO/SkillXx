@@ -1,0 +1,660 @@
+import { useState } from "react";
+import { type TranslationPath } from "@/i18n";
+import { type UnifiedSkillListItem } from "@/pages/skills/buildUnifiedSkillItems";
+import { type Tool } from "@/types";
+import { getSkillColor } from "@/lib/getSkillColor";
+import { MODAL_LAYER_Z_INDEX } from "@/constants/modal";
+import { TranslateIconButton } from "@/components/translation/TranslateIconButton";
+import { type SkillFileTranslationProgress } from "@/hooks/useSkillTranslation";
+
+interface SkillCardProps {
+  item: UnifiedSkillListItem;
+  isBatchManageMode: boolean;
+  isBatchSelected: boolean;
+  canOpen: boolean;
+  cardTitle: string;
+  description: string;
+  previewChips: string[];
+  fileProgressText: string | null;
+  fileProgressPercent: number;
+  isTranslatedView: boolean;
+  translated: { name?: string; description?: string } | null;
+  tools: Tool[];
+  deletingSkill: string | null;
+  deletingGroupId: string | null;
+  translatingIds: Set<string>;
+  skillTranslationProgress: Record<string, SkillFileTranslationProgress>;
+  onOpen: () => void;
+  onToggleBatchSelection: () => void;
+  onEdit: () => void;
+  onEditDisplay: () => void;
+  onDelete: () => void;
+  onTranslate: () => void;
+  onRetranslate: () => void;
+  t: (key: TranslationPath) => string;
+}
+
+export function SkillCard({
+  item,
+  isBatchManageMode,
+  isBatchSelected,
+  canOpen,
+  cardTitle,
+  description,
+  previewChips,
+  fileProgressText,
+  fileProgressPercent,
+  translated,
+  tools,
+  deletingSkill,
+  deletingGroupId,
+  translatingIds,
+  onOpen,
+  onToggleBatchSelection,
+  onEdit,
+  onEditDisplay,
+  onDelete,
+  onTranslate,
+  onRetranslate,
+  t,
+}: SkillCardProps) {
+  const color = getSkillColor(item.title);
+
+  return (
+    <div
+      key={item.key}
+      onClick={isBatchManageMode ? onToggleBatchSelection : canOpen ? onOpen : undefined}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        padding: "16px",
+        backgroundColor: isBatchSelected ? "color-mix(in srgb, var(--primary) 8%, var(--secondary))" : "var(--secondary)",
+        borderRadius: "10px",
+        border: isBatchSelected ? "1px solid color-mix(in srgb, var(--primary) 40%, transparent)" : "1px solid var(--border)",
+        transition: canOpen && !isBatchManageMode ? "border-color 0.15s" : undefined,
+        cursor: isBatchManageMode ? "pointer" : canOpen ? "pointer" : "default",
+      }}
+      onMouseEnter={(e) => {
+        if (!canOpen || isBatchManageMode) {
+          return;
+        }
+        e.currentTarget.style.borderColor = "var(--ring)";
+      }}
+      onMouseLeave={(e) => {
+        if (!canOpen || isBatchManageMode) {
+          return;
+        }
+        e.currentTarget.style.borderColor = "var(--border)";
+      }}
+    >
+      {/* Header Row */}
+      <div style={{ display: "flex", gap: "14px", marginBottom: "16px", alignItems: "flex-start" }}>
+        {/* Batch Checkbox */}
+        {isBatchManageMode && (
+          <div
+            style={{
+              width: "20px",
+              height: "20px",
+              marginTop: "12px",
+              borderRadius: "6px",
+              border: isBatchSelected ? "1px solid var(--primary)" : "1px solid var(--border)",
+              backgroundColor: isBatchSelected ? "var(--foreground)" : "var(--background)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            {isBatchSelected && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--primary-foreground)" strokeWidth="3">
+                <path d="m5 12 5 5L20 7" />
+              </svg>
+            )}
+          </div>
+        )}
+
+        {/* Icon */}
+        <div style={{
+          width: "40px",
+          height: "40px",
+          borderRadius: "10px",
+          backgroundColor: color.bg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}>
+          {item.kind === "group" ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color.icon} strokeWidth="2">
+              <rect x="3" y="4" width="7" height="7" rx="1.5" />
+              <rect x="14" y="4" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+          ) : (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color.icon} strokeWidth="2">
+              <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
+            </svg>
+          )}
+        </div>
+
+        {/* Title and Description */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+            <div style={{
+              fontSize: "15px",
+              fontWeight: 600,
+              color: "var(--foreground)",
+              lineHeight: 1.3,
+              minWidth: 0,
+            }}>
+              {cardTitle}
+            </div>
+            {item.scopeLabel && (
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                height: "18px",
+                padding: "0 6px",
+                fontSize: "10px",
+                fontWeight: 600,
+                letterSpacing: "0.02em",
+                color: item.scopeLabel === "project"
+                  ? "var(--primary-foreground, #fff)"
+                  : "var(--muted-foreground)",
+                backgroundColor: item.scopeLabel === "project"
+                  ? "var(--primary, #6366f1)"
+                  : "var(--background)",
+                border: item.scopeLabel === "project"
+                  ? "none"
+                  : "1px solid var(--border)",
+                borderRadius: "4px",
+              }}>
+                {item.scopeLabel === "project"
+                  ? t("skills.scopeProject")
+                  : t("skills.scopeGlobal")}
+              </span>
+            )}
+            {item.badgeLabel && (
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                height: "22px",
+                padding: "0 8px",
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "var(--muted-foreground)",
+                backgroundColor: "var(--background)",
+                border: "1px solid var(--border)",
+                borderRadius: "999px",
+              }}>
+                {item.badgeLabel}
+              </span>
+            )}
+          </div>
+          <p style={{
+            fontSize: "13px",
+            color: "var(--muted-foreground)",
+            margin: 0,
+            lineHeight: 1.5,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}>
+            {description}
+          </p>
+        </div>
+
+        {/* Actions */}
+        {!isBatchManageMode && item.kind === "skill" && item.skill && (
+          <SkillCardActions
+            item={item}
+            fileProgressText={fileProgressText}
+            fileProgressPercent={fileProgressPercent}
+            translated={translated}
+            translating={translatingIds.has(item.skill.instance_id)}
+            deleting={deletingSkill === item.skill.instance_id}
+            onEdit={onEdit}
+            onEditDisplay={onEditDisplay}
+            onDelete={onDelete}
+            onTranslate={onTranslate}
+            onRetranslate={onRetranslate}
+            t={t}
+          />
+        )}
+        {!isBatchManageMode && item.kind === "group" && item.skillPackage && (
+          <SkillCardActionMenu
+            deleting={deletingGroupId === item.id}
+            editLabel={t("common.edit")}
+            editDisplayLabel={t("skills.editDisplayName")}
+            deleteLabel={t("skills.delete")}
+            moreActionsLabel={t("skills.moreActions")}
+            onEdit={onEdit}
+            onEditDisplay={() => {}}
+            onDelete={onDelete}
+          />
+        )}
+      </div>
+
+      {/* Preview Chips */}
+      {previewChips.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px", minHeight: "24px" }}>
+          {previewChips.slice(0, 3).map((chip, index) => (
+            <span
+              key={index}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                height: "22px",
+                padding: "0 8px",
+                fontSize: "11px",
+                fontWeight: 500,
+                color: "var(--muted-foreground)",
+                backgroundColor: "var(--background)",
+                border: "1px solid var(--border)",
+                borderRadius: "999px",
+              }}
+            >
+              {chip}
+            </span>
+          ))}
+          {item.previewOverflowCount > 0 && (
+            <span style={{
+              fontSize: "11px",
+              fontWeight: 500,
+              color: "var(--muted-foreground)",
+              height: "22px",
+              display: "inline-flex",
+              alignItems: "center",
+            }}>
+              +{item.previewOverflowCount}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div style={{
+        paddingTop: "12px",
+        borderTop: "1px solid var(--border)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+      }}>
+        <div style={{
+          fontSize: "12px",
+          color: "var(--muted-foreground)",
+          lineHeight: 1.5,
+        }}>
+          {getUnifiedItemMetaLabel(item, t)}
+        </div>
+        {item.kind === "skill" && item.toolSummary?.state === "partial" && item.toolSummary.visibleEnabledToolIds.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {item.toolSummary.visibleEnabledToolIds.map((toolId) => (
+              <span
+                key={toolId}
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "var(--primary)",
+                  backgroundColor: "rgba(9, 105, 218, 0.12)",
+                  padding: "4px 8px",
+                  borderRadius: "6px",
+                  border: "1px solid rgba(9, 105, 218, 0.35)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {getToolDisplayName(toolId, tools)}
+              </span>
+            ))}
+            {item.toolSummary.remainingCount > 0 && (
+              <span style={{
+                fontSize: "12px",
+                fontWeight: 500,
+                color: "var(--muted-foreground)",
+                whiteSpace: "nowrap",
+              }}>
+                +{item.toolSummary.remainingCount}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Helper component for skill card actions (translate, edit, delete)
+interface SkillCardActionsProps {
+  item: UnifiedSkillListItem;
+  fileProgressText: string | null;
+  fileProgressPercent: number;
+  translated: { name?: string; description?: string } | null;
+  translating: boolean;
+  deleting: boolean;
+  onEdit: () => void;
+  onEditDisplay: () => void;
+  onDelete: () => void;
+  onTranslate: () => void;
+  onRetranslate: () => void;
+  t: (key: TranslationPath) => string;
+}
+
+function SkillCardActions({
+  item,
+  fileProgressText,
+  fileProgressPercent,
+  translated,
+  translating,
+  deleting,
+  onEdit,
+  onEditDisplay,
+  onDelete,
+  onTranslate,
+  onRetranslate,
+  t,
+}: SkillCardActionsProps) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 1, minWidth: 0 }}>
+      {fileProgressText && (
+        <div
+          role="status"
+          aria-live="polite"
+          title={fileProgressText}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            maxWidth: 190,
+            minWidth: 0,
+            height: 28,
+            padding: "0 8px",
+            fontSize: 11,
+            color: "var(--foreground)",
+            backgroundColor: "color-mix(in srgb, var(--primary) 7%, var(--background))",
+            border: "1px solid var(--border)",
+            borderRadius: 7,
+            flexShrink: 1,
+          }}
+        >
+          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {fileProgressText}
+          </span>
+          <div
+            aria-hidden
+            style={{
+              width: 46,
+              height: 3,
+              borderRadius: 999,
+              overflow: "hidden",
+              backgroundColor: "color-mix(in srgb, var(--foreground) 14%, transparent)",
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                width: `${fileProgressPercent}%`,
+                height: "100%",
+                backgroundColor: "var(--primary)",
+                transition: "width 0.2s ease",
+              }}
+            />
+          </div>
+        </div>
+      )}
+      <TranslateIconButton
+        hasTranslation={translated != null}
+        showingTranslation={false}
+        translating={translating}
+        translateLabel={t("skills.translateAction")}
+        showOriginalLabel={t("skills.showOriginal")}
+        showTranslationLabel={t("skills.showTranslated")}
+        translatingLabel={t("skills.translating")}
+        retranslateLabel={t("skills.retranslate")}
+        onClick={onTranslate}
+        onRetranslate={onRetranslate}
+      />
+      <SkillCardActionMenu
+        deleting={deleting}
+        editLabel={t("common.edit")}
+        editDisplayLabel={t("skills.editDisplayName")}
+        deleteLabel={t("skills.delete")}
+        moreActionsLabel={t("skills.moreActions")}
+        onEdit={onEdit}
+        onEditDisplay={onEditDisplay}
+        onDelete={onDelete}
+      />
+    </div>
+  );
+}
+
+// Action menu component (moved from Skills.tsx)
+interface SkillCardActionMenuProps {
+  deleting: boolean;
+  editLabel: string;
+  editDisplayLabel: string;
+  deleteLabel: string;
+  moreActionsLabel: string;
+  onEdit: () => void;
+  onEditDisplay: () => void;
+  onDelete: () => void;
+}
+
+function SkillCardActionMenu({
+  deleting,
+  editLabel,
+  editDisplayLabel,
+  deleteLabel,
+  moreActionsLabel,
+  onEdit,
+  onEditDisplay,
+  onDelete,
+}: SkillCardActionMenuProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        type="button"
+        aria-label={moreActionsLabel}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((current) => !current);
+        }}
+        disabled={deleting}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "30px",
+          height: "30px",
+          padding: 0,
+          borderRadius: "8px",
+          border: "none",
+          backgroundColor: "transparent",
+          color: "var(--muted-foreground)",
+          cursor: deleting ? "wait" : "pointer",
+          opacity: deleting ? 0.6 : 1,
+          transition: "color 0.15s ease, background-color 0.15s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = "var(--foreground)";
+          e.currentTarget.style.backgroundColor = "rgba(15, 23, 42, 0.04)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = "var(--muted-foreground)";
+          e.currentTarget.style.backgroundColor = "transparent";
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="12" r="1.8" />
+          <circle cx="12" cy="12" r="1.8" />
+          <circle cx="19" cy="12" r="1.8" />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-label={moreActionsLabel}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+            }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "transparent",
+              border: "none",
+              padding: 0,
+              margin: 0,
+              cursor: "default",
+            }}
+          />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "absolute",
+              top: "calc(100% + 8px)",
+              right: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: "2px",
+              minWidth: "132px",
+              padding: "4px",
+              backgroundColor: "var(--popover)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.25)",
+              backdropFilter: "blur(10px)",
+              zIndex: MODAL_LAYER_Z_INDEX,
+            }}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                onEdit();
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                padding: "10px 12px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "var(--popover-foreground)",
+                backgroundColor: "transparent",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                textAlign: "left",
+                transition: "background-color 0.15s ease, color 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--foreground) 8%, transparent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              {editLabel}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                onEditDisplay();
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                padding: "10px 12px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "var(--popover-foreground)",
+                backgroundColor: "transparent",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                textAlign: "left",
+                transition: "background-color 0.15s ease, color 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--foreground) 8%, transparent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              {editDisplayLabel}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                onDelete();
+              }}
+              disabled={deleting}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                padding: "10px 12px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#dc2626",
+                backgroundColor: "transparent",
+                border: "none",
+                borderRadius: "6px",
+                cursor: deleting ? "wait" : "pointer",
+                textAlign: "left",
+                opacity: deleting ? 0.6 : 1,
+                transition: "background-color 0.15s ease, color 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(220, 38, 38, 0.08)";
+                e.currentTarget.style.color = "#b91c1c";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "#dc2626";
+              }}
+            >
+              {deleteLabel}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Helper functions
+function getToolDisplayName(toolId: string, tools: Tool[]): string {
+  const tool = tools.find((t) => t.id === toolId);
+  return tool?.name ?? toolId;
+}
+
+function getUnifiedItemMetaLabel(item: UnifiedSkillListItem, t: (key: TranslationPath) => string) {
+  if (item.kind === "group") {
+    return t("skills.groupMembersCount").replace("{count}", String(item.memberCount ?? 0));
+  }
+
+  const summary = item.toolSummary;
+  if (!summary || summary.state === "none") {
+    return t("skills.noToolsEnabled");
+  }
+
+  if (summary.state === "all") {
+    return t("skills.allEnabled");
+  }
+
+  return `${t("skills.enabledFor")} ${summary.enabledCount}/${summary.totalCount}`;
+}
