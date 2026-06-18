@@ -2273,116 +2273,96 @@ export function Skills() {
           ) : (
             <div
               style={{
-                height: virtualizer.getTotalSize(),
-                width: "100%",
-                position: "relative",
+                display: "grid",
+                gridTemplateColumns: `repeat(auto-fill, minmax(320px, 1fr))`,
+                gap: "16px",
               }}
             >
-              {virtualizer.getVirtualItems().map((virtualRow) => {
-                const rowItems = rows[virtualRow.index];
+              {sortedUnifiedItems.map((item) => {
+                const canOpen = Boolean(item.openPath);
+                const translationKey = item.kind === "skill" && item.skill
+                  ? makeTranslationKey(item.skill.instance_id, language)
+                  : null;
+                const translated = translationKey ? translation.getTranslation(translationKey) : null;
+                const isTranslatedView = translationKey
+                  ? translation.getView(translationKey) === "translated" && translated != null
+                  : false;
+                const cardTitle = isTranslatedView && translated ? translated.name : item.title;
+                const description = item.kind === "group"
+                  ? item.skillPackage?.package_id ?? getUnifiedItemMetaLabel(item, t)
+                  : isTranslatedView && translated
+                    ? translated.description || t("skills.noDescription")
+                    : item.description || t("skills.noDescription");
+                const previewChips = item.previewChips.map((chip) => `#${chip}`);
+                const fileProgress = item.kind === "skill" && item.skill
+                  ? skillTranslationProgress[item.skill.instance_id]
+                  : undefined;
+                const fileProgressText = fileProgress
+                  ? t("editor.translateFilesCompact")
+                      .replace("{current}", String(fileProgress.current))
+                      .replace("{total}", String(fileProgress.total))
+                      .replace("{path}", fileProgress.path)
+                  : null;
+                const fileProgressPercent = fileProgress && fileProgress.total > 0
+                  ? Math.max(0, Math.min(100, (fileProgress.current / fileProgress.total) * 100))
+                  : 0;
 
                 return (
-                  <div
-                    key={virtualRow.index}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      transform: `translateY(${virtualRow.start}px)`,
-                      display: "grid",
-                      gridTemplateColumns: `repeat(${columns}, 1fr)`,
-                      gap: "16px",
+                  <SkillCard
+                    key={item.key}
+                    item={item}
+                    isBatchManageMode={isBatchManageMode}
+                    isBatchSelected={selectedBatchItemKeys.has(item.key)}
+                    canOpen={canOpen}
+                    cardTitle={cardTitle}
+                    description={description}
+                    previewChips={previewChips}
+                    fileProgressText={fileProgressText}
+                    fileProgressPercent={fileProgressPercent}
+                    isTranslatedView={isTranslatedView}
+                    translated={translated}
+                    tools={tools}
+                    deletingSkill={deletingSkill}
+                    deletingGroupId={deletingGroupId}
+                    translatingIds={translatingIds}
+                    skillTranslationProgress={skillTranslationProgress}
+                    onOpen={() => void handleOpenUnifiedItem(item)}
+                    onToggleBatchSelection={() => handleToggleBatchItemSelection(item.key)}
+                    onEdit={() => {
+                      if (item.kind === "skill" && item.skill) {
+                        openSkillEditor(item.skill.instance_id, "tools");
+                      } else if (item.kind === "group") {
+                        openGroupEditor(item.id);
+                      }
                     }}
-                  >
-                    {rowItems.map((item) => {
-                      const canOpen = Boolean(item.openPath);
-                      const translationKey = item.kind === "skill" && item.skill
-                        ? makeTranslationKey(item.skill.instance_id, language)
-                        : null;
-                      const translated = translationKey ? translation.getTranslation(translationKey) : null;
-                      const isTranslatedView = translationKey
-                        ? translation.getView(translationKey) === "translated" && translated != null
-                        : false;
-                      const cardTitle = isTranslatedView && translated ? translated.name : item.title;
-                      const description = item.kind === "group"
-                        ? item.skillPackage?.package_id ?? getUnifiedItemMetaLabel(item, t)
-                        : isTranslatedView && translated
-                          ? translated.description || t("skills.noDescription")
-                          : item.description || t("skills.noDescription");
-                      const previewChips = item.previewChips.map((chip) => `#${chip}`);
-                      const fileProgress = item.kind === "skill" && item.skill
-                        ? skillTranslationProgress[item.skill.instance_id]
-                        : undefined;
-                      const fileProgressText = fileProgress
-                        ? t("editor.translateFilesCompact")
-                            .replace("{current}", String(fileProgress.current))
-                            .replace("{total}", String(fileProgress.total))
-                            .replace("{path}", fileProgress.path)
-                        : null;
-                      const fileProgressPercent = fileProgress && fileProgress.total > 0
-                        ? Math.max(0, Math.min(100, (fileProgress.current / fileProgress.total) * 100))
-                        : 0;
-
-                      return (
-                        <SkillCard
-                          key={item.key}
-                          item={item}
-                          isBatchManageMode={isBatchManageMode}
-                          isBatchSelected={selectedBatchItemKeys.has(item.key)}
-                          canOpen={canOpen}
-                          cardTitle={cardTitle}
-                          description={description}
-                          previewChips={previewChips}
-                          fileProgressText={fileProgressText}
-                          fileProgressPercent={fileProgressPercent}
-                          isTranslatedView={isTranslatedView}
-                          translated={translated}
-                          tools={tools}
-                          deletingSkill={deletingSkill}
-                          deletingGroupId={deletingGroupId}
-                          translatingIds={translatingIds}
-                          skillTranslationProgress={skillTranslationProgress}
-                          onOpen={() => void handleOpenUnifiedItem(item)}
-                          onToggleBatchSelection={() => handleToggleBatchItemSelection(item.key)}
-                          onEdit={() => {
-                            if (item.kind === "skill" && item.skill) {
-                              openSkillEditor(item.skill.instance_id, "tools");
-                            } else if (item.kind === "group") {
-                              openGroupEditor(item.id);
-                            }
-                          }}
-                          onEditDisplay={() => {
-                            if (item.kind === "skill" && item.skill) {
-                              openDisplayNameEditor(item.skill);
-                            }
-                          }}
-                          onDelete={() => {
-                            if (item.kind === "skill" && item.skill) {
-                              void handleDelete(item.skill);
-                            } else if (item.kind === "group") {
-                              void handleDeleteGroup(item);
-                            }
-                          }}
-                          onTranslate={() => {
-                            if (item.kind === "skill" && item.skill) {
-                              if (translated && translationKey) {
-                                translation.setView(translationKey, isTranslatedView ? "original" : "translated");
-                              } else {
-                                void handleTranslateSkill(item.skill);
-                              }
-                            }
-                          }}
-                          onRetranslate={() => {
-                            if (item.kind === "skill" && item.skill) {
-                              void handleTranslateSkill(item.skill, true);
-                            }
-                          }}
-                          t={t}
-                        />
-                      );
-                    })}
-                  </div>
+                    onEditDisplay={() => {
+                      if (item.kind === "skill" && item.skill) {
+                        openDisplayNameEditor(item.skill);
+                      }
+                    }}
+                    onDelete={() => {
+                      if (item.kind === "skill" && item.skill) {
+                        void handleDelete(item.skill);
+                      } else if (item.kind === "group") {
+                        void handleDeleteGroup(item);
+                      }
+                    }}
+                    onTranslate={() => {
+                      if (item.kind === "skill" && item.skill) {
+                        if (translated && translationKey) {
+                          translation.setView(translationKey, isTranslatedView ? "original" : "translated");
+                        } else {
+                          void handleTranslateSkill(item.skill);
+                        }
+                      }
+                    }}
+                    onRetranslate={() => {
+                      if (item.kind === "skill" && item.skill) {
+                        void handleTranslateSkill(item.skill, true);
+                      }
+                    }}
+                    t={t}
+                  />
                 );
               })}
             </div>

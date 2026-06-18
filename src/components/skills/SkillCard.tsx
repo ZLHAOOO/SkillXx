@@ -74,6 +74,8 @@ function SkillCardComponent({
         border: isBatchSelected ? "1px solid color-mix(in srgb, var(--primary) 40%, transparent)" : "1px solid var(--border)",
         transition: canOpen && !isBatchManageMode ? "border-color 0.15s" : undefined,
         cursor: isBatchManageMode ? "pointer" : canOpen ? "pointer" : "default",
+        width: "100%",
+        boxSizing: "border-box",
       }}
       onMouseEnter={(e) => {
         if (!canOpen || isBatchManageMode) {
