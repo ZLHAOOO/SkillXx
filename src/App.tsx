@@ -12,7 +12,6 @@ import { Welcome } from "@/pages/Welcome";
 import { useInitialization } from "@/hooks/useInitialization";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { SkillTranslationProvider } from "@/hooks/useSkillTranslation";
-import { AuthProvider } from "@/contexts/AuthContext";
 import { I18nProvider, Language } from "@/i18n";
 import { FontFamilyPreset, normalizeFontFamilyPreset } from "@/lib/fontFamily";
 import { AppConfig, MarketplaceUpdateCheckResult } from "@/types";
@@ -111,23 +110,21 @@ function App() {
       onFontFamilyChange={handleFontFamilyChange}
     >
       <I18nProvider language={language} onLanguageChange={handleLanguageChange}>
-        <AuthProvider>
-          <BrowserRouter>
-            <SkillTranslationProvider>
-              <Routes>
-                <Route path="/" element={<Layout />}>
-                  <Route index element={<Skills />} />
-                  <Route path="tools" element={<Tools />} />
-                  <Route path="marketplace" element={<Marketplace />} />
-                  <Route path="settings" element={<Settings />} />
-                  <Route path="feedback" element={<Feedback />} />
-                </Route>
-                <Route path="/editor" element={<EditorPage />} />
-              </Routes>
-              <ToastContainer toasts={toasts} onRemove={removeToast} />
-            </SkillTranslationProvider>
-          </BrowserRouter>
-        </AuthProvider>
+        <BrowserRouter>
+          <SkillTranslationProvider>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<Skills />} />
+                <Route path="tools" element={<Tools />} />
+                <Route path="marketplace" element={<Marketplace />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="feedback" element={<Feedback />} />
+              </Route>
+              <Route path="/editor" element={<EditorPage />} />
+            </Routes>
+            <ToastContainer toasts={toasts} onRemove={removeToast} />
+          </SkillTranslationProvider>
+        </BrowserRouter>
       </I18nProvider>
     </ThemeProvider>
   );

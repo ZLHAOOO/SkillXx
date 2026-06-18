@@ -28,7 +28,7 @@ export const en = {
   },
   nav: {
     skills: "Skills",
-    tools: "Tools",
+    agents: "Agents",
     marketplace: "Marketplace",
     feedback: "Feedback",
     polls: "Polls",

@@ -4,20 +4,19 @@ import { useTranslation } from "@/i18n";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { checkUpdate } from "@/services/updater";
-import { AuthButton } from "@/components/auth/AuthButton";
 import { UpdateInfo } from "@/types";
 import { getSidebarChromeMetrics } from "./sidebarChrome";
-import { Sparkles, Wrench, Store, Cog, MessageCircle, type LucideIcon } from "lucide-react";
+import { Sparkles, Bot, Store, Cog, MessageCircle, type LucideIcon } from "lucide-react";
 
 interface NavItem {
   path: string;
-  labelKey: "nav.skills" | "nav.tools" | "nav.marketplace" | "nav.settings" | "nav.feedback";
+  labelKey: "nav.skills" | "nav.agents" | "nav.marketplace" | "nav.settings" | "nav.feedback";
   icon: LucideIcon;
 }
 
 const navItems: NavItem[] = [
   { path: "/", labelKey: "nav.skills", icon: Sparkles },
-  { path: "/tools", labelKey: "nav.tools", icon: Wrench },
+  { path: "/tools", labelKey: "nav.agents", icon: Bot },
   { path: "/marketplace", labelKey: "nav.marketplace", icon: Store },
   { path: "/settings", labelKey: "nav.settings", icon: Cog },
   { path: "/feedback", labelKey: "nav.feedback", icon: MessageCircle },
@@ -104,8 +103,12 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col h-full bg-sidebar border-r border-sidebar-border shrink-0"
-      style={{ width: 180, minWidth: 180 }}
+      className="flex flex-col h-full shrink-0"
+      style={{
+        width: 180,
+        minWidth: 180,
+        backgroundColor: "transparent",
+      }}
     >
       {/* Draggable titlebar region for macOS */}
       <div
@@ -143,11 +146,6 @@ export function Sidebar() {
           <SidebarNavButton key={item.path} item={item} label={t(item.labelKey)} />
         ))}
       </nav>
-
-      {/* Bottom section */}
-      <div className="px-2 py-3 border-t border-sidebar-border">
-        <AuthButton variant="sidebar" />
-      </div>
     </aside>
   );
 }

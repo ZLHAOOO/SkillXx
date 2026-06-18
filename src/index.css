@@ -74,13 +74,13 @@
   --chart-3: #eab308;
   --chart-4: #9333ea;
   --chart-5: #dc2626;
-  --sidebar: #fafafa;
+  --sidebar: transparent;
   --sidebar-foreground: #171717;
   --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0f0f0;
+  --sidebar-accent: #e8e8e8;
   --sidebar-accent-foreground: #171717;
-  --sidebar-border: #e5e5e5;
+  --sidebar-border: transparent;
   --sidebar-ring: #2563eb;
 
   /* Semantic colors */
@@ -124,13 +124,13 @@
   --chart-3: #eab308;
   --chart-4: #a855f7;
   --chart-5: #ef4444;
-  --sidebar: #0f0f0f;
+  --sidebar: transparent;
   --sidebar-foreground: #fafafa;
   --sidebar-primary: #3b82f6;
   --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #1a1a1a;
+  --sidebar-accent: #1f1f1f;
   --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: #262626;
+  --sidebar-border: transparent;
   --sidebar-ring: #3b82f6;
 
   /* Semantic colors - dark mode overrides */

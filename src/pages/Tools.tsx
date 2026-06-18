@@ -581,7 +581,7 @@ export function Tools() {
   }, [formOpen]);
 
   const builtinTools = useMemo(
-    () => sortToolsByEnabled(tools.filter((tool) => tool.source !== "custom")),
+    () => sortToolsByEnabled(tools.filter((tool) => tool.source !== "custom" && tool.detected)),
     [tools]
   );
   const customTools = useMemo(

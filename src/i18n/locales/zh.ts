@@ -28,8 +28,8 @@ export const zh = {
     refreshing: "正在刷新...",
   },
   nav: {
-    skills: "Skills",
-    tools: "工 具",
+    skills: "技能库",
+    agents: "智能体",
     marketplace: "市 场",
     feedback: "反 馈",
     polls: "投 票",
