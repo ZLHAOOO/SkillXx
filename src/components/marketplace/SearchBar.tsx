@@ -61,7 +61,7 @@ export function SearchBar({ onSearch, onInstallByUrl, loading }: SearchBarProps)
             width: "100%",
             height: "44px",
             backgroundColor: "var(--background)",
-            borderRadius: "22px",
+            borderRadius: "26px",
             border: "1px solid var(--border)",
             boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
             padding: "4px",
@@ -182,7 +182,7 @@ export function SearchBar({ onSearch, onInstallByUrl, loading }: SearchBarProps)
         {mode === "link" ? (
           <form onSubmit={handleLinkSubmit} style={{
             display: "flex", alignItems: "center", width: "100%", height: "44px",
-            backgroundColor: "var(--background)", borderRadius: "22px",
+            backgroundColor: "var(--background)", borderRadius: "26px",
             border: "1px solid var(--border)", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)", padding: "4px",
           }}>
             <div style={{ position: "relative", flexShrink: 0 }}>

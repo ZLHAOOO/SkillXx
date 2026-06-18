@@ -6,7 +6,6 @@ import { Skills } from "@/pages/Skills";
 import { Tools } from "@/pages/Tools";
 import { Marketplace } from "@/pages/Marketplace";
 import { Settings } from "@/pages/Settings";
-import { Feedback } from "@/pages/Feedback";
 import { EditorPage } from "@/pages/Editor";
 import { Welcome } from "@/pages/Welcome";
 import { useInitialization } from "@/hooks/useInitialization";
@@ -118,7 +117,6 @@ function App() {
                 <Route path="tools" element={<Tools />} />
                 <Route path="marketplace" element={<Marketplace />} />
                 <Route path="settings" element={<Settings />} />
-                <Route path="feedback" element={<Feedback />} />
               </Route>
               <Route path="/editor" element={<EditorPage />} />
             </Routes>

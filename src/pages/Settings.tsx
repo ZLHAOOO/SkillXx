@@ -23,6 +23,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
 import { ToastContainer, useToast } from "@/components/ui/toast";
 import { SunIcon, MoonIcon, MonitorIcon } from "@/components/icons/theme-icons";
+import { ChevronDown } from "lucide-react";
 import { resolveActiveProjectId } from "./projectBindings";
 
 export function Settings() {
@@ -680,6 +681,92 @@ export function Settings() {
             />
           </SettingsCard>
 
+
+          {/* Feedback */}
+          <SectionTitle>{t("feedback.title")}</SectionTitle>
+          <SettingsCard>
+            <div style={{ padding: "12px 0" }}>
+              <p style={{
+                margin: "0 0 16px 0",
+                fontSize: "13px",
+                lineHeight: 1.7,
+                color: "var(--muted-foreground)",
+              }}>
+                {t("feedback.description")}
+              </p>
+
+              <div style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: "16px",
+                padding: "14px 0",
+              }}>
+                <div>
+                  <div style={{
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "var(--foreground)",
+                    marginBottom: "4px",
+                  }}>
+                    {t("feedback.issueGithubTitle")}
+                  </div>
+                  <div style={{
+                    fontSize: "13px",
+                    lineHeight: 1.6,
+                    color: "var(--muted-foreground)",
+                  }}>
+                    {t("feedback.issueGithubDesc")}
+                  </div>
+                </div>
+                <button
+                  onClick={() => void openUrl("https://github.com/ZLHAOOO/SkillXx/issues/new/choose")}
+                  style={{
+                    padding: "8px 14px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "var(--primary-foreground)",
+                    backgroundColor: "var(--primary)",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {t("feedback.issueGithubAction")}
+                </button>
+              </div>
+
+              <FeedbackInlineForm addToast={addToast} t={t} language={language} />
+
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                paddingTop: "14px",
+                marginTop: "14px",
+                borderTop: "1px solid var(--border)",
+              }}>
+                <span style={{ color: "var(--muted-foreground)", fontSize: "13px", minWidth: "52px" }}>
+                  {t("feedback.contact.emailLabel")}
+                </span>
+                <a
+                  href="mailto:zlhaooo@foxmail.com"
+                  style={{
+                    color: "var(--primary)",
+                    textDecoration: "none",
+                    fontWeight: 500,
+                    fontSize: "13px",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.textDecoration = "underline"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.textDecoration = "none"; }}
+                >
+                  zlhaooo@foxmail.com
+                </a>
+              </div>
+            </div>
+          </SettingsCard>
+
           {/* About Section */}
           <SectionTitle>{t("settings.about")}</SectionTitle>
           <SettingsCard>
@@ -854,6 +941,283 @@ export function Settings() {
       )}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
+  );
+}
+
+
+// --- Feedback Inline Form (embedded in Settings) ---
+
+import { FormEvent } from "react";
+import { submitFeedback } from "@/services/feedback";
+import {
+  FEEDBACK_CONTACT_TYPES,
+  FEEDBACK_CONTACT_TYPE_LABEL_KEY_MAP,
+  getFeedbackContactValuePlaceholderKey,
+  validateFeedbackContact,
+} from "@/services/feedbackContact";
+import type { FeedbackContactType } from "@/types";
+
+function FeedbackInlineForm({ addToast, t, language }: {
+  addToast: (msg: string, type: "error" | "success" | "info", persistent?: boolean) => string;
+  t: (key: any) => string;
+  language: string;
+}) {
+  const [contactType, setContactType] = useState<FeedbackContactType | "">("");
+  const [contactValue, setContactValue] = useState("");
+  const [content, setContent] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedContent = content.trim();
+    const contactValidation = validateFeedbackContact(contactType, contactValue);
+    if (!contactValidation.ok) {
+      addToast(t(contactValidation.errorKey), "error");
+      return;
+    }
+    if (!trimmedContent) {
+      addToast(t("feedback.form.contentRequired"), "error");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await submitFeedback({
+        contact_type: contactValidation.contactType,
+        contact_value: contactValidation.contactValue,
+        content: trimmedContent,
+        source: "desktop-settings",
+        language,
+      });
+      setContactType("");
+      setContactValue("");
+      setContent("");
+      addToast(t("feedback.form.submitSuccess"), "success");
+    } catch (err) {
+      addToast(
+        err instanceof Error ? err.message : t("feedback.form.submitFailed"),
+        "error",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ padding: "14px 0 18px 0" }}>
+      <div style={{
+        fontSize: "14px",
+        fontWeight: 600,
+        color: "var(--foreground)",
+        marginBottom: "4px",
+      }}>
+        {t("feedback.issueDirectTitle")}
+      </div>
+      <div style={{
+        fontSize: "13px",
+        lineHeight: 1.6,
+        color: "var(--muted-foreground)",
+        marginBottom: "12px",
+      }}>
+        {t("feedback.issueDirectDesc")}
+      </div>
+
+      <div style={{
+        display: "flex",
+        gap: "12px",
+        flexWrap: "wrap",
+        marginBottom: "8px",
+      }}>
+        <div style={{ flex: "0 0 180px", minWidth: "180px" }}>
+          <label
+            htmlFor="feedback-contact-type"
+            style={{
+              display: "block",
+              fontSize: "12px",
+              fontWeight: 500,
+              color: "var(--foreground)",
+              marginBottom: "6px",
+            }}
+          >
+            {t("feedback.form.contactTypeLabel")}
+            <span style={{ color: "var(--color-error)", marginLeft: "4px" }}>*</span>
+          </label>
+          <div style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            borderRadius: "12px",
+            border: "1px solid var(--border)",
+            background: "linear-gradient(180deg, var(--background) 0%, var(--secondary) 100%)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.55), 0 10px 24px rgba(15,23,42,0.04)",
+            minHeight: "44px",
+          }}>
+            <select
+              id="feedback-contact-type"
+              value={contactType}
+              onChange={(e) => {
+                setContactType(e.target.value as FeedbackContactType | "");
+                setContactValue("");
+              }}
+              style={{
+                width: "100%",
+                padding: "11px 42px 11px 12px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "var(--foreground)",
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                appearance: "none",
+                WebkitAppearance: "none",
+                cursor: "pointer",
+              }}
+            >
+              <option value="">{t("feedback.form.contactTypePlaceholder")}</option>
+              {FEEDBACK_CONTACT_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {t(FEEDBACK_CONTACT_TYPE_LABEL_KEY_MAP[type])}
+                </option>
+              ))}
+            </select>
+            <div style={{
+              position: "absolute",
+              top: "50%",
+              right: "10px",
+              transform: "translateY(-50%)",
+              width: "24px",
+              height: "24px",
+              borderRadius: "999px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "var(--secondary)",
+              color: "var(--muted-foreground)",
+              pointerEvents: "none",
+            }}>
+              <ChevronDown size={14} strokeWidth={2.1} />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ flex: "1 1 280px", minWidth: "240px" }}>
+          <label
+            htmlFor="feedback-contact-value"
+            style={{
+              display: "block",
+              fontSize: "12px",
+              fontWeight: 500,
+              color: "var(--foreground)",
+              marginBottom: "6px",
+            }}
+          >
+            {t("feedback.form.contactValueLabel")}
+            <span style={{ color: "var(--color-error)", marginLeft: "4px" }}>*</span>
+          </label>
+          <div style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            borderRadius: "12px",
+            border: "1px solid var(--border)",
+            background: contactType
+              ? "linear-gradient(180deg, var(--background) 0%, var(--secondary) 100%)"
+              : "var(--secondary)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.55), 0 10px 24px rgba(15,23,42,0.04)",
+            minHeight: "44px",
+            opacity: contactType ? 1 : 0.74,
+          }}>
+            <input
+              id="feedback-contact-value"
+              type={contactType === "email" ? "email" : "text"}
+              inputMode={contactType === "email" ? "email" : "text"}
+              disabled={!contactType}
+              value={contactValue}
+              onChange={(e) => setContactValue(e.target.value)}
+              placeholder={t(getFeedbackContactValuePlaceholderKey(contactType))}
+              style={{
+                width: "100%",
+                padding: "11px 12px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "var(--foreground)",
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                cursor: contactType ? "text" : "not-allowed",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div style={{
+        fontSize: "12px",
+        lineHeight: 1.6,
+        color: "var(--muted-foreground)",
+        marginBottom: "12px",
+      }}>
+        {t("feedback.form.contactHelp")}
+      </div>
+
+      <label
+        htmlFor="feedback-content"
+        style={{
+          display: "block",
+          fontSize: "12px",
+          fontWeight: 500,
+          color: "var(--foreground)",
+          marginBottom: "6px",
+        }}
+      >
+        {t("feedback.form.contentLabel")}
+        <span style={{ color: "var(--color-error)", marginLeft: "4px" }}>*</span>
+      </label>
+      <textarea
+        id="feedback-content"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder={t("feedback.form.contentPlaceholder")}
+        rows={5}
+        style={{
+          width: "100%",
+          padding: "10px 12px",
+          fontSize: "13px",
+          lineHeight: 1.6,
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
+          background: "linear-gradient(180deg, var(--background) 0%, var(--secondary) 100%)",
+          color: "var(--foreground)",
+          outline: "none",
+          resize: "vertical",
+          minHeight: "110px",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.55), 0 10px 24px rgba(15,23,42,0.04)",
+        }}
+      />
+
+      <div style={{
+        display: "flex",
+        justifyContent: "flex-end",
+        marginTop: "14px",
+      }}>
+        <button
+          type="submit"
+          disabled={submitting}
+          style={{
+            padding: "8px 16px",
+            fontSize: "13px",
+            fontWeight: 500,
+            color: "var(--primary-foreground)",
+            backgroundColor: "var(--foreground)",
+            border: "none",
+            borderRadius: "8px",
+            cursor: submitting ? "wait" : "pointer",
+            opacity: submitting ? 0.7 : 1,
+          }}
+        >
+          {submitting ? t("feedback.form.submitting") : t("feedback.form.submit")}
+        </button>
+      </div>
+    </form>
   );
 }
 

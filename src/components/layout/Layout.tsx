@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Sidebar } from "./Sidebar";
 import { SyncReport, LinkReport } from "@/types";
 import { useTranslation } from "@/i18n";
@@ -52,18 +53,17 @@ export function Layout() {
 
   return (
     <div
-      className="flex h-screen relative"
-      style={{ backgroundColor: "#f0f0f0" }}
+      className="flex h-screen relative bg-background"
     >
-      {/* Drag region for macOS - covers entire top area including main content */}
+      {/* Draggable titlebar region for macOS - covers main content top area */}
       <div
-        data-tauri-drag-region
-        className="absolute top-0 left-0 right-0 pointer-events-none cursor-grab"
+        onMouseDown={() => getCurrentWindow().startDragging()}
+        className="absolute top-0 right-0 cursor-grab"
         style={{
           height: 52,
-          zIndex: 100,
-          WebkitAppRegion: "drag",
-        } as React.CSSProperties}
+          left: 200,
+          zIndex: 0,
+        }}
       />
 
       {/* Sidebar - lower layer */}
@@ -75,12 +75,12 @@ export function Layout() {
         style={{
           margin: "8px 8px 8px 0",
           backgroundColor: "var(--background)",
-          borderRadius: "12px",
+          borderRadius: "16px",
           boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)",
         }}
       >
         {showBanner && (
-          <div className="absolute top-0 left-0 right-0 px-6 py-3 bg-yellow-50 border-b border-yellow-200 flex items-center justify-between z-50" style={{ borderRadius: "12px 12px 0 0" }}>
+          <div className="absolute top-0 left-0 right-0 px-6 py-3 bg-yellow-50 border-b border-yellow-200 flex items-center justify-between z-50" style={{ borderRadius: "16px 16px 0 0" }}>
             <div className="flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" strokeWidth="2">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />

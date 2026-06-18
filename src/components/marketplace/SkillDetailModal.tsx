@@ -409,7 +409,7 @@ export function SkillDetailModal({ skill, onClose, onInstall, installing }: Skil
           maxWidth: MODAL_MAX_VIEWPORT_WIDTH,
           height: SKILL_DETAIL_MODAL_HEIGHT,
           backgroundColor: "var(--background)",
-          borderRadius: "16px",
+          borderRadius: "20px",
           border: "1px solid var(--border)",
           boxShadow: "0 18px 60px rgba(0,0,0,0.25)",
           display: "flex",
@@ -575,7 +575,7 @@ export function SkillDetailModal({ skill, onClose, onInstall, installing }: Skil
                           style={{
                             border: "1px solid var(--border)",
                             background: "linear-gradient(180deg, var(--secondary) 0%, transparent 100%)",
-                            borderRadius: "10px",
+                            borderRadius: "14px",
                             padding: "12px 14px",
                             marginBottom: "14px",
                           }}

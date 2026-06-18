@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { confirm, open } from "@tauri-apps/plugin-dialog";
 
@@ -51,6 +51,8 @@ export function Tools() {
   const [toolEditorEnabledOnly, setToolEditorEnabledOnly] = useState(false);
   const [togglingSkill, setTogglingSkill] = useState<string | null>(null);
   const [bulkTogglingToolId, setBulkTogglingToolId] = useState<string | null>(null);
+  const [dragOverToolId, setDragOverToolId] = useState<string | null>(null);
+  const draggedToolIdRef = useRef<string | null>(null);
   const [iconFallbackStage, setIconFallbackStage] = useState<Record<string, "asset" | "file" | "none">>({});
   const [form, setForm] = useState({
     name: "",
@@ -738,7 +740,7 @@ export function Tools() {
         overflow: 'hidden',
         backgroundColor: 'var(--background)',
       }}>
-        <PageHeader title={t("tools.title")} />
+        <PageHeader title={t("nav.agents")} />
         <main style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
           <PageLoader />
         </main>
@@ -767,15 +769,43 @@ export function Tools() {
     return (
       <div
         key={tool.id}
+        draggable
+        onDragStart={() => {
+          draggedToolIdRef.current = tool.id;
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOverToolId(tool.id);
+        }}
+        onDragLeave={() => setDragOverToolId(null)}
+        onDrop={(e) => {
+          e.preventDefault();
+          const draggedId = draggedToolIdRef.current;
+          setDragOverToolId(null);
+          if (!draggedId || draggedId === tool.id) {
+            draggedToolIdRef.current = null;
+            return;
+          }
+          setTools(prev => {
+            const next = [...prev];
+            const fromIdx = next.findIndex(t => t.id === draggedId);
+            const toIdx = next.findIndex(t => t.id === tool.id);
+            if (fromIdx === -1 || toIdx === -1) return prev;
+            const [moved] = next.splice(fromIdx, 1);
+            next.splice(toIdx, 0, moved);
+            return next;
+          });
+          draggedToolIdRef.current = null;
+        }}
         style={{
           display: 'flex',
           flexDirection: 'column',
           padding: '18px 20px',
-          backgroundColor: 'var(--secondary)',
+          backgroundColor: dragOverToolId === tool.id ? 'color-mix(in srgb, var(--primary) 8%, var(--secondary))' : 'var(--secondary)',
           borderRadius: '14px',
-          border: '1px solid var(--border)',
-          transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
-          cursor: 'pointer',
+          border: dragOverToolId === tool.id ? '2px dashed var(--primary)' : '1px solid var(--border)',
+          transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s, background-color 0.2s',
+          cursor: 'grab',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = 'var(--ring)';
@@ -783,6 +813,7 @@ export function Tools() {
           e.currentTarget.style.transform = 'translateY(-2px)';
         }}
         onMouseLeave={(e) => {
+          if (dragOverToolId === tool.id) return;
           e.currentTarget.style.borderColor = 'var(--border)';
           e.currentTarget.style.boxShadow = 'none';
           e.currentTarget.style.transform = 'translateY(0)';
@@ -1133,7 +1164,7 @@ export function Tools() {
       backgroundColor: 'var(--background)',
     }}>
       <PageHeader
-        title={t("tools.title")}
+        title={t("nav.agents")}
         actions={
           <>
             <RefreshButton onClick={handleRefresh} loading={refreshing} />

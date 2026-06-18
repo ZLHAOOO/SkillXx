@@ -11,7 +11,6 @@ export function PageHeader({ title, actions }: PageHeaderProps) {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "16px 32px",
-        borderBottom: "1px solid var(--border)",
         backgroundColor: "var(--background)",
         flexShrink: 0,
       }}

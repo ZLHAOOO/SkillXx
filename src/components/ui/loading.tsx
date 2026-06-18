@@ -59,7 +59,7 @@ export function PageLoader({ message = "Loading..." }: PageLoaderProps) {
 export function SkeletonCard() {
   return (
     <div style={{
-      borderRadius: '14px',
+      borderRadius: '16px',
       border: '1px solid var(--border)',
       backgroundColor: 'var(--secondary)',
       padding: '18px 20px',
@@ -69,7 +69,7 @@ export function SkeletonCard() {
           width: '44px',
           height: '44px',
           backgroundColor: 'var(--muted)',
-          borderRadius: '12px',
+          borderRadius: '14px',
           animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         }} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>

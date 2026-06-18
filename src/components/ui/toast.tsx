@@ -35,7 +35,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
         padding: "12px 16px",
         backgroundColor: bgColor,
         border: `1px solid ${borderColor}`,
-        borderRadius: "10px",
+        borderRadius: "14px",
         color: textColor,
         fontSize: "14px",
         boxShadow: "0 4px 12px rgba(0,0,0,0.15)",

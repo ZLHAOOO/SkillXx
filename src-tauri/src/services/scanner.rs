@@ -117,6 +117,11 @@ impl ScannerService {
                     return Vec::new();
                 }
 
+                // Skip backup directories (e.g. foo.bak)
+                if path.file_name().and_then(|n| n.to_str()).map_or(false, |n| n.ends_with(".bak")) {
+                    return Vec::new();
+                }
+
                 if Self::is_skill_dir(&path) {
                     return Self::load_skill_with_config(&path, config)
                         .map(|skill| vec![skill])

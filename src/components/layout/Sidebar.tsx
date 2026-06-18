@@ -6,11 +6,11 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { checkUpdate } from "@/services/updater";
 import { UpdateInfo } from "@/types";
 import { getSidebarChromeMetrics } from "./sidebarChrome";
-import { Sparkles, Bot, Store, Cog, MessageCircle, type LucideIcon } from "lucide-react";
+import { Sparkles, Bot, Store, Cog, type LucideIcon } from "lucide-react";
 
 interface NavItem {
   path: string;
-  labelKey: "nav.skills" | "nav.agents" | "nav.marketplace" | "nav.settings" | "nav.feedback";
+  labelKey: "nav.skills" | "nav.agents" | "nav.marketplace" | "nav.settings";
   icon: LucideIcon;
 }
 
@@ -19,7 +19,6 @@ const navItems: NavItem[] = [
   { path: "/tools", labelKey: "nav.agents", icon: Bot },
   { path: "/marketplace", labelKey: "nav.marketplace", icon: Store },
   { path: "/settings", labelKey: "nav.settings", icon: Cog },
-  { path: "/feedback", labelKey: "nav.feedback", icon: MessageCircle },
 ];
 
 function SidebarNavButton({ item, label }: { item: NavItem; label: string }) {
@@ -51,7 +50,7 @@ function SidebarNavButton({ item, label }: { item: NavItem; label: string }) {
               ? "var(--foreground)"
               : "var(--muted-foreground)",
           backgroundColor,
-          borderRadius: "10px",
+          borderRadius: "9999px",
           textDecoration: "none",
           boxShadow: isActive ? "0 1px 2px rgba(15, 23, 42, 0.12)" : "none",
           transition: "background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease",
@@ -107,7 +106,7 @@ export function Sidebar() {
       style={{
         width: 180,
         minWidth: 180,
-        backgroundColor: "transparent",
+        backgroundColor: "var(--sidebar)",
       }}
     >
       {/* Draggable titlebar region for macOS */}
@@ -125,7 +124,7 @@ export function Sidebar() {
         className="flex items-center justify-between px-4 py-3"
         style={{ padding: chromeMetrics.brandPadding }}
       >
-        <span className="text-sm font-semibold text-foreground tracking-tight">SkillX</span>
+        <span style={{ fontSize: "15px", fontWeight: 700, fontFamily: "'Inter', sans-serif", letterSpacing: "-0.02em" }}>SkillX</span>
         {updateInfo?.has_update && (
           <button
             onClick={handleUpdateClick}

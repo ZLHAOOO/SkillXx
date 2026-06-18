@@ -67,7 +67,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         style={{
           width: "min(420px, calc(100vw - 48px))",
           backgroundColor: "var(--background)",
-          borderRadius: "16px",
+          borderRadius: "20px",
           border: "1px solid var(--border)",
           boxShadow: "0 24px 64px rgba(0,0,0,0.18), 0 0 1px rgba(0,0,0,0.1)",
           padding: "24px",
@@ -127,7 +127,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           /* Logged In View */
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {/* Avatar & Username */}
-            <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "12px", borderRadius: "12px", backgroundColor: "var(--secondary)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "12px", borderRadius: "16px", backgroundColor: "var(--secondary)" }}>
               <div
                 style={{
                   width: "48px",
@@ -191,7 +191,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 color: "var(--foreground)",
                 backgroundColor: "var(--secondary)",
                 border: "1px solid var(--border)",
-                borderRadius: "10px",
+                borderRadius: "14px",
                 cursor: isLoading ? "wait" : "pointer",
                 opacity: isLoading ? 0.7 : 1,
                 transition: "all 0.15s",
@@ -236,7 +236,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 color: "#fff",
                 backgroundColor: "#24292f",
                 border: "1px solid #24292f",
-                borderRadius: "10px",
+                borderRadius: "14px",
                 cursor: isLoading ? "wait" : "pointer",
                 opacity: isLoading ? 0.7 : 1,
                 transition: "all 0.15s",
@@ -270,7 +270,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 color: "var(--foreground)",
                 backgroundColor: "var(--background)",
                 border: "1px solid var(--border)",
-                borderRadius: "10px",
+                borderRadius: "14px",
                 cursor: isLoading ? "wait" : "pointer",
                 opacity: isLoading ? 0.7 : 1,
                 transition: "all 0.15s",
@@ -295,7 +295,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 alignItems: "center",
                 gap: "10px",
                 padding: "12px 14px",
-                borderRadius: "10px",
+                borderRadius: "14px",
                 backgroundColor: "var(--secondary)",
                 fontSize: "12px",
                 color: "var(--muted-foreground)",
@@ -345,7 +345,7 @@ function ErrorAlert({ message }: { message: string }) {
         alignItems: "flex-start",
         gap: "10px",
         padding: "12px 14px",
-        borderRadius: "10px",
+        borderRadius: "14px",
         backgroundColor: "#fef2f2",
         border: "1px solid #fecaca",
         fontSize: "12px",
