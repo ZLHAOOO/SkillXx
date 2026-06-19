@@ -7,7 +7,7 @@
 > **A unified desktop application for managing AI coding assistant skills.**
 > Seamlessly organize, sync, and share skills for **Claude Code, Codex, Opencode** and other AI tools.
 
-![Version](https://img.shields.io/badge/version-3.0.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.1.1-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
 [中文说明](./README_CN.md)
 
@@ -91,6 +91,36 @@ We welcome all forms of contribution!
 
 - **Found a bug?** Please submit an issue on our [Issues](../../issues) page.
 - **Have a feature request?** We'd love to hear your ideas! Feel free to open an issue to discuss new features.
+
+## 🆕 What's New in v3.1.1
+
+### Architecture Refactoring
+- **Skills.tsx split**: 3,819 → 2,525 lines (-34%), extracted SkillCard, 3 dialog components, and 3 custom hooks
+- **Component structure**: Each component now has a single responsibility — easier to maintain and test
+- **Backend improvements**: Enhanced config, LLM, and marketplace modules
+
+### Performance
+- **React.memo**: Expensive components only re-render when data changes
+- **Search debounce**: 300ms delay prevents excessive filtering on fast typing
+- **Route lazy loading**: Components load on demand, faster startup
+
+### UI Polish
+- **Inter font**: Clean, modern typography
+- **Consistent border-radius**: Unified 12→14→16→20px scale across all components
+- **Sidebar**: Pill-shaped nav items, dark background (#161616)
+- **Feedback form**: Built into Settings page with GitHub issue link and contact form
+
+### Code Quality
+- **0 TypeScript errors**: All type issues resolved
+- **0 Rust warnings**: Clean cargo check
+- **Dead code cleanup**: Removed unused imports, variables, and the reverted virtualizer
+
+### Bug Fixes
+- GitHub links updated to new repository (SkillXx)
+- Settings feedback form points to correct repo
+- Drag region fix for macOS titlebar
+
+---
 
 ## 📈 Star History
 

@@ -13,7 +13,7 @@ pub mod sync;
 pub mod tools;
 pub mod updater;
 
-pub use config::{get_config, is_initialized, mark_initialized, save_config};
+pub use config::{get_config, is_initialized, mark_initialized, save_config, save_tools_order};
 pub use editors::{
     detect_available_editors, get_available_editors, open_in_editor, refresh_editors,
 };
@@ -23,8 +23,8 @@ pub use llm::{
     clear_llm_provider, clear_translation_cache, get_cached_marketplace_translations,
     get_cached_skill_translations, get_cached_text_translation, get_llm_provider,
     save_llm_provider, test_llm_provider, translate_skill,
-    translate_skill_files, translate_skill_name_desc, translate_skill_names_batch,
-    translate_text_content,
+    translate_skill_files, translate_skill_name_desc, translate_skill_name_desc_custom,
+    translate_skill_names_batch, translate_text_content,
 };
 pub use marketplace::{
     check_marketplace_updates_if_stale, fetch_marketplace_skill_descriptions,

@@ -9,16 +9,16 @@ interface UseSkillsDataReturn {
   skillPackages: InstalledSkillPackage[];
   tools: Tool[];
   config: AppConfig | null;
-  
+
   // Loading states
   initialLoading: boolean;
   refreshing: boolean;
-  
+
   // Actions
   loadData: () => Promise<void>;
   refreshData: () => Promise<void>;
   reloadData: () => Promise<void>;
-  
+
   // Setters (for external updates)
   setSkills: React.Dispatch<React.SetStateAction<Skill[]>>;
   setSkillPackages: React.Dispatch<React.SetStateAction<InstalledSkillPackage[]>>;
@@ -66,6 +66,10 @@ export function useSkillsData(): UseSkillsDataReturn {
           ? configResult
           : { ...configResult, skill_metadata: migratedSkillMetadata };
         setConfig(nextConfig);
+      }
+
+      for (const msg of failures) {
+        console.error("[useSkillsData] Error:", msg);
       }
     } catch (error) {
       console.error("Failed to load data:", error);

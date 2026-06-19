@@ -108,6 +108,9 @@ export interface UserPreferences {
   // Skill display language settings
   skill_display_name_lang: "original" | "zh" | "en";
   skill_display_desc_lang: "original" | "zh" | "en";
+
+  // Pin
+  pinned_keys: string[];
 }
 
 export interface AuthProfile {
@@ -460,7 +463,7 @@ export interface PlatformSkill {
   author: string;
   description: string;
   downloads: number;
-  platform: "skillhub" | "clawhub";
+  platform: "skillhub" | "clawhub" | "skills.sh" | "awesome-claude-skills";
 }
 
 export interface PlatformInstallResult {

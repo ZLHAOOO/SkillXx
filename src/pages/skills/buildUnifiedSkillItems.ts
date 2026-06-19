@@ -31,6 +31,8 @@ export interface UnifiedSkillListItem {
   memberCount?: number;
   toolSummary?: EnabledToolsSummary;
   groupToolStateById?: Record<string, GroupToolState>;
+  allToolIds?: string[];
+  pinned?: boolean;
   skill?: Skill;
   skillPackage?: InstalledSkillPackage;
 }
@@ -43,6 +45,7 @@ interface BuildUnifiedSkillItemsOptions {
   groupBadgeLabel: string;
   displayNameLang?: "original" | "zh" | "en";
   displayDescLang?: "original" | "zh" | "en";
+  pinnedKeys?: string[];
 }
 
 interface UnifiedSkillListFilters {
@@ -180,7 +183,9 @@ export function buildUnifiedSkillItems({
   groupBadgeLabel,
   displayNameLang = "original",
   displayDescLang = "original",
+  pinnedKeys = [],
 }: BuildUnifiedSkillItemsOptions): UnifiedSkillListItem[] {
+  const pinnedSet = new Set(pinnedKeys);
   const enabledToolIds = getEnabledToolIds(tools);
 
   const skillItems = skills.map((skill): UnifiedSkillListItem => {
@@ -241,7 +246,9 @@ export function buildUnifiedSkillItems({
       previewOverflowCount: Math.max(0, previewTotal - previewChips.length),
       sortName: skill.name.toLowerCase(),
       sortPriority: skill.scope === "project" ? 0 : 1,
-      toolSummary: summarizeEnabledTools(orderedToolIds, skill.enabled, 2),
+      toolSummary: summarizeEnabledTools(orderedToolIds, skill.enabled, 10),
+      allToolIds: orderedToolIds,
+      pinned: pinnedSet.has(`skill:${skill.instance_id}`),
       skill,
     };
   });
@@ -276,6 +283,7 @@ export function buildUnifiedSkillItems({
       sortPriority: 2,
       memberCount: skillPackage.installed_members.length,
       groupToolStateById: buildGroupToolStateById(skillPackage, skills, enabledToolIds),
+      pinned: pinnedSet.has(`group:${skillPackage.package_id}`),
       skillPackage,
     };
   });
@@ -341,6 +349,13 @@ export function sortUnifiedSkillItems(
   const query = searchQuery.trim().toLowerCase();
 
   return [...items].sort((a, b) => {
+    // Pinned items always come first
+    const aPinned = a.pinned ? 1 : 0;
+    const bPinned = b.pinned ? 1 : 0;
+    if (aPinned !== bPinned) {
+      return bPinned - aPinned;
+    }
+
     if (query) {
       const rankDiff = getSearchRank(a, query) - getSearchRank(b, query);
       if (rankDiff !== 0) {

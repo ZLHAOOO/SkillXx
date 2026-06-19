@@ -49,6 +49,38 @@ pub async fn test_llm_provider(provider: LlmProvider) -> Result<String, LlmError
     llm::test_connection(&provider).await
 }
 
+/// Result struct for skill name and description translation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillNameDescTranslationResult {
+    pub name: String,
+    pub description: String,
+}
+
+/// Translate skill name and description using LLM with custom prompt
+#[tauri::command]
+pub async fn translate_skill_name_desc_custom(
+    prompt: String,
+    target_lang: String,
+) -> Result<SkillNameDescTranslationResult, LlmError> {
+    let provider = load_provider_or_error()?;
+    let json_value = llm::translate_text(&provider, &prompt, &target_lang).await?;
+
+    // Extract name and description from JSON value
+    let name = json_value
+        .get("name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    let description = json_value
+        .get("description")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    Ok(SkillNameDescTranslationResult { name, description })
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarketplaceTranslationInput {
     pub id: String,
@@ -968,10 +1000,13 @@ pub async fn translate_skill_names_batch(
                 },
             );
 
+            let skill_md_path = Path::new(&skill.path).join("SKILL.md");
+            let content_md = fs::read_to_string(&skill_md_path).unwrap_or_default();
+
             let input = SkillTranslationInput {
                 name: skill.name.clone(),
                 description: skill.description.clone().unwrap_or_default(),
-                content_md: Some(String::new()),
+                content_md: Some(content_md),
             };
 
             match translation::translate_skill(

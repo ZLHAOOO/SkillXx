@@ -1,13 +1,19 @@
+import { useState } from "react";
 import { type TranslationPath } from "@/i18n";
 import { MODAL_LAYER_Z_INDEX, MODAL_OVERLAY_COLOR } from "@/constants/modal";
 import { Toggle } from "@/components/ui/toggle";
 import { normalizeSkillTags } from "@/pages/skills/skillTags";
+import { Pencil, X, Check, Sparkles, Loader2 } from "lucide-react";
 
 type SkillEditorTab = "tools" | "tags";
 
 export function SkillManageDialog({
   skillName,
   skillDescription,
+  displayName,
+  displayDescription,
+  displayNameLang,
+  displayDescLang,
   activeTab,
   availableTabs = ["tools", "tags"],
   onTabChange,
@@ -36,10 +42,16 @@ export function SkillManageDialog({
   tagSuggestions,
   onSelectTagSuggestion,
   savingTags,
+  onSaveDisplayName,
+  onTranslateSkill,
   t,
 }: {
   skillName: string;
   skillDescription: string;
+  displayName?: string | null;
+  displayDescription?: string | null;
+  displayNameLang?: "original" | "zh" | "en";  // 当前显示的是哪个"本子"
+  displayDescLang?: "original" | "zh" | "en";
   activeTab: SkillEditorTab;
   availableTabs?: SkillEditorTab[];
   onTabChange: (tab: SkillEditorTab) => void;
@@ -75,9 +87,76 @@ export function SkillManageDialog({
   tagSuggestions: string[];
   onSelectTagSuggestion: (tag: string) => void;
   savingTags: boolean;
+  onSaveDisplayName?: (name: string, description: string, targetNameLang: "original" | "zh" | "en", targetDescLang: "original" | "zh" | "en") => void | Promise<void>;
+  onTranslateSkill?: () => Promise<{ name: string; description: string; targetNameLang: "original" | "zh" | "en"; targetDescLang: "original" | "zh" | "en" }>;
   t: (key: TranslationPath) => string;
 }) {
   const canAddTag = normalizeSkillTags([tagDraft]).length > 0;
+
+  // Inline editing state - use displayName/displayDescription if available
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingName, setEditingName] = useState(displayName || skillName);
+  const [editingDescription, setEditingDescription] = useState(displayDescription || skillDescription);
+
+  // AI translation state
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  const handleStartEdit = () => {
+    // Use the current language version (displayName/displayDescription) instead of original
+    setEditingName(displayName || skillName);
+    setEditingDescription(displayDescription || skillDescription);
+    setIsEditingName(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingName(false);
+  };
+
+  const handleSaveEdit = async () => {
+    const trimmedName = editingName.trim();
+    const trimmedDesc = editingDescription.trim();
+
+    // 获取当前显示的语言版本，保存到对应的"本子"
+    const currentNameLang = displayNameLang || "original";
+    const currentDescLang = displayDescLang || "original";
+
+    // Compare against current language version
+    const currentName = displayName || skillName;
+    const currentDesc = displayDescription || skillDescription;
+
+    if (trimmedName && (trimmedName !== currentName || trimmedDesc !== currentDesc)) {
+      // IMPORTANT: Must await the save to ensure it completes before page navigation
+      await onSaveDisplayName?.(trimmedName, trimmedDesc || currentDesc, currentNameLang, currentDescLang);
+    }
+    setIsEditingName(false);
+  };
+
+  // AI translation handler - 翻译并保存到对应的"本子"
+  const handleAITranslate = async () => {
+    if (!onTranslateSkill || isTranslating) return;
+
+    setIsTranslating(true);
+    try {
+      const result = await onTranslateSkill();
+
+      // 翻译结果和目标"本子"
+      const newName = result.name || displayName || skillName;
+      const newDesc = result.description || displayDescription || skillDescription;
+      const targetNameLang = result.targetNameLang || "original";
+      const targetDescLang = result.targetDescLang || "original";
+
+      // Update editing state so when user clicks pencil, they see the translated values
+      setEditingName(newName);
+      setEditingDescription(newDesc);
+
+      // 保存到对应的"本子"（根据用户设置的语言）
+      await onSaveDisplayName?.(newName, newDesc, targetNameLang, targetDescLang);
+    } catch (err) {
+      // Error is handled by parent via toast
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   return (
     <div
@@ -108,13 +187,153 @@ export function SkillManageDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
-          <div style={{ minWidth: 0 }}>
-            <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: 600, color: "var(--foreground)" }}>
-              {skillName}
-            </h3>
-            <p style={{ margin: 0, fontSize: "12px", color: "var(--muted-foreground)", lineHeight: 1.5 }}>
-              {skillDescription}
-            </p>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            {isEditingName ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: "var(--muted-foreground)", marginBottom: "4px" }}>
+                    {t("skills.displayNameLabel")}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "6px 10px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      backgroundColor: "var(--background)",
+                      color: "var(--foreground)",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: "var(--muted-foreground)", marginBottom: "4px" }}>
+                    {t("skills.displayDescLabel")}
+                  </label>
+                  <textarea
+                    value={editingDescription}
+                    onChange={(e) => setEditingDescription(e.target.value)}
+                    rows={2}
+                    style={{
+                      width: "100%",
+                      padding: "6px 10px",
+                      fontSize: "12px",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      backgroundColor: "var(--background)",
+                      color: "var(--foreground)",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      resize: "vertical",
+                      fontFamily: "inherit",
+                      lineHeight: 1.4,
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                  <button
+                    onClick={handleCancelEdit}
+                    style={{
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      color: "var(--foreground)",
+                      backgroundColor: "var(--secondary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {t("common.cancel")}
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    style={{
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      color: "var(--primary-foreground)",
+                      backgroundColor: "var(--primary)",
+                      border: "none",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <Check style={{ width: 14, height: 14 }} />
+                    {t("common.save")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600, color: "var(--foreground)" }}>
+                    {displayName || skillName}
+                  </h3>
+                  <button
+                    onClick={handleStartEdit}
+                    title={t("skills.editDisplayName")}
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--border)",
+                      backgroundColor: "var(--secondary)",
+                      color: "var(--muted-foreground)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 0,
+                    }}
+                  >
+                    <Pencil style={{ width: 12, height: 12 }} />
+                  </button>
+                  {onTranslateSkill && (
+                    <button
+                      onClick={handleAITranslate}
+                      disabled={isTranslating}
+                      title={t("skills.aiTranslate")}
+                      style={{
+                        height: "24px",
+                        borderRadius: "6px",
+                        border: "1px solid var(--border)",
+                        backgroundColor: "var(--secondary)",
+                        color: isTranslating ? "var(--muted-foreground)" : "var(--primary)",
+                        cursor: isTranslating ? "wait" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "4px",
+                        padding: "0 8px",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        opacity: isTranslating ? 0.7 : 1,
+                      }}
+                    >
+                      {isTranslating ? (
+                        <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+                      ) : (
+                        <Sparkles style={{ width: 14, height: 14 }} />
+                      )}
+                      <span>{t("skills.aiTranslate")}</span>
+                    </button>
+                  )}
+                </div>
+                <p style={{ margin: 0, fontSize: "12px", color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+                  {displayDescription || skillDescription}
+                </p>
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -133,9 +352,7 @@ export function SkillManageDialog({
               flexShrink: 0,
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+            <X style={{ width: 14, height: 14 }} />
           </button>
         </div>
 

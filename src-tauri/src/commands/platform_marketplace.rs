@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 
+use crate::models::marketplace::MarketplaceSkillsResponse;
+use crate::services::marketplace::MarketplaceService;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlatformSkill {
     pub name: String,
@@ -9,6 +12,8 @@ pub struct PlatformSkill {
     pub description: String,
     pub downloads: u64,
     pub platform: String,
+    pub repo_url: Option<String>,
+    pub skill_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,6 +44,9 @@ pub async fn check_cli_installed(tool: String) -> Result<bool, String> {
         Err(_) => Ok(false),
     }
 }
+
+const SKILLS_SH_SOURCE_ID: &str = "src_skills_sh_home";
+const AWESOME_CLAUDE_SKILLS_SOURCE_ID: &str = "src_composio_awesome_claude_skills";
 
 /// Install CLI tool (skillhub or clawhub)
 #[tauri::command]
@@ -111,7 +119,7 @@ pub async fn install_cli_tool(tool: String) -> Result<InstallResult, String> {
     }
 }
 
-/// Search for skills on a platform (SkillHub or ClawHub)
+/// Search for skills on a platform (SkillHub, ClawHub, skills.sh, awesome-claude-skills)
 #[tauri::command]
 pub async fn search_marketplace(
     platform: String,
@@ -121,35 +129,74 @@ pub async fn search_marketplace(
         return Err("Search query cannot be empty".to_string());
     }
 
-    let output = match platform.as_str() {
+    match platform.as_str() {
         "skillhub" => {
-            Command::new("skillhub")
+            let output = Command::new("skillhub")
                 .arg("search")
                 .arg(&query)
                 .output()
-                .map_err(|e| format!("Failed to execute skillhub CLI: {}", e))?
+                .map_err(|e| format!("Failed to execute skillhub CLI: {}", e))?;
+
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                if stderr.contains("No skills found") || stderr.is_empty() {
+                    return Ok(Vec::new());
+                }
+                return Err(format!("Search failed: {}", stderr));
+            }
+
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            parse_search_results(&stdout, &platform)
         }
         "clawhub" => {
-            Command::new("clawhub")
+            let output = Command::new("clawhub")
                 .arg("search")
                 .arg(&query)
                 .output()
-                .map_err(|e| format!("Failed to execute clawhub CLI: {}", e))?
-        }
-        _ => return Err(format!("Unsupported platform: {}", platform)),
-    };
+                .map_err(|e| format!("Failed to execute clawhub CLI: {}", e))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        // Don't return error for empty results, just return empty list
-        if stderr.contains("No skills found") || stderr.is_empty() {
-            return Ok(Vec::new());
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                if stderr.contains("No skills found") || stderr.is_empty() {
+                    return Ok(Vec::new());
+                }
+                return Err(format!("Search failed: {}", stderr));
+            }
+
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            parse_search_results(&stdout, &platform)
         }
-        return Err(format!("Search failed: {}", stderr));
+        "skills.sh" | "awesome-claude-skills" => {
+            let source_id = match platform.as_str() {
+                "skills.sh" => SKILLS_SH_SOURCE_ID,
+                "awesome-claude-skills" => AWESOME_CLAUDE_SKILLS_SOURCE_ID,
+                _ => return Err(format!("Unsupported platform: {}", platform)),
+            };
+
+            let response: MarketplaceSkillsResponse =
+                MarketplaceService::fetch_marketplace_skills_by_source(source_id, Some(&query), 1)
+                    .await
+                    .map_err(|e| format!("Market API search failed: {}", e))?;
+
+            let skills: Vec<PlatformSkill> = response
+                .skills
+                .into_iter()
+                .map(|s| PlatformSkill {
+                    name: s.name,
+                    slug: s.slug.unwrap_or_else(|| s.id.clone()),
+                    author: s.author.unwrap_or_default(),
+                    description: s.description.unwrap_or_default(),
+                    downloads: s.install_count.unwrap_or(0),
+                    platform: platform.clone(),
+                    repo_url: s.repo_url,
+                    skill_path: s.skill_path,
+                })
+                .collect();
+
+            Ok(skills)
+        }
+        _ => Err(format!("Unsupported platform: {}", platform)),
     }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    parse_search_results(&stdout, &platform)
 }
 
 /// Parse search results from CLI output (JSON format)
@@ -174,6 +221,8 @@ fn parse_search_results(output: &str, platform: &str) -> Result<Vec<PlatformSkil
                     description,
                     downloads,
                     platform: platform.to_string(),
+                    repo_url: None,
+                    skill_path: None,
                 })
             })
             .collect();
@@ -232,6 +281,8 @@ fn parse_text_line(line: &str, platform: &str) -> Option<PlatformSkill> {
             description,
             downloads: 0,
             platform: platform.to_string(),
+            repo_url: None,
+            skill_path: None,
         });
     }
 
@@ -245,6 +296,8 @@ fn parse_text_line(line: &str, platform: &str) -> Option<PlatformSkill> {
             description: tab_parts.get(3).unwrap_or(&"").to_string(),
             downloads: tab_parts.get(4).and_then(|v| v.parse().ok()).unwrap_or(0),
             platform: platform.to_string(),
+            repo_url: None,
+            skill_path: None,
         });
     }
 
@@ -257,13 +310,26 @@ pub async fn install_from_platform(
     platform: String,
     slug: String,
 ) -> Result<InstallResult, String> {
-    let output = match platform.as_str() {
+    match platform.as_str() {
         "skillhub" => {
-            Command::new("skillhub")
+            let output = Command::new("skillhub")
                 .arg("install")
                 .arg(&slug)
                 .output()
-                .map_err(|e| format!("Failed to execute skillhub CLI: {}", e))?
+                .map_err(|e| format!("Failed to execute skillhub CLI: {}", e))?;
+
+            if output.status.success() {
+                Ok(InstallResult {
+                    success: true,
+                    message: format!("Successfully installed {}", slug),
+                })
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Ok(InstallResult {
+                    success: false,
+                    message: format!("Installation failed: {}", stderr),
+                })
+            }
         }
         "clawhub" => {
             // ClawHub installs to <workdir>/<dir>/<slug> by default
@@ -271,7 +337,7 @@ pub async fn install_from_platform(
             // Use --workdir ~/.skillx and --dir skills
             let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
             let workdir = format!("{}/.skillx", home);
-            Command::new("clawhub")
+            let output = Command::new("clawhub")
                 .arg("install")
                 .arg("--workdir")
                 .arg(&workdir)
@@ -279,21 +345,67 @@ pub async fn install_from_platform(
                 .arg("skills")
                 .arg(&slug)
                 .output()
-                .map_err(|e| format!("Failed to execute clawhub CLI: {}", e))?
-        }
-        _ => return Err(format!("Unsupported platform: {}", platform)),
-    };
+                .map_err(|e| format!("Failed to execute clawhub CLI: {}", e))?;
 
-    if output.status.success() {
-        Ok(InstallResult {
-            success: true,
-            message: format!("Successfully installed {}", slug),
-        })
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Ok(InstallResult {
-            success: false,
-            message: format!("Installation failed: {}", stderr),
-        })
+            if output.status.success() {
+                Ok(InstallResult {
+                    success: true,
+                    message: format!("Successfully installed {}", slug),
+                })
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Ok(InstallResult {
+                    success: false,
+                    message: format!("Installation failed: {}", stderr),
+                })
+            }
+        }
+        "skills.sh" | "awesome-claude-skills" => {
+            // Use market API to install: first search for the skill, then install
+            let source_id = match platform.as_str() {
+                "skills.sh" => SKILLS_SH_SOURCE_ID,
+                "awesome-claude-skills" => AWESOME_CLAUDE_SKILLS_SOURCE_ID,
+                _ => return Err(format!("Unsupported platform: {}", platform)),
+            };
+
+            let skills_dir = std::env::current_dir().unwrap_or_default();
+            let manager = crate::services::config_manager::ConfigManager::new();
+            let config = manager.load().map_err(|e| e.to_string())?;
+            let github_token = config
+                .preferences
+                .as_ref()
+                .and_then(|prefs| prefs.github_token.clone())
+                .map(|token| token.trim().to_string());
+
+            // Search for the skill by slug
+            let response = MarketplaceService::fetch_marketplace_skills_by_source(source_id, Some(&slug), 1)
+                .await
+                .map_err(|e| format!("Failed to search skill: {}", e))?;
+
+            let skill = response.skills.into_iter().find(|s| {
+                s.slug.as_deref().unwrap_or(&s.id) == slug
+                    || s.name.to_lowercase() == slug.to_lowercase()
+            });
+
+            let skill = match skill {
+                Some(s) => s,
+                None => return Ok(InstallResult {
+                    success: false,
+                    message: format!("Skill '{}' not found on {}", slug, platform),
+                }),
+            };
+
+            match MarketplaceService::install_skill(&skill, &skills_dir, github_token.as_deref()).await {
+                Ok(_result) => Ok(InstallResult {
+                    success: true,
+                    message: format!("Successfully installed {}", slug),
+                }),
+                Err(e) => Ok(InstallResult {
+                    success: false,
+                    message: format!("Installation failed: {}", e),
+                }),
+            }
+        }
+        _ => Err(format!("Unsupported platform: {}", platform)),
     }
 }

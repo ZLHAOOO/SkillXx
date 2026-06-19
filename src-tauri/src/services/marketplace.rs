@@ -809,6 +809,15 @@ impl MarketplaceService {
         Ok(MarketplaceSkillsResponse { skills, has_more })
     }
 
+    /// Fetch skills from the market API filtered by a single source_id
+    pub async fn fetch_marketplace_skills_by_source(
+        source_id: &str,
+        query: Option<&str>,
+        page: u32,
+    ) -> Result<MarketplaceSkillsResponse, String> {
+        Self::fetch_marketplace_api_skills_page(query, Some(source_id), page).await
+    }
+
     async fn fetch_marketplace_api_skills_page_for_sources(
         query: Option<&str>,
         allowed_source_ids: &HashSet<String>,

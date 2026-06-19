@@ -54,6 +54,7 @@ export function Tools() {
   const [dragOverToolId, setDragOverToolId] = useState<string | null>(null);
   const draggedToolIdRef = useRef<string | null>(null);
   const [iconFallbackStage, setIconFallbackStage] = useState<Record<string, "asset" | "file" | "none">>({});
+  const [toolsOrder, setToolsOrder] = useState<string[]>([]);
   const [form, setForm] = useState({
     name: "",
     id: "",
@@ -110,16 +111,40 @@ export function Tools() {
     setIconFallbackStage({});
   }, []);
 
+  // Load saved tools order from config
+  const loadToolsOrder = useCallback(async () => {
+    try {
+      const config = await invoke<{ tools_order?: string[] }>("get_config");
+      if (config.tools_order && config.tools_order.length > 0) {
+        setToolsOrder(config.tools_order);
+      }
+    } catch (err) {
+      console.error("Failed to load tools order:", err);
+    }
+  }, []);
+
+  // Save tools order to config
+  const saveToolsOrder = useCallback(async (order: string[]) => {
+    try {
+      await invoke("save_tools_order", { toolsOrder: order });
+      setToolsOrder(order);
+    } catch (err) {
+      console.error("Failed to save tools order:", err);
+    }
+  }, []);
+
   // Initial load - uses cached data
   const loadTools = useCallback(async () => {
     try {
+      // Load config first to get saved order
+      await loadToolsOrder();
       await fetchToolsAndSkills("detect_tools", "list_skills");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setInitialLoading(false);
     }
-  }, [fetchToolsAndSkills]);
+  }, [fetchToolsAndSkills, loadToolsOrder]);
 
   // Manual refresh - forces re-detection
   const handleRefresh = useCallback(async () => {
@@ -137,11 +162,17 @@ export function Tools() {
   // Reload after operations - force re-detection to avoid stale cached list
   const reloadTools = useCallback(async () => {
     try {
+      // Save current order before refresh
+      const currentOrder = tools.map(t => t.id);
       await fetchToolsAndSkills("refresh_tools", "list_skills");
+      // Try to save the order again after refresh (in case tools changed)
+      if (currentOrder.length > 0) {
+        saveToolsOrder(currentOrder);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
-  }, [fetchToolsAndSkills]);
+  }, [fetchToolsAndSkills, tools, saveToolsOrder]);
   const toggleToolEnabled = useCallback(async (tool: Tool, enabled: boolean) => {
     // Undetected tools cannot be enabled, but still allow disabling if already enabled.
     if (enabled && !tool.detected) {
@@ -582,13 +613,32 @@ export function Tools() {
     };
   }, [formOpen]);
 
+  // Apply saved order to tools
+  const orderedTools = useMemo(() => {
+    if (toolsOrder.length === 0) return tools;
+
+    // Create a map for quick lookup
+    const toolsMap = new Map(tools.map(tool => [tool.id, tool]));
+
+    // Get tools in saved order
+    const ordered = toolsOrder
+      .map(id => toolsMap.get(id))
+      .filter((tool): tool is Tool => tool !== undefined);
+
+    // Add any new tools not in the saved order at the end
+    const orderedIds = new Set(toolsOrder);
+    const newTools = tools.filter(tool => !orderedIds.has(tool.id));
+
+    return [...ordered, ...newTools];
+  }, [tools, toolsOrder]);
+
   const builtinTools = useMemo(
-    () => sortToolsByEnabled(tools.filter((tool) => tool.source !== "custom" && tool.detected)),
-    [tools]
+    () => sortToolsByEnabled(orderedTools.filter((tool) => tool.source !== "custom" && tool.detected)),
+    [orderedTools]
   );
   const customTools = useMemo(
-    () => sortToolsByEnabled(tools.filter((tool) => tool.source === "custom")),
-    [tools]
+    () => sortToolsByEnabled(orderedTools.filter((tool) => tool.source === "custom")),
+    [orderedTools]
   );
   const bulkToggleLabel = bulkToggling
     ? t("tools.bulkUpdating")
@@ -793,6 +843,9 @@ export function Tools() {
             if (fromIdx === -1 || toIdx === -1) return prev;
             const [moved] = next.splice(fromIdx, 1);
             next.splice(toIdx, 0, moved);
+            // Save the new order to backend
+            const newOrder = next.map(t => t.id);
+            saveToolsOrder(newOrder);
             return next;
           });
           draggedToolIdRef.current = null;

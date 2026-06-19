@@ -16,10 +16,10 @@ use commands::{
     install_marketplace_skill, install_marketplace_skill_by_ref, install_skill_package_from_path,
     is_initialized, list_skill_packages, list_skills, mark_initialized, open_in_editor,
     read_directory_tree, read_file, refresh_editors, refresh_skills, refresh_tools,
-    remove_skill_package, save_config, save_llm_provider, scan_existing_skills, search_marketplace,
-    set_tool_enabled, submit_feedback, sync_marketplace_installed_skills, test_llm_provider,
-    toggle_marketplace_source, translate_skill, translate_skill_files,
-    translate_skill_name_desc, translate_skill_names_batch,
+    remove_skill_package, save_config, save_llm_provider, save_tools_order, scan_existing_skills,
+    search_marketplace, set_tool_enabled, submit_feedback, sync_marketplace_installed_skills,
+    test_llm_provider, toggle_marketplace_source, translate_skill, translate_skill_files,
+    translate_skill_name_desc, translate_skill_name_desc_custom, translate_skill_names_batch,
     translate_text_content, update_custom_tool, update_tool_paths, write_file,
 };
 use services::{AppCache, MarketplaceCache};
@@ -133,6 +133,8 @@ pub fn run() {
             install_from_platform,
             check_cli_installed,
             install_cli_tool,
+            save_tools_order,
+            translate_skill_name_desc_custom,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -26,3 +26,12 @@ pub fn mark_initialized() -> Result<(), String> {
     config.initialized = true;
     manager.save(&config)
 }
+
+/// Save only the tools order to config
+#[tauri::command]
+pub fn save_tools_order(tools_order: Vec<String>) -> Result<(), String> {
+    let manager = ConfigManager::new();
+    let mut config = manager.load()?;
+    config.tools_order = tools_order;
+    manager.save(&config)
+}

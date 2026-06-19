@@ -123,7 +123,7 @@ impl ConfigManager {
             };
 
             if normalized
-                .insert(normalized_id, SkillMetadata { tags, ..Default::default() })
+                .insert(normalized_id, SkillMetadata { tags, ..item.clone() })
                 .is_some()
             {
                 changed = true;

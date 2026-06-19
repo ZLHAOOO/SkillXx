@@ -32,6 +32,9 @@ pub struct UserPreferences {
     /// Skill display description language: "original", "zh", "en"
     #[serde(default = "default_skill_display_desc_lang")]
     pub skill_display_desc_lang: String,
+    /// Pinned skill/group keys (sorted by key for deterministic save)
+    #[serde(default)]
+    pub pinned_keys: Vec<String>,
 }
 
 fn default_skill_display_lang() -> String {
@@ -138,6 +141,7 @@ impl Default for UserPreferences {
             github_token: None,
             skill_display_name_lang: default_skill_display_lang(),
             skill_display_desc_lang: default_skill_display_desc_lang(),
+            pinned_keys: Vec::new(),
         }
     }
 }
@@ -228,6 +232,9 @@ pub struct AppConfig {
     pub auth_session: Option<AuthSession>,
     #[serde(default)]
     pub initialized: bool,
+    /// Order of tool IDs for drag-and-drop sorting
+    #[serde(default)]
+    pub tools_order: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -252,7 +259,7 @@ pub struct ToolConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            version: "3.0.0".to_string(),
+            version: "3.1.1".to_string(),
             skills_dir: Self::default_skills_dir(),
             tools: HashMap::new(),
             custom_tools: HashMap::new(),
@@ -264,6 +271,7 @@ impl Default for AppConfig {
             llm_provider: None,
             auth_session: None,
             initialized: false,
+            tools_order: Vec::new(),
         }
     }
 }
@@ -325,6 +333,31 @@ impl AppConfig {
         }
 
         configs
+    }
+
+    /// Apply tools_order to sort tool IDs. Returns tool IDs in saved order,
+    /// with any new tools appended at the end.
+    #[allow(dead_code)]
+    pub fn get_ordered_tool_ids(&self, all_tool_ids: &[String]) -> Vec<String> {
+        let order_set: std::collections::HashSet<&str> =
+            self.tools_order.iter().map(|s| s.as_str()).collect();
+
+        // First, collect tools in saved order (only those that still exist)
+        let mut ordered: Vec<String> = self
+            .tools_order
+            .iter()
+            .filter(|id| all_tool_ids.contains(id))
+            .cloned()
+            .collect();
+
+        // Append any new tools not in the saved order
+        for id in all_tool_ids {
+            if !order_set.contains(id.as_str()) {
+                ordered.push(id.clone());
+            }
+        }
+
+        ordered
     }
 }
 

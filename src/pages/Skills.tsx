@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy, type CSSProperties } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { confirm, open } from "@tauri-apps/plugin-dialog";
@@ -19,16 +18,16 @@ import {
   ProjectBinding,
   Skill,
   Tool,
+  UserPreferences,
 } from "@/types";
+import { defaultPreferences } from "@/constants/preferences";
 import { useTranslation, TranslationPath } from "@/i18n";
 import {
   useSkillTranslation,
   makeTranslationKey,
-  type SkillFileTranslationProgress,
 } from "@/hooks/useSkillTranslation";
-import { TranslateIconButton } from "@/components/translation/TranslateIconButton";
 import { formatTranslationError } from "@/lib/formatTranslationError";
-import { getSkillColor } from "@/lib/getSkillColor";
+import { generateTranslationPrompt } from "@/utils/skillTranslationPrompt";
 import {
   applyTagFilterAction,
   getGroupMetadataKey,
@@ -41,15 +40,10 @@ import {
   normalizeSkillTags,
   updateMetadataTags,
   updateSkillTagsForSkill,
-  hasSkillMetadataEntry,
-  removeSkillMetadataEntry,
-  migrateSkillMetadataToInstanceIds,
 } from "./skills/skillTags";
 import { orderToolIdsForSkill } from "./skills/orderToolIds";
 import { getEnabledToolIds } from "./skills/getEnabledToolIds";
-import {
-  getSkillBulkToggleConfirmKey,
-  getSkillBulkToggleMode,
+import { getSkillBulkToggleMode,
   getSkillBulkToggleTargets,
 } from "./skills/bulkToggleSkillTools";
 import {
@@ -97,7 +91,6 @@ import {
 const ProjectBindingsDialog = lazy(() => import("./ProjectBindingsDialog").then(mod => ({ default: mod.ProjectBindingsDialog })));
 const SkillManageDialog = lazy(() => import("@/components/skills/dialogs/SkillManageDialog").then(mod => ({ default: mod.SkillManageDialog })));
 const CreateSkillDialog = lazy(() => import("@/components/skills/dialogs/CreateSkillDialog").then(mod => ({ default: mod.CreateSkillDialog })));
-const DisplayNameEditorDialog = lazy(() => import("@/components/skills/dialogs/DisplayNameEditorDialog").then(mod => ({ default: mod.DisplayNameEditorDialog })));
 const BatchManageToolsDialog = lazy(() => import("./skills/BatchManageToolsDialog").then(mod => ({ default: mod.BatchManageToolsDialog })));
 import { SkillCard } from "@/components/skills/SkillCard";
 import { useSkillsData } from "@/hooks/skills/useSkillsData";
@@ -131,60 +124,6 @@ function buildTagFilterMenuItemStyle(active: boolean): CSSProperties {
 
 type SkillEditorTab = "tools" | "tags";
 
-type SkillCardActionMenuProps = {
-  deleting: boolean;
-  editLabel: string;
-  editDisplayLabel: string;
-  deleteLabel: string;
-  moreActionsLabel: string;
-  onEdit: () => void;
-  onEditDisplay: () => void;
-  onDelete: () => void;
-};
-
-function renderPreviewChips(chips: string[], overflowCount: number) {
-  if (chips.length === 0 && overflowCount === 0) {
-    return null;
-  }
-
-  return (
-    <>
-      {chips.map((chip) => (
-        <span
-          key={chip}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-            fontSize: "11px",
-            fontWeight: 500,
-            color: "var(--primary)",
-            backgroundColor: "color-mix(in srgb, var(--primary) 10%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--primary) 25%, transparent)",
-            borderRadius: "999px",
-            padding: "3px 8px",
-            lineHeight: 1.2,
-          }}
-        >
-          {chip}
-        </span>
-      ))}
-      {overflowCount > 0 && (
-        <span
-          style={{
-            fontSize: "11px",
-            fontWeight: 500,
-            color: "var(--muted-foreground)",
-            padding: "3px 0",
-          }}
-        >
-          +{overflowCount}
-        </span>
-      )}
-    </>
-  );
-}
-
 function getUnifiedItemMetaLabel(item: UnifiedSkillListItem, t: (key: TranslationPath) => string) {
   if (item.kind === "group") {
     return t("skills.groupMembersCount").replace("{count}", String(item.memberCount ?? 0));
@@ -206,8 +145,6 @@ export function Skills() {
   const { t, language } = useTranslation();
   const navigate = useNavigate();
   const translation = useSkillTranslation();
-  const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
-  const [skillTranslationProgress, setSkillTranslationProgress] = useState<Record<string, SkillFileTranslationProgress>>({});
   const [batchTranslating, setBatchTranslating] = useState(false);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [skillPackages, setSkillPackages] = useState<InstalledSkillPackage[]>([]);
@@ -229,7 +166,7 @@ export function Skills() {
   const [toolEditorSkillId, setToolEditorSkillId] = useState<string | null>(null);
   const [toolEditorQuery, setToolEditorQuery] = useState("");
   const [toolEditorEnabledOnly, setToolEditorEnabledOnly] = useState(false);
-  const [bulkTogglingSkillId, setBulkTogglingSkillId] = useState<string | null>(null);
+  const bulkTogglingSkillIdRef = useRef<string | null>(null);
   const [groupEditorPackageId, setGroupEditorPackageId] = useState<string | null>(null);
   const [groupEditorQuery, setGroupEditorQuery] = useState("");
   const [groupEditorEnabledOnly, setGroupEditorEnabledOnly] = useState(false);
@@ -249,7 +186,6 @@ export function Skills() {
   const [isBatchToolDialogOpen, setIsBatchToolDialogOpen] = useState(false);
   const [batchToolQuery, setBatchToolQuery] = useState("");
   const [batchSubmitting, setBatchSubmitting] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { toasts, addToast, updateToast, removeToast } = useToast();
 
@@ -259,20 +195,36 @@ export function Skills() {
     skillPackages: dataSkillPackages,
     tools: dataTools,
     config: dataConfig,
+    initialLoading,
     reloadData: dataReloadData,
+    setSkills: hookSetSkills,
   } = useSkillsData();
 
-  // Custom hook for filtering and search
-  const {
-    unifiedItems: filterUnifiedItems,
-    sortedUnifiedItems: filterSortedUnifiedItems,
-    hasActiveSkillFilters: filterHasActiveSkillFilters,
-  } = useSkillFilter({
+  // 将useSkillsData加载的最新数据同步到本地状态
+  // 使用ref追踪首次同步，确保初始加载时数据不会丢失
+  const skillsSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!skillsSyncedRef.current || dataSkills.length > 0) {
+      setSkills(dataSkills);
+      setSkillPackages(dataSkillPackages);
+      setTools(dataTools);
+      skillsSyncedRef.current = true;
+    }
+  }, [dataSkills, dataSkillPackages, dataTools]);
+
+  useEffect(() => {
+    if (dataConfig) {
+      setConfig(dataConfig);
+    }
+  }, [dataConfig]);
+
+  // Custom hook for filtering and search (kept for side effects; local useMemo handles filtering)
+  useSkillFilter({
     skills: dataSkills,
     skillPackages: dataSkillPackages,
     tools: dataTools,
     config: dataConfig,
-    searchQuery: debouncedSearchQuery, // 使用防抖后的搜索查询
+    searchQuery: debouncedSearchQuery,
     selectedTags,
     untaggedOnly,
     scopeFilter,
@@ -306,12 +258,6 @@ export function Skills() {
   const listContainerRef = useRef<HTMLElement | null>(null);
   const hasRestoredScrollRef = useRef(false);
 
-  // Display name editor state
-  const [displayNameEditorSkillId, setDisplayNameEditorSkillId] = useState<string | null>(null);
-  const [displayNameDraft, setDisplayNameDraft] = useState("");
-  const [displayDescDraft, setDisplayDescDraft] = useState("");
-  const [savingDisplayName, setSavingDisplayName] = useState(false);
-
   // Batch translate names state
   const [translatingNames, setTranslatingNames] = useState(false);
 
@@ -335,96 +281,18 @@ export function Skills() {
     }
   }, [config, navigate, addToast]);
 
-  const loadData = useCallback(async () => {
-    const settled = await Promise.allSettled([
-      invoke<Skill[]>("list_skills"),
-      invoke<InstalledSkillPackage[]>("list_skill_packages"),
-      invoke<AppConfig>("get_config"),
-      invoke<Tool[]>("detect_tools"),
-    ]);
-
-    const [skillsR, packagesR, configR, toolsR] = settled;
-    const failures: string[] = [];
-    for (const r of settled) {
-      if (r.status === "rejected") {
-        failures.push(r.reason instanceof Error ? r.reason.message : String(r.reason));
-      }
-    }
-
-    try {
-      if (skillsR.status === "fulfilled") setSkills(skillsR.value);
-      if (packagesR.status === "fulfilled") setSkillPackages(packagesR.value);
-      if (toolsR.status === "fulfilled") setTools(toolsR.value);
-
-      if (configR.status === "fulfilled") {
-        const configResult = configR.value;
-        const skillsForMigration = skillsR.status === "fulfilled" ? skillsR.value : [];
-        const migratedSkillMetadata = migrateSkillMetadataToInstanceIds(
-          skillsForMigration,
-          configResult.skill_metadata,
-        );
-        const nextConfig = migratedSkillMetadata === configResult.skill_metadata
-          ? configResult
-          : { ...configResult, skill_metadata: migratedSkillMetadata };
-        if (nextConfig !== configResult) {
-          try {
-            await invoke("save_config", { config: nextConfig });
-          } catch (err) {
-            failures.push(err instanceof Error ? err.message : String(err));
-          }
-        }
-        setConfig(nextConfig);
-      }
-
-      for (const msg of failures) {
-        addToast(msg, "error");
-      }
-    } finally {
-      setInitialLoading(false);
-    }
-  }, [addToast]);
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [skillsResult, skillPackagesResult, configResult, toolsResult] = await Promise.all([
-        invoke<Skill[]>("refresh_skills"),
-        invoke<InstalledSkillPackage[]>("list_skill_packages"),
-        invoke<AppConfig>("get_config"),
-        invoke<Tool[]>("detect_tools"),
-      ]);
-      setSkills(skillsResult);
-      setSkillPackages(skillPackagesResult);
-      setConfig(configResult);
-      setTools(toolsResult);
+      await dataReloadData();
       addToast(t("common.refreshSuccess"), "success");
     } catch (err) {
       addToast(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setRefreshing(false);
     }
-  }, [addToast, t]);
+  }, [addToast, t, dataReloadData]);
 
-  const reloadData = useCallback(async () => {
-    try {
-      const [skillsResult, skillPackagesResult, configResult, toolsResult] = await Promise.all([
-        invoke<Skill[]>("list_skills"),
-        invoke<InstalledSkillPackage[]>("list_skill_packages"),
-        invoke<AppConfig>("get_config"),
-        invoke<Tool[]>("detect_tools"),
-      ]);
-      setSkills(skillsResult);
-      setSkillPackages(skillPackagesResult);
-      setConfig(configResult);
-      setTools(toolsResult);
-    } catch (err) {
-      addToast(err instanceof Error ? err.message : String(err), "error");
-    }
-  }, [addToast]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   useEffect(() => {
     if (skills.length === 0) return;
@@ -535,43 +403,70 @@ export function Skills() {
     await persistSkillTags(skill, nextTags);
   }, [persistSkillTags, skillMetadata]);
 
-  // Display name editor handlers
-  const openDisplayNameEditor = useCallback((skill: Skill) => {
-    const metadataKey = getSkillMetadataKey(skill);
-    const existing = skillMetadata?.[metadataKey];
-    setDisplayNameDraft(existing?.display_name || "");
-    setDisplayDescDraft(existing?.display_description || "");
-    setDisplayNameEditorSkillId(skill.instance_id);
-  }, [skillMetadata]);
-
-  const closeDisplayNameEditor = useCallback(() => {
-    setDisplayNameEditorSkillId(null);
-    setDisplayNameDraft("");
-    setDisplayDescDraft("");
-  }, []);
-
-  const handleSaveDisplayName = useCallback(async (skill: Skill) => {
+  // Inline display name editor handler for SkillManageDialog
+  // 按照"三个本子"的思路：用户编辑哪个本子，就保存到哪个本子
+  const handleSaveDisplayName = useCallback(async (
+    skill: Skill,
+    newName: string,
+    newDescription: string,
+    targetNameLang: "original" | "zh" | "en",  // 用户编辑的是哪个本子
+    targetDescLang: "original" | "zh" | "en"
+  ) => {
     if (!config) return;
 
     const metadataKey = getSkillMetadataKey(skill);
     const currentMetadata = skillMetadata?.[metadataKey] || { tags: [] };
-    const displayName = displayNameDraft.trim() || null;
-    const displayDescription = displayDescDraft.trim() || null;
 
-    // Only save if something changed
-    if (displayName === (currentMetadata.display_name || null) &&
-        displayDescription === (currentMetadata.display_description || null)) {
-      closeDisplayNameEditor();
+    console.log("[handleSaveDisplayName] Saving to notebooks:", {
+      targetNameLang,
+      targetDescLang,
+      newName,
+      newDescription,
+    });
+
+    // 构建更新后的metadata，只修改目标本子
+    const nextMetadata = { ...currentMetadata };
+
+    // 保存到对应的"本子"
+    if (targetNameLang === "original") {
+      nextMetadata.display_name = newName.trim() || null;
+    } else if (targetNameLang === "zh") {
+      nextMetadata.translated_name_zh = newName.trim() || null;
+    } else if (targetNameLang === "en") {
+      nextMetadata.translated_name_en = newName.trim() || null;
+    }
+
+    if (targetDescLang === "original") {
+      nextMetadata.display_description = newDescription.trim() || null;
+    } else if (targetDescLang === "zh") {
+      nextMetadata.translated_desc_zh = newDescription.trim() || null;
+    } else if (targetDescLang === "en") {
+      nextMetadata.translated_desc_en = newDescription.trim() || null;
+    }
+
+    // 检查是否有变化
+    let hasChanges = false;
+    if (targetNameLang === "original" && nextMetadata.display_name !== currentMetadata.display_name) {
+      hasChanges = true;
+    } else if (targetNameLang === "zh" && nextMetadata.translated_name_zh !== currentMetadata.translated_name_zh) {
+      hasChanges = true;
+    } else if (targetNameLang === "en" && nextMetadata.translated_name_en !== currentMetadata.translated_name_en) {
+      hasChanges = true;
+    }
+
+    if (targetDescLang === "original" && nextMetadata.display_description !== currentMetadata.display_description) {
+      hasChanges = true;
+    } else if (targetDescLang === "zh" && nextMetadata.translated_desc_zh !== currentMetadata.translated_desc_zh) {
+      hasChanges = true;
+    } else if (targetDescLang === "en" && nextMetadata.translated_desc_en !== currentMetadata.translated_desc_en) {
+      hasChanges = true;
+    }
+
+    if (!hasChanges) {
       return;
     }
 
-    setSavingDisplayName(true);
     try {
-      const nextMetadata = {
-        ...currentMetadata,
-        display_name: displayName,
-        display_description: displayDescription,
-      };
       const nextSkillMetadata = {
         ...skillMetadata,
         [metadataKey]: nextMetadata,
@@ -581,15 +476,90 @@ export function Skills() {
         skill_metadata: nextSkillMetadata,
       };
       setConfig(nextConfig);
+
       await invoke("save_config", { config: nextConfig });
+
       addToast(t("skills.displayNameSaved"), "success");
-      closeDisplayNameEditor();
     } catch (err) {
       addToast(err instanceof Error ? err.message : String(err), "error");
-    } finally {
-      setSavingDisplayName(false);
     }
-  }, [config, skillMetadata, displayNameDraft, displayDescDraft, closeDisplayNameEditor, addToast, t]);
+  }, [config, skillMetadata, addToast, t]);
+
+  // AI translate skill name and description
+  // 返回翻译结果和目标语言，让调用者知道应该保存到哪个"本子"
+  const handleTranslateSkillNameDesc = useCallback(async (skill: Skill): Promise<{
+    name: string;
+    description: string;
+    targetNameLang: "original" | "zh" | "en";
+    targetDescLang: "original" | "zh" | "en";
+  }> => {
+    console.log("[AI Translate] Starting translation for:", skill.name);
+
+    // Check if LLM is configured
+    let configured = translation.isConfigured;
+    if (!configured) {
+      configured = await translation.refreshConfigured();
+      if (!configured) {
+        console.error("[AI Translate] LLM not configured");
+        addToast(t("skills.llmNotConfigured"), "error");
+        return {
+          name: skill.name,
+          description: skill.description || "",
+          targetNameLang: "original",
+          targetDescLang: "original",
+        };
+      }
+    }
+
+    try {
+      // Read skill content (SKILL.md)
+      const skillContent = await invoke<string>("read_file", {
+        path: `${skill.path}/SKILL.md`,
+      }).catch(() => "");
+
+      // Get language preferences - 这就是用户想翻译到哪个"本子"
+      const nameLang = config?.preferences?.skill_display_name_lang || "original";
+      const descLang = config?.preferences?.skill_display_desc_lang || "original";
+
+      // 确定目标语言（用于AI翻译提示词）
+      // 如果设置是"original"，默认翻译成中文
+      const translateTargetLang = nameLang === "original" && descLang === "original"
+        ? "zh"
+        : (nameLang !== "original" ? nameLang : descLang);
+
+      // Generate translation prompt
+      const prompt = generateTranslationPrompt({
+        originalName: skill.name,
+        originalDescription: skill.description || "",
+        skillContent: skillContent || "",
+        targetLang: translateTargetLang,
+        translateName: true,  // 总是翻译名称和描述
+        translateDesc: true,
+      });
+
+      // Call LLM for translation
+      const result = await invoke<{ name: string; description: string }>("translate_skill_name_desc_custom", {
+        prompt,
+        targetLang: translateTargetLang,
+      });
+
+      addToast(t("skills.aiTranslateSuccess"), "success");
+      return {
+        name: result.name,
+        description: result.description,
+        targetNameLang: nameLang,
+        targetDescLang: descLang,
+      };
+    } catch (err) {
+      addToast(t("skills.aiTranslateFailed"), "error");
+      return {
+        name: skill.name,
+        description: skill.description || "",
+        targetNameLang: "original",
+        targetDescLang: "original",
+      };
+    }
+  }, [translation, config, addToast, t]);
 
   // Batch translate skill names and descriptions
   const handleBatchTranslateNames = useCallback(async () => {
@@ -601,7 +571,13 @@ export function Skills() {
       }
     }
 
-    const targetLang = config?.preferences?.language || "en";
+    const nameLang = config?.preferences?.skill_display_name_lang || "original";
+    const descLang = config?.preferences?.skill_display_desc_lang || "original";
+    const targetLang = nameLang !== "original"
+      ? nameLang
+      : descLang !== "original"
+        ? descLang
+        : config?.preferences?.language || "en";
     const instanceIds = skills.map((s) => s.instance_id);
 
     if (instanceIds.length === 0) {
@@ -632,13 +608,13 @@ export function Skills() {
         fail > 0 ? "error" : "success"
       );
 
-      await reloadData();
+      await dataReloadData();
     } catch (err) {
       addToast(formatTranslationError(err, t), "error");
     } finally {
       setTranslatingNames(false);
     }
-  }, [translation, config, skills, addToast, reloadData, t]);
+  }, [translation, config, skills, addToast, dataReloadData, t]);
 
   const handleToggle = actionHandleToggle;
 
@@ -678,54 +654,6 @@ export function Skills() {
   }, []);
 
   const handleBulkToggle = actionHandleBulkToggle;
-
-  const handleTranslateSkill = useCallback(
-    async (skill: Skill, force: boolean = false) => {
-      let configured = translation.isConfigured;
-      if (!configured) {
-        configured = await translation.refreshConfigured();
-      }
-      if (!configured) {
-        addToast(t("skills.llmNotConfigured"), "error");
-        return;
-      }
-      setTranslatingIds((prev) => {
-        const next = new Set(prev);
-        next.add(skill.instance_id);
-        return next;
-      });
-      try {
-        const result = await translation.translateSkillFiles(skill.instance_id, language, force, (progress) => {
-          setSkillTranslationProgress((prev) => ({
-            ...prev,
-            [skill.instance_id]: progress,
-          }));
-        });
-        if (result.failed.length > 0) {
-          addToast(
-            t("editor.translateFilesPartialFailed")
-              .replace("{ok}", String(result.files.length))
-              .replace("{fail}", String(result.failed.length)),
-            "error",
-          );
-        }
-      } catch (err) {
-        addToast(formatTranslationError(err, t), "error");
-      } finally {
-        setSkillTranslationProgress((prev) => {
-          const next = { ...prev };
-          delete next[skill.instance_id];
-          return next;
-        });
-        setTranslatingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(skill.instance_id);
-          return next;
-        });
-      }
-    },
-    [translation, language, addToast, t, formatTranslationError],
-  );
 
   const handleBatchTranslate = useCallback(
     async (skillsToTranslate: Skill[]) => {
@@ -810,6 +738,32 @@ export function Skills() {
 
   const handleDelete = actionHandleDelete;
 
+  const handleTogglePin = async (itemKey: string) => {
+    if (!config) return;
+    const pinnedKeys = [...(config.preferences?.pinned_keys ?? [])];
+    const idx = pinnedKeys.indexOf(itemKey);
+    if (idx >= 0) {
+      pinnedKeys.splice(idx, 1);
+    } else {
+      pinnedKeys.push(itemKey);
+    }
+    const nextConfig = {
+      ...config,
+      preferences: {
+        ...defaultPreferences,
+        ...config.preferences,
+        pinned_keys: pinnedKeys,
+      } as UserPreferences,
+    };
+    setConfig(nextConfig);
+    try {
+      await invoke("save_config", { config: nextConfig });
+    } catch (err) {
+      setConfig(config);
+      addToast(err instanceof Error ? err.message : String(err), "error");
+    }
+  };
+
   const handleCreateSkill = actionHandleCreateSkill;
 
   const unifiedItems = useMemo(() => buildUnifiedSkillItems({
@@ -820,6 +774,7 @@ export function Skills() {
     groupBadgeLabel: t("skills.groupBadge"),
     displayNameLang: config?.preferences?.skill_display_name_lang || "original",
     displayDescLang: config?.preferences?.skill_display_desc_lang || "original",
+    pinnedKeys: config?.preferences?.pinned_keys,
   }), [skillMetadata, skillPackages, skills, t, tools, config]);
 
   const allTagSummaries = useMemo(
@@ -891,30 +846,10 @@ export function Skills() {
     [filteredUnifiedItems, searchQuery],
   );
 
-  // 计算网格列数
-  const [containerWidth, setContainerWidth] = useState(1200);
-  const cardWidth = 320;
-  const gap = 16;
-  const columns = Math.max(1, Math.floor((containerWidth + gap) / (cardWidth + gap)));
+  // Container width tracking (value unused after virtualizer removal; kept for potential future layout)
+  const containerWidthRef = useRef(1200);
+  const setContainerWidth = (w: number) => { containerWidthRef.current = w; };
 
-  // 将数据按行分组（每行 columns 个）
-  const rows = useMemo(() => {
-    const result: typeof sortedUnifiedItems[] = [];
-    for (let i = 0; i < sortedUnifiedItems.length; i += columns) {
-      result.push(sortedUnifiedItems.slice(i, i + columns));
-    }
-    return result;
-  }, [sortedUnifiedItems, columns]);
-
-  // 网格虚拟化 - 按行虚拟化
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => listContainerRef.current,
-    estimateSize: () => 180, // 估计每行的高度
-    overscan: 3, // 预渲染 3 行
-  });
-
-  // 监听容器宽度变化
   useEffect(() => {
     const container = listContainerRef.current;
     if (!container) return;
@@ -1175,6 +1110,7 @@ export function Skills() {
     try {
       await invoke("save_config", { config: nextConfig });
       const refreshedSkills = await invoke<Skill[]>("refresh_skills");
+      hookSetSkills(refreshedSkills);
       setSkills(refreshedSkills);
     } catch (err) {
       if (previousConfig) {
@@ -1186,7 +1122,7 @@ export function Skills() {
     } finally {
       setProjectBindingsSaving(false);
     }
-  }, [addToast, config, skills]);
+  }, [addToast, config, skills, hookSetSkills]);
 
   const handleAddProjectBinding = useCallback(async () => {
     const selected = await open({
@@ -1345,7 +1281,7 @@ export function Skills() {
         addToast(t("skills.batchSubmitPartialFailed").replace("{count}", String(response.failed_count)), "error");
       }
 
-      await reloadData();
+      await dataReloadData();
       if (options?.closeOnSuccess ?? true) {
         exitBatchManageMode();
       }
@@ -1354,7 +1290,7 @@ export function Skills() {
     } finally {
       setBatchSubmitting(false);
     }
-  }, [addToast, exitBatchManageMode, reloadData, selectedBatchItems, t]);
+  }, [addToast, exitBatchManageMode, dataReloadData, selectedBatchItems, t]);
 
   const handleBatchToolToggle = useCallback(async (toolId: string, enabled: boolean) => {
     const confirmKey = enabled ? "skills.batchConfirmEnableSelectedTools" : "skills.batchConfirmDisableSelectedTools";
@@ -1381,10 +1317,39 @@ export function Skills() {
     [tools],
   );
 
-  const toolEditorSkill = useMemo(
-    () => skills.find((skill) => skill.instance_id === toolEditorSkillId) ?? null,
-    [skills, toolEditorSkillId],
-  );
+  const toolEditorSkill = useMemo(() => {
+    const skill = skills.find((s) => s.instance_id === toolEditorSkillId) ?? null;
+    if (!skill || !skillMetadata) return skill;
+
+    // Get display name and description from metadata, considering language settings
+    const metadataKey = getSkillMetadataKey(skill);
+    const metadata = skillMetadata[metadataKey];
+    const nameLang = config?.preferences?.skill_display_name_lang || "original";
+    const descLang = config?.preferences?.skill_display_desc_lang || "original";
+
+    // Determine display name based on language setting
+    let displayName = metadata?.display_name || null;
+    if (!displayName && nameLang !== "original") {
+      displayName = nameLang === "zh"
+        ? (metadata?.translated_name_zh || null)
+        : (metadata?.translated_name_en || null);
+    }
+
+    // Determine display description based on language setting
+    let displayDescription = metadata?.display_description || null;
+    if (!displayDescription && descLang !== "original") {
+      displayDescription = descLang === "zh"
+        ? (metadata?.translated_desc_zh || null)
+        : (metadata?.translated_desc_en || null);
+    }
+
+    // Return skill with display overrides
+    return {
+      ...skill,
+      displayName: displayName || null,
+      displayDescription: displayDescription || null,
+    };
+  }, [skills, toolEditorSkillId, skillMetadata, config?.preferences?.skill_display_name_lang, config?.preferences?.skill_display_desc_lang]);
 
   const toolEditorOrderedToolIds = useMemo(() => {
     if (!toolEditorSkill) {
@@ -1442,7 +1407,7 @@ export function Skills() {
     );
   }, [toolEditorFilteredToolIds, toolEditorSkill, tools, toolEditorBulkToggleMode]);
 
-  const toolEditorIsBulkToggling = toolEditorSkill ? bulkTogglingSkillId === toolEditorSkill.instance_id : false;
+  const toolEditorIsBulkToggling = toolEditorSkill ? bulkTogglingSkillIdRef.current === toolEditorSkill.instance_id : false;
   const toolEditorHasPendingSingleToggle = toolEditorSkill
     ? Boolean(togglingSkill?.startsWith(`${toolEditorSkill.instance_id}:`))
     : false;
@@ -1648,14 +1613,14 @@ export function Skills() {
         addToast(t("skills.bulkTogglePartialFailed").replace("{count}", String(response.failed_count)), "error");
       }
 
-      await reloadData();
+      await dataReloadData();
     } catch (err) {
       addToast(err instanceof Error ? err.message : String(err), "error");
-      await reloadData();
+      await dataReloadData();
     } finally {
       setTogglingGroupToolKey(null);
     }
-  }, [addToast, reloadData, t, tools]);
+  }, [addToast, dataReloadData, t, tools]);
 
   const handleGroupBulkToggle = useCallback(async (groupItem: UnifiedSkillListItem, visibleToolIds: string[]) => {
     const skillPackage = groupItem.skillPackage;
@@ -1694,14 +1659,14 @@ export function Skills() {
         addToast(t("skills.bulkTogglePartialFailed").replace("{count}", String(response.failed_count)), "error");
       }
 
-      await reloadData();
+      await dataReloadData();
     } catch (err) {
       addToast(err instanceof Error ? err.message : String(err), "error");
-      await reloadData();
+      await dataReloadData();
     } finally {
       setBulkTogglingGroupId(null);
     }
-  }, [addToast, reloadData, t, tools]);
+  }, [addToast, dataReloadData, t, tools]);
 
   const handleDeleteGroup = useCallback(async (groupItem: UnifiedSkillListItem) => {
     const skillPackage = groupItem.skillPackage;
@@ -1745,13 +1710,13 @@ export function Skills() {
         }
       }
       addToast(t("skills.groupDeleteSuccess").replace("{name}", groupItem.title), "success");
-      await reloadData();
+      await dataReloadData();
     } catch (err) {
       addToast(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setDeletingGroupId(null);
     }
-  }, [addToast, closeSkillEditor, config, groupEditorPackageId, reloadData, t]);
+  }, [addToast, closeSkillEditor, config, groupEditorPackageId, dataReloadData, t]);
 
   useEffect(() => {
     if (initialLoading || hasRestoredScrollRef.current) {
@@ -1816,8 +1781,7 @@ export function Skills() {
           <div>{t("skills.loadFailed")}</div>
           <button
             onClick={() => {
-              setInitialLoading(true);
-              loadData();
+              void dataReloadData();
             }}
             style={{
               padding: "8px 16px",
@@ -2297,18 +2261,6 @@ export function Skills() {
                     ? translated.description || t("skills.noDescription")
                     : item.description || t("skills.noDescription");
                 const previewChips = item.previewChips.map((chip) => `#${chip}`);
-                const fileProgress = item.kind === "skill" && item.skill
-                  ? skillTranslationProgress[item.skill.instance_id]
-                  : undefined;
-                const fileProgressText = fileProgress
-                  ? t("editor.translateFilesCompact")
-                      .replace("{current}", String(fileProgress.current))
-                      .replace("{total}", String(fileProgress.total))
-                      .replace("{path}", fileProgress.path)
-                  : null;
-                const fileProgressPercent = fileProgress && fileProgress.total > 0
-                  ? Math.max(0, Math.min(100, (fileProgress.current / fileProgress.total) * 100))
-                  : 0;
 
                 return (
                   <SkillCard
@@ -2320,15 +2272,9 @@ export function Skills() {
                     cardTitle={cardTitle}
                     description={description}
                     previewChips={previewChips}
-                    fileProgressText={fileProgressText}
-                    fileProgressPercent={fileProgressPercent}
-                    isTranslatedView={isTranslatedView}
-                    translated={translated}
                     tools={tools}
                     deletingSkill={deletingSkill}
                     deletingGroupId={deletingGroupId}
-                    translatingIds={translatingIds}
-                    skillTranslationProgress={skillTranslationProgress}
                     onOpen={() => void handleOpenUnifiedItem(item)}
                     onToggleBatchSelection={() => handleToggleBatchItemSelection(item.key)}
                     onEdit={() => {
@@ -2338,11 +2284,6 @@ export function Skills() {
                         openGroupEditor(item.id);
                       }
                     }}
-                    onEditDisplay={() => {
-                      if (item.kind === "skill" && item.skill) {
-                        openDisplayNameEditor(item.skill);
-                      }
-                    }}
                     onDelete={() => {
                       if (item.kind === "skill" && item.skill) {
                         void handleDelete(item.skill);
@@ -2350,20 +2291,7 @@ export function Skills() {
                         void handleDeleteGroup(item);
                       }
                     }}
-                    onTranslate={() => {
-                      if (item.kind === "skill" && item.skill) {
-                        if (translated && translationKey) {
-                          translation.setView(translationKey, isTranslatedView ? "original" : "translated");
-                        } else {
-                          void handleTranslateSkill(item.skill);
-                        }
-                      }
-                    }}
-                    onRetranslate={() => {
-                      if (item.kind === "skill" && item.skill) {
-                        void handleTranslateSkill(item.skill, true);
-                      }
-                    }}
+                    onPin={() => void handleTogglePin(item.key)}
                     t={t}
                   />
                 );
@@ -2410,6 +2338,12 @@ export function Skills() {
           tagSuggestions={toolEditorTagSuggestions}
           onSelectTagSuggestion={(tag) => void persistSkillTags(toolEditorSkill, [...toolEditorTags, tag])}
           savingTags={savingTagsSkillId === getSkillMetadataKey(toolEditorSkill)}
+          onSaveDisplayName={(name, desc, nameLang, descLang) => void handleSaveDisplayName(toolEditorSkill, name, desc, nameLang, descLang)}
+          onTranslateSkill={() => handleTranslateSkillNameDesc(toolEditorSkill)}
+          displayName={(toolEditorSkill as typeof toolEditorSkill & { displayName?: string | null })?.displayName}
+          displayDescription={(toolEditorSkill as typeof toolEditorSkill & { displayDescription?: string | null })?.displayDescription}
+          displayNameLang={config?.preferences?.skill_display_name_lang || "original"}
+          displayDescLang={config?.preferences?.skill_display_desc_lang || "original"}
           t={t}
         />
       )}
@@ -2515,25 +2449,6 @@ export function Skills() {
           t={t}
         />
       )}
-
-      {displayNameEditorSkillId && (() => {
-        const editingSkill = skills.find((s) => s.instance_id === displayNameEditorSkillId);
-        if (!editingSkill) return null;
-        return (
-          <DisplayNameEditorDialog
-            skillName={editingSkill.name}
-            skillDescription={editingSkill.description || ""}
-            displayNameDraft={displayNameDraft}
-            displayDescDraft={displayDescDraft}
-            saving={savingDisplayName}
-            onDisplayNameChange={setDisplayNameDraft}
-            onDisplayDescChange={setDisplayDescDraft}
-            onSave={() => void handleSaveDisplayName(editingSkill)}
-            onClose={closeDisplayNameEditor}
-            t={t}
-          />
-        );
-      })()}
 
       {showProjectBindingsDialog && config && (
         <ProjectBindingsDialog

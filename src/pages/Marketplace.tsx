@@ -19,7 +19,6 @@ import {
   InstallResult,
   MarketplaceSkill,
   MarketplaceSkillsResponse,
-  MarketplaceSource,
   MarketplaceSyncResult,
 } from "@/types";
 import { useTranslation } from "@/i18n";
@@ -72,9 +71,6 @@ export function Marketplace() {
   const [skills, setSkills] = useState<MarketplaceSkill[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [availableSources, setAvailableSources] = useState<MarketplaceSource[]>([]);
-  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
-  const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
   const [githubInstallDialogOpen, setGithubInstallDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [githubInstallUrl, setGithubInstallUrl] = useState("");
@@ -120,13 +116,11 @@ export function Marketplace() {
     query?: string;
     page?: number;
     append?: boolean;
-    sourceIds?: string[];
   }) => {
     const forceRefresh = options?.forceRefresh ?? false;
     const query = options?.query;
     const page = options?.page ?? 1;
     const append = options?.append ?? false;
-    const sourceIds = options?.sourceIds;
     const normalizedQuery = query && query.trim().length > 0 ? query.trim() : undefined;
     const requestSeq = listRequestSeqRef.current + 1;
     listRequestSeqRef.current = requestSeq;
@@ -137,7 +131,6 @@ export function Marketplace() {
         forceRefresh,
         query: normalizedQuery,
         page,
-        sourceIds: sourceIds && sourceIds.length > 0 ? sourceIds : undefined,
       });
       if (isStaleRequest()) {
         return;
@@ -173,42 +166,18 @@ export function Marketplace() {
   }, [showMarketplaceError, t]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadSources() {
-      try {
-        const sources = await invoke<MarketplaceSource[]>("get_marketplace_sources");
-        if (cancelled) return;
-        const enabledSources = sources.filter((source) => source.enabled);
-        setAvailableSources(enabledSources);
-        setSelectedSourceIds((current) => (
-          current.filter((id) => enabledSources.some((source) => source.id === id))
-        ));
-      } catch (_err) {
-        // ignore source loading failures to avoid blocking marketplace page
-      }
-    }
-
-    void loadSources();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
     const loadSeq = remoteLoadSeqRef.current + 1;
     remoteLoadSeqRef.current = loadSeq;
     setSearching(true);
     void loadSkills({
       page: 1,
       query: normalizedRemoteQuery,
-      sourceIds: selectedSourceIds,
     }).finally(() => {
       if (remoteLoadSeqRef.current === loadSeq) {
         setSearching(false);
       }
     });
-  }, [loadSkills, normalizedRemoteQuery, selectedSourceIds]);
+  }, [loadSkills, normalizedRemoteQuery]);
 
   useEffect(() => {
     if (skills.length === 0) return;
@@ -332,7 +301,6 @@ export function Marketplace() {
         forceRefresh: true,
         page: 1,
         query: normalizedRemoteQuery,
-        sourceIds: selectedSourceIds,
       });
       addToast(t("common.refreshSuccess"), "success");
     } catch (err) {
@@ -340,7 +308,7 @@ export function Marketplace() {
     } finally {
       setRefreshing(false);
     }
-  }, [addToast, loadSkills, normalizedRemoteQuery, selectedSourceIds, showMarketplaceError, t]);
+  }, [addToast, loadSkills, normalizedRemoteQuery, showMarketplaceError, t]);
 
   const updateAvailableCount = useMemo(
     () => skills.filter((skill) => skill.install_status === "update_available").length,
@@ -357,9 +325,6 @@ export function Marketplace() {
     try {
       const syncResult = await invoke<MarketplaceSyncResult>(
         "sync_marketplace_installed_skills",
-        {
-          sourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : undefined,
-        },
       );
       if (syncResult.updated > 0) {
         addToast(
@@ -381,7 +346,6 @@ export function Marketplace() {
         forceRefresh: true,
         page: 1,
         query: normalizedRemoteQuery,
-        sourceIds: selectedSourceIds,
       });
     } catch (err) {
       showMarketplaceError(err, t("marketplace.networkError"));
@@ -392,7 +356,6 @@ export function Marketplace() {
     installingSkill,
     loadSkills,
     normalizedRemoteQuery,
-    selectedSourceIds,
     showMarketplaceError,
     t,
     updateAvailableCount,
@@ -409,7 +372,6 @@ export function Marketplace() {
         page: currentPage + 1,
         append: true,
         query: normalizedRemoteQuery,
-        sourceIds: selectedSourceIds,
       });
     } finally {
       setLoadingMore(false);
@@ -422,7 +384,6 @@ export function Marketplace() {
     loadingMore,
     normalizedRemoteQuery,
     refreshing,
-    selectedSourceIds,
   ]);
 
   const handleInstall = useCallback(async (skill: MarketplaceSkill, event?: MouseEvent) => {
@@ -450,7 +411,6 @@ export function Marketplace() {
           forceRefresh: true,
           page: 1,
           query: normalizedRemoteQuery,
-          sourceIds: selectedSourceIds,
         });
       } else {
         addToast(
@@ -466,7 +426,7 @@ export function Marketplace() {
     } finally {
       setInstallingSkill(null);
     }
-  }, [addToast, loadSkills, normalizedRemoteQuery, selectedSourceIds, showMarketplaceError, t]);
+  }, [addToast, loadSkills, normalizedRemoteQuery, showMarketplaceError, t]);
 
   const handleGithubInstall = useCallback(async () => {
     const directUrl = githubInstallUrl.trim();
@@ -494,7 +454,6 @@ export function Marketplace() {
           forceRefresh: true,
           page: 1,
           query: normalizedRemoteQuery,
-          sourceIds: selectedSourceIds,
         });
       } else {
         addToast(t("marketplace.githubInstallFailed"), "error");
@@ -511,7 +470,6 @@ export function Marketplace() {
     loadSkills,
     normalizedRemoteQuery,
     refreshing,
-    selectedSourceIds,
     showMarketplaceError,
     t,
     updatingAll,
@@ -681,40 +639,6 @@ export function Marketplace() {
     });
   }, [selectedTags, skills]);
 
-  const showSourceFilter = availableSources.length > 1;
-  const sourceNameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    availableSources.forEach((source) => {
-      map.set(source.id, source.name);
-    });
-    return map;
-  }, [availableSources]);
-
-  const sourceFilterLabel = useMemo(() => {
-    if (selectedSourceIds.length === 0) {
-      return t("marketplace.sourceAll");
-    }
-    if (selectedSourceIds.length === 1) {
-      return sourceNameMap.get(selectedSourceIds[0]) || selectedSourceIds[0];
-    }
-    return t("marketplace.sourceSelectedCount").replace("{count}", String(selectedSourceIds.length));
-  }, [selectedSourceIds, sourceNameMap, t]);
-
-  const toggleSourceSelection = useCallback((sourceId: string) => {
-    setSelectedSourceIds((prev) => {
-      if (prev.length === 0) {
-        // When showing all, click to select ONLY the clicked source
-        return [sourceId];
-      }
-      if (prev.includes(sourceId)) {
-        const next = prev.filter((id) => id !== sourceId);
-        return next.length === 0 ? [] : next;
-      }
-      const next = [...prev, sourceId];
-      return next.length >= availableSources.length ? [] : next;
-    });
-  }, [availableSources]);
-
   if (initialLoading) {
     return (
       <div style={{
@@ -794,110 +718,6 @@ export function Marketplace() {
               {t("marketplace.githubInstallOpen")}
             </button>
             <RefreshButton onClick={handleRefresh} loading={refreshing || updatingAll} />
-            {showSourceFilter && (
-              <div style={{ position: 'relative' }}>
-                <button
-                  onClick={() => setSourceDropdownOpen((v) => !v)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 10px',
-                    fontSize: '12px',
-                    color: 'var(--foreground)',
-                    backgroundColor: sourceDropdownOpen ? 'var(--secondary)' : 'var(--background)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    maxWidth: '220px',
-                  }}
-                >
-                  <span style={{
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}>
-                    {t("marketplace.sourceFilter")}: {sourceFilterLabel}
-                  </span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M6 9l6 6 6-6"/>
-                  </svg>
-                </button>
-
-                {sourceDropdownOpen && (
-                  <>
-                    <div
-                      style={{ position: 'fixed', inset: 0, zIndex: 10 }}
-                      onClick={() => setSourceDropdownOpen(false)}
-                    />
-                    <div style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 6px)',
-                      left: 0,
-                      minWidth: '220px',
-                      backgroundColor: 'var(--background)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '10px',
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                      zIndex: 20,
-                      padding: '6px',
-                    }}>
-                      <button
-                        onClick={() => {
-                          setSelectedSourceIds([]);
-                          setSourceDropdownOpen(false);
-                        }}
-                        style={{
-                          width: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '8px 10px',
-                          fontSize: '12px',
-                          border: 'none',
-                          borderRadius: '8px',
-                          backgroundColor: selectedSourceIds.length === 0 ? 'var(--secondary)' : 'transparent',
-                          color: 'var(--foreground)',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                        }}
-                      >
-                        <span>{t("marketplace.sourceAll")}</span>
-                        {selectedSourceIds.length === 0 && <span>✓</span>}
-                      </button>
-                      {availableSources.map((source) => {
-                        const selected = selectedSourceIds.length === 0
-                          ? true
-                          : selectedSourceIds.includes(source.id);
-                        return (
-                          <button
-                            key={source.id}
-                            onClick={() => toggleSourceSelection(source.id)}
-                            style={{
-                              width: '100%',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '8px 10px',
-                              fontSize: '12px',
-                              border: 'none',
-                              borderRadius: '8px',
-                              backgroundColor: selected ? 'var(--secondary)' : 'transparent',
-                              color: 'var(--foreground)',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                            }}
-                          >
-                            <span>{source.name}</span>
-                            {selected && <span>✓</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
             <div style={{ position: 'relative' }}>
               <svg
                 style={{

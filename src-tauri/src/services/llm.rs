@@ -222,6 +222,50 @@ pub async fn chat(provider: &LlmProvider, req: ChatRequest) -> Result<String, Ll
     Ok(full)
 }
 
+/// Simple text translation using LLM
+pub async fn translate_text(
+    provider: &LlmProvider,
+    prompt: &str,
+    target_lang: &str,
+) -> Result<serde_json::Value, LlmError> {
+    let messages = vec![
+        ChatMessage {
+            role: "system",
+            content: format!("You are a professional translator. Respond ONLY with a JSON object matching the requested format. Target language: {}", target_lang),
+        },
+        ChatMessage {
+            role: "user",
+            content: prompt.to_string(),
+        },
+    ];
+
+    let req = ChatRequest {
+        messages,
+        json_mode: true,
+    };
+
+    let response = chat(provider, req).await?;
+
+    // Parse JSON response
+    let json_str = extract_json_block(&response);
+    let parsed: serde_json::Value = serde_json::from_str(json_str)
+        .map_err(|e| LlmError::ParseError(e.to_string()))?;
+
+    Ok(parsed)
+}
+
+fn extract_json_block(text: &str) -> &str {
+    let trimmed = text.trim();
+    if let Some(start) = trimmed.find('{') {
+        if let Some(end) = trimmed.rfind('}') {
+            if end >= start {
+                return &trimmed[start..=end];
+            }
+        }
+    }
+    trimmed
+}
+
 pub async fn test_connection(provider: &LlmProvider) -> Result<String, LlmError> {
     let req = ChatRequest {
         messages: vec![

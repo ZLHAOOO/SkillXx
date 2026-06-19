@@ -15,4 +15,5 @@ export const defaultPreferences: UserPreferences = {
   github_token: "",
   skill_display_name_lang: "original",
   skill_display_desc_lang: "original",
+  pinned_keys: [],
 };

@@ -26,8 +26,8 @@ interface UseSkillActionsReturn {
 }
 
 export function useSkillActions({
-  skills,
-  config,
+  skills: _skills,
+  config: _config,
   addToast,
   refreshData,
   t,
@@ -39,7 +39,7 @@ export function useSkillActions({
   const handleCreateSkill = useCallback(async (name: string, description: string) => {
     setCreating(true);
     try {
-      const newSkill = await invoke<Skill>("create_skill", {
+      await invoke<Skill>("create_skill", {
         name,
         description: description || null,
       });
