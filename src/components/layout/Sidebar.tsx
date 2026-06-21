@@ -6,11 +6,11 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { checkUpdate } from "@/services/updater";
 import { UpdateInfo } from "@/types";
 import { getSidebarChromeMetrics } from "./sidebarChrome";
-import { Sparkles, Bot, Store, Cog, type LucideIcon } from "lucide-react";
+import { Sparkles, Bot, Store, Cog, Cpu, type LucideIcon } from "lucide-react";
 
 interface NavItem {
   path: string;
-  labelKey: "nav.skills" | "nav.agents" | "nav.marketplace" | "nav.settings";
+  labelKey: "nav.skills" | "nav.agents" | "nav.marketplace" | "nav.llmModel" | "nav.settings";
   icon: LucideIcon;
 }
 
@@ -18,6 +18,7 @@ const navItems: NavItem[] = [
   { path: "/", labelKey: "nav.skills", icon: Sparkles },
   { path: "/tools", labelKey: "nav.agents", icon: Bot },
   { path: "/marketplace", labelKey: "nav.marketplace", icon: Store },
+  { path: "/llm-model", labelKey: "nav.llmModel", icon: Cpu },
   { path: "/settings", labelKey: "nav.settings", icon: Cog },
 ];
 

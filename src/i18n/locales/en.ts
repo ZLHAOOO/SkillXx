@@ -31,6 +31,7 @@ export const en = {
     skills: "Skills",
     agents: "Agents",
     marketplace: "Marketplace",
+    llmModel: "LLM Model",
     feedback: "Feedback",
     polls: "Polls",
     settings: "Settings",

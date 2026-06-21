@@ -31,6 +31,7 @@ export const zh = {
     skills: "技能库",
     agents: "智能体",
     marketplace: "市 场",
+    llmModel: "大模型",
     feedback: "反 馈",
     polls: "投 票",
     settings: "设 置",
