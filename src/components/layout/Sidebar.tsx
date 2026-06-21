@@ -15,10 +15,10 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: "/", labelKey: "nav.skills", icon: Sparkles },
   { path: "/tools", labelKey: "nav.agents", icon: Bot },
-  { path: "/marketplace", labelKey: "nav.marketplace", icon: Store },
+  { path: "/", labelKey: "nav.skills", icon: Sparkles },
   { path: "/llm-model", labelKey: "nav.llmModel", icon: Cpu },
+  { path: "/marketplace", labelKey: "nav.marketplace", icon: Store },
   { path: "/settings", labelKey: "nav.settings", icon: Cog },
 ];
 
