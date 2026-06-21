@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { Layout } from "@/components/layout/Layout";
+import { MinimalLayout } from "@/components/layout/MinimalLayout";
 import { Skills } from "@/pages/Skills";
 import { Tools } from "@/pages/Tools";
 import { Marketplace } from "@/pages/Marketplace";
 import { Settings } from "@/pages/Settings";
 import { EditorPage } from "@/pages/Editor";
+import { LlmModel } from "@/pages/LlmModel";
 import { Welcome } from "@/pages/Welcome";
 import { useInitialization } from "@/hooks/useInitialization";
 import { useScrollIndicator } from "@/hooks/useScrollIndicator";
@@ -120,7 +122,10 @@ function App() {
                 <Route path="marketplace" element={<Marketplace />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
-              <Route path="/editor" element={<EditorPage />} />
+              <Route element={<MinimalLayout />}>
+                <Route path="llm-model" element={<LlmModel />} />
+                <Route path="/editor" element={<EditorPage />} />
+              </Route>
             </Routes>
             <ToastContainer toasts={toasts} onRemove={removeToast} />
           </SkillTranslationProvider>

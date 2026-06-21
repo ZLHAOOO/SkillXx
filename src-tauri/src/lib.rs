@@ -14,13 +14,16 @@ use commands::{
     get_cached_text_translation, get_config, get_llm_provider, get_marketplace_sources,
     get_tool_status, import_skills_to_hub, install_cli_tool, install_from_platform,
     install_marketplace_skill, install_marketplace_skill_by_ref, install_skill_package_from_path,
-    is_initialized, list_skill_packages, list_skills, mark_initialized, open_in_editor,
-    read_directory_tree, read_file, refresh_editors, refresh_skills, refresh_tools,
-    remove_skill_package, save_config, save_llm_provider, save_tools_order, scan_existing_skills,
-    search_marketplace, set_tool_enabled, submit_feedback, sync_marketplace_installed_skills,
-    test_llm_provider, toggle_marketplace_source, translate_skill, translate_skill_files,
-    translate_skill_name_desc, translate_skill_name_desc_custom, translate_skill_names_batch,
-    translate_text_content, update_custom_tool, update_tool_paths, write_file,
+    is_initialized, list_skill_packages, list_skills, mark_initialized, multi_switch_llm_provider,
+    open_in_editor, read_directory_tree, read_file, refresh_editors, refresh_skills, refresh_tools,
+    remove_skill_package, save_config, save_llm_provider, save_llm_provider_multi,
+    save_tools_order, scan_existing_skills, search_marketplace, set_tool_enabled, submit_feedback,
+    sync_marketplace_installed_skills, test_llm_provider, toggle_marketplace_source, translate_skill,
+    translate_skill_files, translate_skill_name_desc, translate_skill_name_desc_custom,
+    translate_skill_names_batch, translate_text_content, update_custom_tool, update_tool_paths,
+    write_file,
+    delete_llm_provider, get_active_provider, get_llm_providers, get_tool_bindings,
+    save_tool_bindings,
 };
 use services::{AppCache, MarketplaceCache};
 use tauri::{Emitter, Manager};
@@ -135,6 +138,13 @@ pub fn run() {
             install_cli_tool,
             save_tools_order,
             translate_skill_name_desc_custom,
+            get_llm_providers,
+            save_llm_provider_multi,
+            delete_llm_provider,
+            multi_switch_llm_provider,
+            get_active_provider,
+            get_tool_bindings,
+            save_tool_bindings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -58,6 +58,28 @@ pub struct LlmProvider {
     pub timeout_secs: Option<u32>,
 }
 
+/// Multi-provider config entry (new with ClaudeCode refactor)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LlmProviderConfig {
+    pub id: String,
+    pub name: String,
+    pub base_url: String,
+    pub api_key: String,
+    pub model: String,
+    #[serde(default)]
+    pub models: Vec<String>,
+    #[serde(default)]
+    pub api_format: String,
+    #[serde(default)]
+    pub temperature: Option<f32>,
+    #[serde(default)]
+    pub max_tokens: Option<u32>,
+    #[serde(default)]
+    pub timeout_secs: Option<u32>,
+    #[serde(default)]
+    pub website_url: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct SkillMetadata {
     #[serde(default)]
@@ -228,6 +250,13 @@ pub struct AppConfig {
     pub active_project_id: Option<String>,
     #[serde(default)]
     pub llm_provider: Option<LlmProvider>,
+    /// Multi-provider support (new)
+    #[serde(default)]
+    pub llm_providers: Vec<LlmProviderConfig>,
+    #[serde(default)]
+    pub active_provider_id: Option<String>,
+    #[serde(default)]
+    pub tool_bindings: std::collections::HashMap<String, String>,
     #[serde(default)]
     pub auth_session: Option<AuthSession>,
     #[serde(default)]
@@ -269,6 +298,9 @@ impl Default for AppConfig {
             projects: Vec::new(),
             active_project_id: None,
             llm_provider: None,
+            llm_providers: Vec::new(),
+            active_provider_id: None,
+            tool_bindings: std::collections::HashMap::new(),
             auth_session: None,
             initialized: false,
             tools_order: Vec::new(),

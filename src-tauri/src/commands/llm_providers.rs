@@ -1,0 +1,109 @@
+use crate::models::config::LlmProviderConfig;
+use crate::services::config_manager::ConfigManager;
+use serde::{Deserialize, Serialize};
+
+#[tauri::command]
+pub fn get_llm_providers() -> Result<Vec<LlmProviderConfig>, String> {
+    let manager = ConfigManager::new();
+    let config = manager.load()?;
+    let mut providers = config.llm_providers;
+    for p in &mut providers {
+        if p.api_format.is_empty() {
+            p.api_format = "openai".to_string();
+        }
+    }
+    Ok(providers)
+}
+
+#[tauri::command]
+pub fn save_llm_provider_multi(mut provider: LlmProviderConfig) -> Result<LlmProviderConfig, String> {
+    // Normalize: default to openai if empty
+    if provider.api_format.is_empty() {
+        provider.api_format = "openai".to_string();
+    }
+    let manager = ConfigManager::new();
+    let mut config = manager.load()?;
+
+    // Check if provider with same id exists, update or push
+    if let Some(pos) = config.llm_providers.iter().position(|p| p.id == provider.id) {
+        config.llm_providers[pos] = provider.clone();
+    } else {
+        config.llm_providers.push(provider.clone());
+    }
+
+    // If this is the first provider, set it as active
+    if config.active_provider_id.is_none() {
+        config.active_provider_id = Some(provider.id.clone());
+    }
+
+    manager.save(&config)?;
+    Ok(provider)
+}
+
+#[tauri::command]
+pub fn delete_llm_provider(id: String) -> Result<bool, String> {
+    let manager = ConfigManager::new();
+    let mut config = manager.load()?;
+    config.llm_providers.retain(|p| p.id != id);
+
+    // If deleted provider was active, clear or switch
+    if config.active_provider_id == Some(id.clone()) {
+        config.active_provider_id = config.llm_providers.first().map(|p| p.id.clone());
+    }
+
+    manager.save(&config)?;
+    Ok(true)
+}
+
+#[tauri::command]
+pub fn multi_switch_llm_provider(id: String) -> Result<bool, String> {
+    let manager = ConfigManager::new();
+    let mut config = manager.load()?;
+
+    // Verify provider exists
+    if !config.llm_providers.iter().any(|p| p.id == id) {
+        return Err(format!("Provider {} not found", id));
+    }
+
+    config.active_provider_id = Some(id);
+    manager.save(&config)?;
+    Ok(true)
+}
+
+#[tauri::command]
+pub fn get_tool_bindings() -> Result<std::collections::HashMap<String, String>, String> {
+    let manager = ConfigManager::new();
+    let config = manager.load()?;
+    Ok(config.tool_bindings)
+}
+
+#[tauri::command]
+pub fn save_tool_bindings(
+    bindings: std::collections::HashMap<String, String>,
+) -> Result<bool, String> {
+    let manager = ConfigManager::new();
+    let mut config = manager.load()?;
+    config.tool_bindings = bindings;
+    manager.save(&config)?;
+    Ok(true)
+}
+
+#[tauri::command]
+pub fn get_active_provider() -> Result<Option<LlmProviderConfig>, String> {
+    let manager = ConfigManager::new();
+    let config = manager.load()?;
+
+    let mut provider = if let Some(active_id) = &config.active_provider_id {
+        config.llm_providers.iter().find(|p| &p.id == active_id).cloned()
+    } else {
+        config.llm_providers.first().cloned()
+    };
+
+    if let Some(ref mut p) = provider {
+        if p.api_format.is_empty() {
+            p.api_format = "openai".to_string();
+        }
+    }
+
+    Ok(provider)
+}
