@@ -6,7 +6,8 @@ import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Spinner, SkeletonList } from "@/components/ui/loading";
-import { Plus, Download, X, ChevronDown, ExternalLink, Pencil } from "lucide-react";
+import { Plus, Download, X, ChevronDown, ExternalLink, Pencil, MoreHorizontal } from "lucide-react";
+import { getProviderIcon, getProviderInitial } from "@/utils/providerIcon";
 
 export interface LlmProviderConfig {
   id: string;
@@ -142,6 +143,46 @@ const PROVIDER_PRESETS: {
 
 const PRESET_VISIBLE_COUNT = 10; // 2 rows × 5 cols
 
+function ProviderLogo({ name, id, size = 32 }: { name: string; id?: string; size?: number }) {
+  const iconPath = getProviderIcon(name, id);
+  const [failed, setFailed] = useState(false);
+
+  if (iconPath && !failed) {
+    return (
+      <img
+        src={iconPath}
+        alt={name}
+        width={size}
+        height={size}
+        style={{ borderRadius: "6px", objectFit: "contain", flexShrink: 0 }}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
+  // Fallback: first letter placeholder
+  const initial = getProviderInitial(name);
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "6px",
+        backgroundColor: "var(--muted)",
+        color: "var(--muted-foreground)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: size * 0.4,
+        fontWeight: 700,
+        flexShrink: 0,
+      }}
+    >
+      {initial}
+    </div>
+  );
+}
+
 export function ProviderManager() {
   const { t } = useTranslation();
   const { addToast, removeToast } = useToast();
@@ -158,6 +199,7 @@ export function ProviderManager() {
   const [fetchedModels, setFetchedModels] = useState<{ id: string; ownedBy: string | null }[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingWebsite, setEditingWebsite] = useState(false);
   const [tempWebsite, setTempWebsite] = useState("");
 
@@ -179,6 +221,19 @@ export function ProviderManager() {
   useEffect(() => {
     fetchProviders();
   }, [fetchProviders]);
+
+  // 点击外部关闭菜单
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-provider-menu]")) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openMenuId]);
 
   const handleAdd = () => {
     setEditingId(null);
@@ -467,180 +522,144 @@ export function ProviderManager() {
             <div
               key={provider.id}
               style={{
-                borderRadius: "8px",
+                borderRadius: "10px",
                 border: "1px solid var(--border)",
-                backgroundColor: "var(--background)",
+                backgroundColor: "var(--secondary)",
                 padding: "16px",
+                position: "relative",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  gap: "12px",
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      marginBottom: "4px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontWeight: 600,
-                        fontSize: "15px",
-                        color: "var(--foreground)",
-                      }}
-                    >
-                      {provider.name}
-                    </span>
-                    {provider.website_url && (
-                      <a
-                        href={provider.website_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          fontSize: "11px",
-                          color: "var(--primary)",
-                          textDecoration: "none",
-                          opacity: 0.8,
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-                        onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.8")}
-                      >
-                        🔗 {t("llmProviders.website")}
-                      </a>
-                    )}
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        padding: "1px 6px",
-                        borderRadius: "4px",
-                        backgroundColor: "var(--muted)",
-                        color: "var(--muted-foreground)",
-                      }}
-                    >
-                      {provider.api_format === "anthropic" ? "Anthropic" : "OpenAI"}
-                    </span>
-                    {provider.id === activeProviderId && (
-                      <Badge variant="default" style={{ fontSize: "11px" }}>
-                        {t("llmProviders.active")}
-                      </Badge>
-                    )}
-                  </div>
+              {/* 名称行 */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                <ProviderLogo name={provider.name} id={provider.id} size={28} />
+                <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--foreground)" }}>
+                  {provider.name}
+                </span>
+                {provider.id === activeProviderId && (
+                  <Badge variant="default" style={{ fontSize: "11px" }}>
+                    {t("llmProviders.active")}
+                  </Badge>
+                )}
+              </div>
 
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "var(--foreground)",
-                      fontWeight: 500,
-                      marginBottom: "2px",
-                    }}
-                  >
-                    {provider.model}
-                  </div>
-
-                  {provider.models && provider.models.length > 0 && (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "4px",
-                        marginTop: "4px",
-                      }}
-                    >
-                      {provider.models.map((m) => (
-                        <span
-                          key={m}
-                          style={{
-                            fontSize: "11px",
-                            padding: "1px 5px",
-                            borderRadius: "3px",
-                            backgroundColor: "var(--secondary)",
-                            color: "var(--muted-foreground)",
-                          }}
-                        >
-                          {m}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div
+              {/* 信息行 */}
+              <div style={{ fontSize: "13px", color: "var(--muted-foreground)", lineHeight: 1.6 }}>
+                <div>{t("llmProviders.model")}: {provider.model}</div>
+                {provider.website_url && (
+                  <a
+                    href={provider.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style={{
                       fontSize: "12px",
-                      color: "var(--muted-foreground)",
+                      color: "var(--primary)",
+                      textDecoration: "none",
                       opacity: 0.8,
+                      display: "inline-block",
+                      marginTop: "2px",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.8")}
+                  >
+                    🔗 {provider.website_url}
+                  </a>
+                )}
+                <div style={{ wordBreak: "break-all", marginTop: "2px" }}>{provider.base_url}</div>
+              </div>
+
+              {/* 右上角操作按钮 */}
+              <div style={{ position: "absolute", top: "12px", right: "12px" }} data-provider-menu>
+                <button
+                  onClick={() => setOpenMenuId(openMenuId === provider.id ? null : provider.id)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "4px",
+                    borderRadius: "6px",
+                    color: "var(--muted-foreground)",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--muted)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <MoreHorizontal style={{ width: 18, height: 18 }} />
+                </button>
+                {openMenuId === provider.id && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      right: 0,
+                      marginTop: "4px",
+                      backgroundColor: "var(--background)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      zIndex: 50,
+                      minWidth: "120px",
+                      overflow: "hidden",
                     }}
                   >
-                    {provider.base_url}
-                  </div>
-
-                  {provider.models && provider.models.length > 0 && (
-                    <div
+                    {provider.id !== activeProviderId && (
+                      <button
+                        onClick={() => { handleSwitch(provider.id); setOpenMenuId(null); }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          padding: "8px 14px",
+                          fontSize: "13px",
+                          textAlign: "left",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "var(--foreground)",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--muted)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      >
+                        {t("llmProviders.switch")}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { handleEdit(provider); setOpenMenuId(null); }}
                       style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "4px",
-                        marginTop: "4px",
+                        display: "block",
+                        width: "100%",
+                        padding: "8px 14px",
+                        fontSize: "13px",
+                        textAlign: "left",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--foreground)",
                       }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--muted)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
-                      {provider.models.map((m) => (
-                        <span
-                          key={m}
-                          style={{
-                            fontSize: "11px",
-                            padding: "1px 5px",
-                            borderRadius: "3px",
-                            backgroundColor: "var(--secondary)",
-                            color: "var(--muted-foreground)",
-                          }}
-                        >
-                          {m}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    flexShrink: 0,
-                  }}
-                >
-                  {provider.id !== activeProviderId && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSwitch(provider.id)}
+                      {t("common.edit")}
+                    </button>
+                    <button
+                      onClick={() => { handleDelete(provider.id); setOpenMenuId(null); }}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        padding: "8px 14px",
+                        fontSize: "13px",
+                        textAlign: "left",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--destructive)",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--muted)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
-                      {t("llmProviders.switch")}
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEdit(provider)}
-                  >
-                    {t("common.edit")}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(provider.id)}
-                    style={{ color: "var(--destructive)" }}
-                  >
-                    {t("common.delete")}
-                  </Button>
-                </div>
+                      {t("common.delete")}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

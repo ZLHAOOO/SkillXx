@@ -1,0 +1,236 @@
+[
+  {
+    "id": "anthropic",
+    "name": "Anthropic",
+    "base_url_openai": "",
+    "base_url_anthropic": "https://api.anthropic.com",
+    "model": "claude-sonnet-4-20250514",
+    "website_url": "https://www.anthropic.com/claude-code",
+    "icon": "anthropic.svg"
+  },
+  {
+    "id": "openai",
+    "name": "OpenAI",
+    "base_url_openai": "https://api.openai.com/v1",
+    "base_url_anthropic": "",
+    "model": "gpt-5.5",
+    "website_url": "https://platform.openai.com",
+    "icon": "openai.svg"
+  },
+  {
+    "id": "deepseek",
+    "name": "DeepSeek",
+    "base_url_openai": "https://api.deepseek.com",
+    "base_url_anthropic": "https://api.deepseek.com/anthropic",
+    "model": "deepseek-v4-pro",
+    "website_url": "https://platform.deepseek.com",
+    "icon": "deepseek.svg"
+  },
+  {
+    "id": "kimi",
+    "name": "Kimi",
+    "base_url_openai": "https://api.moonshot.cn/v1",
+    "base_url_anthropic": "https://api.moonshot.cn/anthropic",
+    "model": "kimi-k2.7-code",
+    "website_url": "https://platform.moonshot.cn",
+    "icon": "kimi-cn.svg"
+  },
+  {
+    "id": "minimax",
+    "name": "MiniMax",
+    "base_url_openai": "https://api.minimaxi.com/v1",
+    "base_url_anthropic": "https://api.minimaxi.com/anthropic",
+    "model": "MiniMax-M2.7",
+    "website_url": "https://platform.minimaxi.com",
+    "icon": "minimax-cn.svg"
+  },
+  {
+    "id": "glm",
+    "name": "GLM",
+    "base_url_openai": "https://open.bigmodel.cn/v4",
+    "base_url_anthropic": "https://open.bigmodel.cn/api/anthropic",
+    "model": "glm-5.1",
+    "website_url": "https://open.bigmodel.cn",
+    "icon": "glm.svg"
+  },
+  {
+    "id": "volcengine",
+    "name": "火山引擎",
+    "base_url_openai": "https://ark.cn-beijing.volces.com/api/coding/v3",
+    "base_url_anthropic": "https://ark.cn-beijing.volces.com/api/coding",
+    "model": "ark-code-latest",
+    "website_url": "https://www.volcengine.com",
+    "icon": "volcengine.svg"
+  },
+  {
+    "id": "bailian",
+    "name": "阿里百炼",
+    "base_url_openai": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "base_url_anthropic": "https://dashscope.aliyuncs.com/apps/anthropic",
+    "model": "qwen3-coder-plus",
+    "website_url": "https://bailian.console.aliyun.com",
+    "icon": "qwen.svg"
+  },
+  {
+    "id": "mimo",
+    "name": "MiMo",
+    "base_url_openai": "https://api.xiaomimimo.com/v1",
+    "base_url_anthropic": "https://api.xiaomimimo.com/anthropic",
+    "model": "mimo-v2.5-pro",
+    "website_url": "https://platform.xiaomimimo.com",
+    "icon": "xiaomi.svg"
+  },
+  {
+    "id": "qwen",
+    "name": "Qwen",
+    "base_url_openai": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "base_url_anthropic": "",
+    "model": "qwen3-coder-plus",
+    "website_url": "https://dashscope.aliyuncs.com",
+    "icon": "qwen.svg"
+  },
+  {
+    "id": "gemini",
+    "name": "Gemini",
+    "base_url_openai": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "base_url_anthropic": "",
+    "model": "gemini-3-flash-preview",
+    "website_url": "https://aistudio.google.com",
+    "icon": "gemini.svg"
+  },
+  {
+    "id": "grok",
+    "name": "Grok",
+    "base_url_openai": "https://api.x.ai/v1",
+    "base_url_anthropic": "",
+    "model": "grok-4",
+    "website_url": "https://x.ai",
+    "icon": "grok.svg"
+  },
+  {
+    "id": "groq",
+    "name": "Groq",
+    "base_url_openai": "https://api.groq.com/openai/v1",
+    "base_url_anthropic": "",
+    "model": "qwen3-32b",
+    "website_url": "https://groq.com",
+    "icon": "groq.svg"
+  },
+  {
+    "id": "mistral",
+    "name": "Mistral",
+    "base_url_openai": "https://api.mistral.ai/v1",
+    "base_url_anthropic": "",
+    "model": "mistral-medium-2508",
+    "website_url": "https://mistral.ai",
+    "icon": "mistral.svg"
+  },
+  {
+    "id": "cohere",
+    "name": "Cohere",
+    "base_url_openai": "https://api.cohere.com/v1",
+    "base_url_anthropic": "",
+    "model": "command-r-plus-08-2025",
+    "website_url": "https://cohere.com",
+    "icon": "cohere.svg"
+  },
+  {
+    "id": "perplexity",
+    "name": "Perplexity",
+    "base_url_openai": "https://api.perplexity.ai",
+    "base_url_anthropic": "",
+    "model": "sonar-pro",
+    "website_url": "https://perplexity.ai",
+    "icon": "perplexity.svg"
+  },
+  {
+    "id": "openrouter",
+    "name": "OpenRouter",
+    "base_url_openai": "https://openrouter.ai/api/v1",
+    "base_url_anthropic": "",
+    "model": "openrouter/auto",
+    "website_url": "https://openrouter.ai",
+    "icon": "openrouter.svg"
+  },
+  {
+    "id": "nvidia",
+    "name": "NVIDIA",
+    "base_url_openai": "https://integrate.api.nvidia.com/v1",
+    "base_url_anthropic": "",
+    "model": "nvidia/llama-3.1-nemotron-70b-instruct",
+    "website_url": "https://integrate.api.nvidia.com",
+    "icon": "nvidia.svg"
+  },
+  {
+    "id": "longcat",
+    "name": "LongCat",
+    "base_url_openai": "https://api.longcat.chat/v1",
+    "base_url_anthropic": "",
+    "model": "longcat-v3",
+    "website_url": "https://longcat.chat/platform",
+    "icon": "longcat.svg"
+  },
+  {
+    "id": "stepfun",
+    "name": "阶跃星辰",
+    "base_url_openai": "https://api.stepfun.com/v1",
+    "base_url_anthropic": "",
+    "model": "step-3",
+    "website_url": "https://www.stepfun.com",
+    "icon": "stepfun.svg"
+  },
+  {
+    "id": "hunyuan",
+    "name": "腾讯混元",
+    "base_url_openai": "https://api.hunyuan.cloud.tencent.com/v1",
+    "base_url_anthropic": "",
+    "model": "hunyuan-turbos-latest",
+    "website_url": "https://hunyuan.tencent.com",
+    "icon": "hunyuan.svg"
+  },
+  {
+    "id": "bai",
+    "name": "百度千帆",
+    "base_url_openai": "https://qianfan.baidubce.com/v2",
+    "base_url_anthropic": "",
+    "model": "deepseek-v3",
+    "website_url": "https://qianfan.baidubce.com",
+    "icon": "bai.svg"
+  },
+  {
+    "id": "ernie",
+    "name": "文心一言",
+    "base_url_openai": "https://qianfan.baidubce.com/v2",
+    "base_url_anthropic": "",
+    "model": "ernie-4.0-8k",
+    "website_url": "https://yiyan.baidu.com",
+    "icon": "ernie.svg"
+  },
+  {
+    "id": "worldrouter",
+    "name": "WorldRouter",
+    "base_url_openai": "https://api.worldrouter.io/v1",
+    "base_url_anthropic": "",
+    "model": "auto",
+    "website_url": "https://worldrouter.io",
+    "icon": "worldrouter.svg"
+  },
+  {
+    "id": "zai",
+    "name": "Z.ai",
+    "base_url_openai": "https://api.z.ai/v1",
+    "base_url_anthropic": "",
+    "model": "glm-4.5",
+    "website_url": "https://z.ai",
+    "icon": "zai.svg"
+  },
+  {
+    "id": "agnes",
+    "name": "Agnes",
+    "base_url_openai": "https://api.agnes.chat/v1",
+    "base_url_anthropic": "",
+    "model": "agnes-3",
+    "website_url": "https://agnes.chat",
+    "icon": "agnes.png"
+  }
+]
