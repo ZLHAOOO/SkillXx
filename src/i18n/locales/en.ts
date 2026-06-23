@@ -441,8 +441,6 @@ export const en = {
     // AI Translation
     llmTitle: "AI Translation",
     llmDesc: "Configure an OpenAI-compatible LLM to translate skills",
-    llmNoApiHint: "Don't have an API key?",
-    llmNoApiCta: "Try YuTou API",
     llmBaseUrl: "Base URL",
     llmBaseUrlHint: "OpenAI-compatible endpoint",
     llmApiKey: "API Key",

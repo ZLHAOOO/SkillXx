@@ -668,44 +668,6 @@ export function Settings() {
                 ]}
               />
             </SettingsRow>
-
-            {/* Batch translate all skill names */}
-            <SettingsRow
-              label={t("skills.batchTranslateNames")}
-              description={t("skills.batchTranslateNamesDesc")}
-              isLast={true}
-            >
-              <button
-                type="button"
-                onClick={async () => {
-                  const confirmed = window.confirm(
-                    t("skills.batchTranslateNamesConfirm").replace("{count}", "all")
-                  );
-                  if (!confirmed) return;
-                  try {
-                    addToast(t("skills.batchTranslating"), "info");
-                    // We don't have skills list here, so we invoke without instanceIds filter
-                    // Backend will translate all skills
-                    addToast(t("skills.batchTranslateNamesDoneAll"), "success");
-                  } catch {
-                    addToast(t("skills.batchTranslateFailed"), "error");
-                  }
-                }}
-                style={{
-                  padding: "8px 16px",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "var(--foreground)",
-                  backgroundColor: "var(--background)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  transition: "opacity 0.15s",
-                }}
-              >
-                {t("skills.batchTranslateNames")}
-              </button>
-            </SettingsRow>
           </SettingsCard>
 
           {/* AI Translation */}
@@ -1709,26 +1671,6 @@ function LlmProviderSection({ provider, onChange, addToast, t }: LlmProviderSect
           >
             {t("settings.llmClearCache")}
           </button>
-          <div style={{ fontSize: "12px", color: "var(--muted-foreground)" }}>
-            <span>{t("settings.llmNoApiHint")} </span>
-            <button
-              type="button"
-              onClick={() => {
-                void openUrl("https://yutou.virtualgoods.top");
-              }}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--primary)",
-                cursor: "pointer",
-                padding: 0,
-                fontSize: "12px",
-                textDecoration: "underline",
-              }}
-            >
-              {t("settings.llmNoApiCta")} →
-            </button>
-          </div>
         </div>
       </div>
     </div>

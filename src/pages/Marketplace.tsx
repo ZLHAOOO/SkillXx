@@ -67,6 +67,7 @@ export function Marketplace() {
   const { t, language } = useTranslation();
   const translation = useSkillTranslation();
   const [translatingMarketIds, setTranslatingMarketIds] = useState<Set<string>>(new Set());
+  const [marketViewMode, setMarketViewMode] = useState<Set<string>>(new Set());
   const { toasts, addToast, removeToast } = useToast();
   const [skills, setSkills] = useState<MarketplaceSkill[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -553,8 +554,12 @@ export function Marketplace() {
       if (!force) {
         const existing = translation.getTranslation(key);
         if (existing) {
-          const isTranslated = translation.getView(key) === "translated";
-          translation.setView(key, isTranslated ? "original" : "translated");
+          const isTranslated = marketViewMode.has(skill.id);
+          setMarketViewMode((prev) => {
+            const next = new Set(prev);
+            isTranslated ? next.delete(skill.id) : next.add(skill.id);
+            return next;
+          });
           return;
         }
       }
@@ -587,7 +592,7 @@ export function Marketplace() {
         });
       }
     },
-    [translation, language, addToast, t],
+    [translation, language, addToast, t, marketViewMode],
   );
 
   const handleOpenExternalLink = useCallback(async (event: MouseEvent, url: string) => {
@@ -936,7 +941,7 @@ export function Marketplace() {
                 const translationKey = makeTranslationKey(skill.id, language);
                 const cachedTranslation = translation.getTranslation(translationKey);
                 const showingTranslation =
-                  cachedTranslation != null && translation.getView(translationKey) === "translated";
+                  cachedTranslation != null && marketViewMode.has(skill.id);
                 const displayedName = showingTranslation && cachedTranslation
                   ? cachedTranslation.name
                   : skill.name;

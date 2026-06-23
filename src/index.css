@@ -232,3 +232,81 @@
 .animate-slide-down {
   animation: slideDown 0.2s ease-out;
 }
+
+/* ========================================
+   Glassmorphism (毛玻璃)
+   Gray canvas + frosted content card + translucent sidebar.
+   ======================================== */
+
+/* --- Light mode --- */
+
+/* Sidebar: no background — blends seamlessly with the body canvas */
+.glass-sidebar {
+  background: none;
+}
+
+/* Content card: frosted glass floating above the sidebar & body */
+.glass-content {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.03),
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 8px 16px rgba(0, 0, 0, 0.06),
+    0 24px 48px rgba(0, 0, 0, 0.06);
+}
+
+/* --- Dark mode --- */
+
+.dark .glass-sidebar {
+  background: none;
+}
+
+.dark .glass-content {
+  background: rgba(40, 40, 44, 0.82);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 8px 16px rgba(0, 0, 0, 0.3),
+    0 24px 48px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Body: light gray canvas --- */
+body {
+  background: #f0f0f3;
+}
+
+.dark body {
+  background: #1a1a1f;
+}
+
+/* --- Scrollbar inside glass panels --- */
+.glass-content .scrolling::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.dark .glass-content .scrolling::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.glass-content .scrolling::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.dark .glass-content .scrolling::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.glass-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
+}
+
+.dark .glass-content {
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}

@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "../i18n";
+import type { AppConfig } from "@/types";
 
 export interface SkillTranslationOutput {
   name: string;
@@ -62,12 +63,9 @@ export interface SkillFilesTranslationResult {
   failed: SkillFileTranslationFailure[];
 }
 
-type ViewMode = "translated" | "original";
-
 interface TranslationStore {
   results: Map<string, SkillTranslationOutput>;
   fileResults: Map<string, SkillTranslationOutput>;
-  view: Map<string, ViewMode>;
   inFlight: Map<string, Promise<SkillTranslationOutput>>;
   fileInFlight: Map<string, Promise<SkillFilesTranslationResult>>;
 }
@@ -94,8 +92,6 @@ interface SkillTranslationContextValue {
   ) => Promise<SkillFilesTranslationResult>;
   getTranslation: (key: string) => SkillTranslationOutput | null;
   getFileTranslation: (instanceId: string, targetLang: string, path: string) => SkillTranslationOutput | null;
-  getView: (key: string) => ViewMode;
-  setView: (key: string, mode: ViewMode) => void;
   preloadCachedSkills: (instanceIds: string[], targetLang: string) => Promise<void>;
   preloadCachedMarketplace: (
     inputs: MarketplaceTranslationInput[],
@@ -111,11 +107,36 @@ function normalizeTranslationPath(path: string): string {
   return path.replace(/\\/g, "/").replace(/^\.\/+/, "").replace(/^\/+/, "");
 }
 
+async function syncTranslationToMetadata(
+  result: SkillTranslationOutput,
+  instanceId: string,
+  targetLang: string
+): Promise<void> {
+  const config = await invoke<AppConfig>("get_config");
+  const metadataKey = `skill:${instanceId}`;
+  const nextSkillMetadata = { ...config.skill_metadata };
+  const existing = nextSkillMetadata[metadataKey] || {};
+
+  if (targetLang === "zh") {
+    existing.translated_name_zh = result.name;
+    existing.translated_desc_zh = result.description;
+    existing.translated_name_en = null;
+    existing.translated_desc_en = null;
+  } else {
+    existing.translated_name_en = result.name;
+    existing.translated_desc_en = result.description;
+    existing.translated_name_zh = null;
+    existing.translated_desc_zh = null;
+  }
+
+  nextSkillMetadata[metadataKey] = existing;
+  await invoke("save_config", { config: { ...config, skill_metadata: nextSkillMetadata } });
+}
+
 export function SkillTranslationProvider({ children }: { children: ReactNode }) {
   const storeRef = useRef<TranslationStore>({
     results: new Map(),
     fileResults: new Map(),
-    view: new Map(),
     inFlight: new Map(),
     fileInFlight: new Map(),
   });
@@ -160,8 +181,12 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
           force,
         });
         storeRef.current.results.set(key, result);
-        storeRef.current.view.set(key, "translated");
         bump();
+        try {
+          await syncTranslationToMetadata(result, instanceId, targetLang);
+        } catch {
+          // metadata sync failure shouldn't block the translation result
+        }
         return result;
       })().finally(() => {
         storeRef.current.inFlight.delete(inflightKey);
@@ -191,7 +216,6 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
           force,
         });
         storeRef.current.results.set(key, result);
-        storeRef.current.view.set(key, "translated");
         bump();
         return result;
       })().finally(() => {
@@ -222,8 +246,36 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
           instanceIds,
           targetLang,
         });
-        for (const id of result.succeeded) {
-          storeRef.current.view.set(cacheKey(id, targetLang), "translated");
+        // Sync batch results to metadata so they persist across refreshes
+        try {
+          const config = await invoke<AppConfig>("get_config");
+          const nextSkillMetadata = { ...config.skill_metadata };
+          let changed = false;
+          for (const id of result.succeeded) {
+            const cached = storeRef.current.results.get(cacheKey(id, targetLang));
+            if (cached) {
+              const metadataKey = `skill:${id}`;
+              const existing = nextSkillMetadata[metadataKey] || {};
+              if (targetLang === "zh") {
+                existing.translated_name_zh = cached.name;
+                existing.translated_desc_zh = cached.description;
+                existing.translated_name_en = null;
+                existing.translated_desc_en = null;
+              } else {
+                existing.translated_name_en = cached.name;
+                existing.translated_desc_en = cached.description;
+                existing.translated_name_zh = null;
+                existing.translated_desc_zh = null;
+              }
+              nextSkillMetadata[metadataKey] = existing;
+              changed = true;
+            }
+          }
+          if (changed) {
+            await invoke("save_config", { config: { ...config, skill_metadata: nextSkillMetadata } });
+          }
+        } catch {
+          // metadata sync failure shouldn't block the batch result
         }
         bump();
         return result;
@@ -274,7 +326,6 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
             );
             if (normalizedPath.toLowerCase().endsWith("skill.md")) {
               storeRef.current.results.set(key, file.translation);
-              storeRef.current.view.set(key, "translated");
             }
           }
           bump();
@@ -300,22 +351,11 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
     return storeRef.current.fileResults.get(fileCacheKey(instanceId, targetLang, path)) ?? null;
   }, []);
 
-  const getView = useCallback((key: string): ViewMode => {
-    return storeRef.current.view.get(key) ?? "original";
-  }, []);
-
-  const setView = useCallback(
-    (key: string, mode: ViewMode) => {
-      storeRef.current.view.set(key, mode);
-      bump();
-    },
-    [bump]
-  );
-
   const clearAll = useCallback(() => {
     storeRef.current.results.clear();
     storeRef.current.fileResults.clear();
-    storeRef.current.view.clear();
+    storeRef.current.inFlight.clear();
+    storeRef.current.fileInFlight.clear();
     bump();
   }, [bump]);
 
@@ -418,8 +458,6 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
     translateSkillFiles,
     getTranslation,
     getFileTranslation,
-    getView,
-    setView,
     preloadCachedSkills,
     preloadCachedMarketplace,
     clearAll,

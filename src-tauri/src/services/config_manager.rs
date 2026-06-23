@@ -107,11 +107,6 @@ impl ConfigManager {
             }
 
             let tags = Self::normalize_skill_tags(&item.tags);
-            if tags.is_empty() {
-                changed = true;
-                continue;
-            }
-
             let normalized_id = if trimmed_id.starts_with("global:")
                 || trimmed_id.starts_with("project:")
                 || trimmed_id.starts_with("group:")
@@ -122,8 +117,13 @@ impl ConfigManager {
                 format!("global:{}", trimmed_id)
             };
 
+            let normalized_item = SkillMetadata { tags, ..item.clone() };
+            if normalized_item.tags.is_empty() {
+                // Keep entries with empty tags (e.g. translation-only metadata)
+                // instead of dropping them entirely.
+            }
             if normalized
-                .insert(normalized_id, SkillMetadata { tags, ..item.clone() })
+                .insert(normalized_id, normalized_item)
                 .is_some()
             {
                 changed = true;

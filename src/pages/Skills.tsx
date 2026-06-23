@@ -24,7 +24,6 @@ import { defaultPreferences } from "@/constants/preferences";
 import { useTranslation, TranslationPath } from "@/i18n";
 import {
   useSkillTranslation,
-  makeTranslationKey,
 } from "@/hooks/useSkillTranslation";
 import { formatTranslationError } from "@/lib/formatTranslationError";
 import { generateTranslationPrompt } from "@/utils/skillTranslationPrompt";
@@ -257,9 +256,6 @@ export function Skills() {
   const skillMetadata = config?.skill_metadata;
   const listContainerRef = useRef<HTMLElement | null>(null);
   const hasRestoredScrollRef = useRef(false);
-
-  // Batch translate names state
-  const [translatingNames, setTranslatingNames] = useState(false);
 
   const handleOpenUnifiedItem = useCallback(async (item: UnifiedSkillListItem) => {
     if (!item.openPath) {
@@ -521,20 +517,25 @@ export function Skills() {
       const nameLang = config?.preferences?.skill_display_name_lang || "original";
       const descLang = config?.preferences?.skill_display_desc_lang || "original";
 
-      // 确定目标语言（用于AI翻译提示词）
-      // 如果设置是"original"，默认翻译成中文
-      const translateTargetLang = nameLang === "original" && descLang === "original"
-        ? "zh"
-        : (nameLang !== "original" ? nameLang : descLang);
+      // 分别判断名称和简介是否需要翻译
+      const shouldTranslateName = nameLang !== "original";
+      const shouldTranslateDesc = descLang !== "original";
 
-      // Generate translation prompt
+      // 确定 LLM 翻译的目标语言
+      const translateTargetLang = nameLang !== "original"
+        ? nameLang
+        : descLang !== "original"
+          ? descLang
+          : "zh";
+
+      // 只有需要翻译的字段才加入 prompt
       const prompt = generateTranslationPrompt({
         originalName: skill.name,
         originalDescription: skill.description || "",
         skillContent: skillContent || "",
         targetLang: translateTargetLang,
-        translateName: true,  // 总是翻译名称和描述
-        translateDesc: true,
+        translateName: shouldTranslateName,
+        translateDesc: shouldTranslateDesc,
       });
 
       // Call LLM for translation
@@ -545,10 +546,10 @@ export function Skills() {
 
       addToast(t("skills.aiTranslateSuccess"), "success");
       return {
-        name: result.name,
-        description: result.description,
-        targetNameLang: nameLang,
-        targetDescLang: descLang,
+        name: shouldTranslateName ? result.name : skill.name,
+        description: shouldTranslateDesc ? result.description : (skill.description || ""),
+        targetNameLang: shouldTranslateName ? nameLang : "original",
+        targetDescLang: shouldTranslateDesc ? descLang : "original",
       };
     } catch (err) {
       addToast(t("skills.aiTranslateFailed"), "error");
@@ -560,61 +561,6 @@ export function Skills() {
       };
     }
   }, [translation, config, addToast, t]);
-
-  // Batch translate skill names and descriptions
-  const handleBatchTranslateNames = useCallback(async () => {
-    if (!translation.isConfigured) {
-      const configured = await translation.refreshConfigured();
-      if (!configured) {
-        addToast(t("skills.llmNotConfigured"), "error");
-        return;
-      }
-    }
-
-    const nameLang = config?.preferences?.skill_display_name_lang || "original";
-    const descLang = config?.preferences?.skill_display_desc_lang || "original";
-    const targetLang = nameLang !== "original"
-      ? nameLang
-      : descLang !== "original"
-        ? descLang
-        : config?.preferences?.language || "en";
-    const instanceIds = skills.map((s) => s.instance_id);
-
-    if (instanceIds.length === 0) {
-      addToast(t("skills.batchTranslateNoNew"), "info");
-      return;
-    }
-
-    const confirmed = await confirm(
-      t("skills.batchTranslateNamesConfirm").replace("{count}", String(instanceIds.length)),
-      { title: t("skills.batchTranslateNames"), kind: "warning" }
-    );
-    if (!confirmed) return;
-
-    setTranslatingNames(true);
-    try {
-      const result = await invoke<{ succeeded: string[]; failed: { instance_id: string; reason: string }[] }>(
-        "translate_skill_names_batch",
-        { instanceIds, targetLang }
-      );
-
-      const fail = result.failed.length;
-      const ok = result.succeeded.length;
-      addToast(
-        t("skills.batchTranslateNamesDone")
-          .replace("{ok}", String(ok))
-          .replace("{total}", String(instanceIds.length))
-          .replace("{fail}", String(fail)),
-        fail > 0 ? "error" : "success"
-      );
-
-      await dataReloadData();
-    } catch (err) {
-      addToast(formatTranslationError(err, t), "error");
-    } finally {
-      setTranslatingNames(false);
-    }
-  }, [translation, config, skills, addToast, dataReloadData, t]);
 
   const handleToggle = actionHandleToggle;
 
@@ -666,22 +612,19 @@ export function Skills() {
         return;
       }
 
-      const pending: Skill[] = [];
-      let skipped = 0;
-      for (const skill of skillsToTranslate) {
-        const key = makeTranslationKey(skill.instance_id, language);
-        if (translation.getTranslation(key)) {
-          skipped += 1;
-        } else {
-          pending.push(skill);
-        }
-      }
+      const nameLang = config?.preferences?.skill_display_name_lang || "original";
+      const pending = skillsToTranslate.filter((skill) => {
+        if (nameLang === "original") return true;
+        const meta = skillMetadata?.[getSkillMetadataKey(skill)];
+        return nameLang === "zh" ? !meta?.translated_name_zh : !meta?.translated_name_en;
+      });
 
       if (pending.length === 0) {
         addToast(t("skills.batchTranslateNoNew"), "info");
         return;
       }
 
+      const skipped = skillsToTranslate.length - pending.length;
       const confirmMessage = skipped > 0
         ? t("skills.batchTranslateConfirmSkip")
             .replace("{new}", String(pending.length))
@@ -702,15 +645,12 @@ export function Skills() {
             .replace("{name}", p.skill_name);
 
           if (!progressToastId) {
-            // 创建持久化进度 toast
             progressToastId = addToast(progressMsg, "info", true);
           } else {
-            // 更新现有 toast
             updateToast(progressToastId, progressMsg);
           }
         });
 
-        // 翻译完成：移除进度 toast，显示结果
         if (progressToastId) {
           removeToast(progressToastId);
         }
@@ -733,7 +673,7 @@ export function Skills() {
         setBatchTranslating(false);
       }
     },
-    [translation, language, addToast, updateToast, removeToast, t],
+    [translation, language, addToast, updateToast, removeToast, t, skillMetadata, config],
   );
 
   const handleDelete = actionHandleDelete;
@@ -1007,81 +947,13 @@ export function Skills() {
             {t("settings.projectBindings")}
           </button>
         );
-      case "translate-names":
-        return (
-          <button
-            key={actionId}
-            type="button"
-            onClick={() => void handleBatchTranslateNames()}
-            disabled={isBatchManageMode || translatingNames}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "8px 14px",
-              fontSize: "13px",
-              fontWeight: 500,
-              color: "var(--foreground)",
-              backgroundColor: "var(--background)",
-              border: "1px solid var(--border)",
-              borderRadius: "8px",
-              cursor: isBatchManageMode || translatingNames ? "not-allowed" : "pointer",
-              opacity: isBatchManageMode || translatingNames ? 0.6 : 1,
-            }}
-          >
-            {translatingNames ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}>
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M12.22 8l2.47-2.47M17.5 14.5l-2.47 2.47" />
-              </svg>
-            )}
-            {t("skills.translateNames")}
-          </button>
-        );
       case "create-skill":
-        return (
-          <button
-            key={actionId}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "8px 16px",
-              fontSize: "13px",
-              fontWeight: 500,
-              color: "var(--primary-foreground)",
-              backgroundColor: "var(--foreground)",
-              border: "none",
-              borderRadius: "8px",
-              cursor: isBatchManageMode ? "not-allowed" : "pointer",
-              transition: "opacity 0.15s",
-              opacity: isBatchManageMode ? 0.5 : 1,
-            }}
-            onMouseEnter={(e) => { if (!isBatchManageMode) e.currentTarget.style.opacity = "0.9"; }}
-            onMouseLeave={(e) => { if (!isBatchManageMode) e.currentTarget.style.opacity = "1"; }}
-            onClick={() => {
-              if (!isBatchManageMode) {
-                setShowCreateDialog(true);
-              }
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            {t("skills.newSkill")}
-          </button>
-        );
     }
   }, [
     enterBatchManageMode,
     exitBatchManageMode,
     handleOpenBatchToolDialog,
-    handleBatchTranslateNames,
     isBatchManageMode,
-    translatingNames,
     selectedBatchItems.length,
     t,
   ]);
@@ -2247,19 +2119,29 @@ export function Skills() {
             >
               {sortedUnifiedItems.map((item) => {
                 const canOpen = Boolean(item.openPath);
-                const translationKey = item.kind === "skill" && item.skill
-                  ? makeTranslationKey(item.skill.instance_id, language)
-                  : null;
-                const translated = translationKey ? translation.getTranslation(translationKey) : null;
-                const isTranslatedView = translationKey
-                  ? translation.getView(translationKey) === "translated" && translated != null
-                  : false;
-                const cardTitle = isTranslatedView && translated ? translated.name : item.title;
+
+                const cardTitle = item.kind === "skill" && item.skill
+                  ? (() => {
+                      const meta = skillMetadata?.[getSkillMetadataKey(item.skill)];
+                      const nameLang = config?.preferences?.skill_display_name_lang || "original";
+                      if (nameLang === "zh" && meta?.translated_name_zh) return meta.translated_name_zh;
+                      if (nameLang === "en" && meta?.translated_name_en) return meta.translated_name_en;
+                      return item.title;
+                    })()
+                  : item.title;
+
                 const description = item.kind === "group"
                   ? item.skillPackage?.package_id ?? getUnifiedItemMetaLabel(item, t)
-                  : isTranslatedView && translated
-                    ? translated.description || t("skills.noDescription")
-                    : item.description || t("skills.noDescription");
+                  : (() => {
+                      const meta = item.kind === "skill" && item.skill
+                        ? skillMetadata?.[getSkillMetadataKey(item.skill)]
+                        : null;
+                      const descLang = config?.preferences?.skill_display_desc_lang || "original";
+                      if (descLang === "zh" && meta?.translated_desc_zh) return meta.translated_desc_zh;
+                      if (descLang === "en" && meta?.translated_desc_en) return meta.translated_desc_en;
+                      return item.description || t("skills.noDescription");
+                    })();
+
                 const previewChips = item.previewChips.map((chip) => `#${chip}`);
 
                 return (

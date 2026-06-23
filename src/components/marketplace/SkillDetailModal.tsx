@@ -44,6 +44,7 @@ export function SkillDetailModal({ skill, onClose, onInstall, installing }: Skil
   const { theme } = useTheme();
   const translation = useSkillTranslation();
   const [translatingDetail, setTranslatingDetail] = useState(false);
+  const [detailViewMode, setDetailViewMode] = useState<Set<string>>(new Set());
   const isLinux = navigator.userAgent.includes("Linux");
   const [fileTree, setFileTree] = useState<SkillFileNode | null>(null);
   const [selectedPath, setSelectedPath] = useState("");
@@ -62,7 +63,7 @@ export function SkillDetailModal({ skill, onClose, onInstall, installing }: Skil
   const translationKey = makeTranslationKey(skill.id, language);
   const cachedTranslation = translation.getTranslation(translationKey);
   const showingTranslation =
-    cachedTranslation != null && translation.getView(translationKey) === "translated";
+    cachedTranslation != null && detailViewMode.has(skill.id);
   const displayedName = showingTranslation && cachedTranslation ? cachedTranslation.name : skill.name;
   const displayedDescription =
     showingTranslation && cachedTranslation ? cachedTranslation.description : skill.description;
@@ -71,10 +72,11 @@ export function SkillDetailModal({ skill, onClose, onInstall, installing }: Skil
 
   const handleTranslate = useCallback(async (force: boolean = false) => {
     if (!force && cachedTranslation) {
-      translation.setView(
-        translationKey,
-        showingTranslation ? "original" : "translated",
-      );
+      setDetailViewMode((prev) => {
+        const next = new Set(prev);
+        detailViewMode.has(skill.id) ? next.delete(skill.id) : next.add(skill.id);
+        return next;
+      });
       return;
     }
     let configured = translation.isConfigured;
@@ -104,9 +106,7 @@ export function SkillDetailModal({ skill, onClose, onInstall, installing }: Skil
     }
   }, [
     cachedTranslation,
-    translation,
-    translationKey,
-    showingTranslation,
+    detailViewMode,
     skill.id,
     skill.name,
     skill.description,

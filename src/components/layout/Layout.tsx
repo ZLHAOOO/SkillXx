@@ -12,6 +12,7 @@ export function Layout() {
   const [autoFixedCount, setAutoFixedCount] = useState<number>(0);
   const [showBanner, setShowBanner] = useState(false);
   const [fixing, setFixing] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     void autoCheckAndFix();
@@ -54,34 +55,33 @@ export function Layout() {
   return (
     <div
       className="flex h-screen relative"
-      style={{ backgroundColor: "var(--secondary)" }}
     >
-      {/* Draggable titlebar region for macOS - covers main content top area */}
-      <div
-        onMouseDown={() => getCurrentWindow().startDragging()}
-        className="absolute top-0 right-0 cursor-grab"
-        style={{
-          height: 52,
-          left: 200,
-          zIndex: 0,
-        }}
-      />
-
       {/* Sidebar - lower layer */}
-      <Sidebar />
+      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
 
       {/* Main content - elevated card */}
       <main
-        className="flex-1 overflow-auto relative"
+        className="flex-1 overflow-auto relative glass-content"
         style={{
           margin: "8px 8px 8px 0",
-          backgroundColor: "var(--background)",
           borderRadius: "16px",
-          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)",
         }}
       >
+        {/* Invisible drag region at top edge */}
+        <div
+          onMouseDown={() => getCurrentWindow().startDragging()}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 8,
+            cursor: "grab",
+            zIndex: 1,
+          }}
+        />
         {showBanner && (
-          <div className="absolute top-0 left-0 right-0 px-6 py-3 bg-yellow-50 border-b border-yellow-200 flex items-center justify-between z-50" style={{ borderRadius: "16px 16px 0 0" }}>
+          <div className="absolute top-0 left-0 right-0 px-6 py-3 bg-yellow-50 border-b border-yellow-200 flex items-center justify-between z-50" style={{ borderRadius: "20px 20px 0 0" }}>
             <div className="flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" strokeWidth="2">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />

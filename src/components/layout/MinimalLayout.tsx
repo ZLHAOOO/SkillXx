@@ -1,19 +1,34 @@
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export function MinimalLayout() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   return (
-    <div className="flex h-screen relative" style={{ backgroundColor: "var(--secondary)" }}>
-      <Sidebar />
+    <div className="flex h-screen relative">
+      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
       <main
-        className="flex-1 overflow-auto relative"
+        className="flex-1 overflow-auto relative glass-content"
         style={{
           margin: "8px 8px 8px 0",
-          backgroundColor: "var(--background)",
           borderRadius: "16px",
-          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)",
         }}
       >
+        {/* Invisible drag region at top edge */}
+        <div
+          onMouseDown={() => getCurrentWindow().startDragging()}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 8,
+            cursor: "grab",
+            zIndex: 1,
+          }}
+        />
         <Outlet />
       </main>
     </div>

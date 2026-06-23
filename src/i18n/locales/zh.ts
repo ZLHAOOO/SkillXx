@@ -77,7 +77,7 @@ export const zh = {
     customizePath: "自定义路径",
   },
   skills: {
-    title: "Skills",
+    title: "技能库",
     loadFailed: "加载 Skills 失败,请重试或检查 skills 目录",
     scopeGlobal: "全局",
     scopeProject: "项目",
@@ -434,8 +434,6 @@ export const zh = {
     // AI Translation
     llmTitle: "AI 翻译",
     llmDesc: "配置 OpenAI 兼容的大模型，用于翻译 Skill 内容",
-    llmNoApiHint: "还没有 API？",
-    llmNoApiCta: "试试 YuTou API",
     llmBaseUrl: "Base URL",
     llmBaseUrlHint: "OpenAI 兼容接口地址",
     llmApiKey: "API Key",

@@ -84,8 +84,8 @@ function App() {
   // Wait for both initialization check and config to load
   if (initLoading || !configLoaded) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse" style={{ color: "var(--muted-foreground)" }}>Loading...</div>
       </div>
     );
   }

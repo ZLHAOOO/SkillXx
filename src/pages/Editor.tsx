@@ -38,6 +38,7 @@ export function EditorPage() {
   const [translatingFile, setTranslatingFile] = useState(false);
   const [fileTranslation, setFileTranslation] = useState<SkillTranslationOutput | null>(null);
   const [fileViewMode, setFileViewMode] = useState<"original" | "translated">("original");
+  const [viewMode, setViewMode] = useState<"original" | "translated">("original");
   const [skillFileProgress, setSkillFileProgress] = useState<SkillFileTranslationProgress | null>(null);
   const [translationNotice, setTranslationNotice] = useState<string | null>(null);
 
@@ -45,7 +46,6 @@ export function EditorPage() {
   const isTranslatableFile = /\.(md|mdx|markdown|txt|text)$/i.test(selectedPath);
   const translationKey = relatedSkill ? makeTranslationKey(relatedSkill.instance_id, language) : null;
   const translatedResult = translationKey ? translation.getTranslation(translationKey) : null;
-  const viewMode = translationKey ? translation.getView(translationKey) : "original";
   const relatedSelectedPath = useMemo(
     () => getPathWithinSkill(rootPath, selectedPath, relatedSkill?.path ?? null),
     [rootPath, selectedPath, relatedSkill?.path],
@@ -177,7 +177,7 @@ export function EditorPage() {
           },
         );
         if (isSkillMdFile && translationKey) {
-          translation.setView(translationKey, "translated");
+          setViewMode("translated");
         } else if (relatedSelectedPath) {
           const currentTranslation = result.files.find(
             (file) => normalizePath(file.path) === normalizePath(relatedSelectedPath),
@@ -245,11 +245,11 @@ export function EditorPage() {
 
   const toggleView = useCallback(() => {
     if (isSkillMdFile && translationKey) {
-      translation.setView(translationKey, viewMode === "translated" ? "original" : "translated");
+      setViewMode(viewMode === "translated" ? "original" : "translated");
       return;
     }
     setFileViewMode((m) => (m === "translated" ? "original" : "translated"));
-  }, [isSkillMdFile, translationKey, translation, viewMode]);
+  }, [isSkillMdFile, translationKey, viewMode]);
 
   // Reset file-level translation when switching files / language (not on content edits)
   useEffect(() => {
