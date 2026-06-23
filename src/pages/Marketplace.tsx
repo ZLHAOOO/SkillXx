@@ -9,7 +9,7 @@ import {
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { ExternalLink, Link2 } from "lucide-react";
+import { ExternalLink, Link2, Plus, Loader2 } from "lucide-react";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageLoader } from "@/components/ui/loading";
@@ -723,87 +723,6 @@ export function Marketplace() {
               {t("marketplace.githubInstallOpen")}
             </button>
             <RefreshButton onClick={handleRefresh} loading={refreshing || updatingAll} />
-            <div style={{ position: 'relative' }}>
-              <svg
-                style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--muted-foreground)',
-                  pointerEvents: 'none',
-                }}
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.3-4.3"/>
-              </svg>
-              <input
-                type="text"
-                placeholder={t("marketplace.searchPlaceholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: '240px',
-                  padding: '8px 34px 8px 36px',
-                  fontSize: '13px',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  backgroundColor: 'var(--background)',
-                  color: 'var(--foreground)',
-                  outline: 'none',
-                  transition: 'border-color 0.15s, box-shadow 0.15s',
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--ring)';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(9, 105, 218, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              />
-              {searching && !initialLoading && (
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: 'var(--muted-foreground)',
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeDasharray="30 22"
-                  >
-                    <animateTransform
-                      attributeName="transform"
-                      type="rotate"
-                      from="0 12 12"
-                      to="360 12 12"
-                      dur="0.8s"
-                      repeatCount="indefinite"
-                    />
-                  </circle>
-                </svg>
-              )}
-            </div>
           </>
         }
       />
@@ -1081,25 +1000,26 @@ export function Marketplace() {
                               type="button"
                               onClick={(e) => handleInstall(skill, e)}
                               disabled={actionBusy}
+                              title={t(isUpdateAvailable ? "marketplace.update" : "marketplace.install")}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '4px',
-                                padding: '5px 10px',
-                                fontSize: '10px',
-                                fontWeight: 500,
-                                color: 'var(--primary-foreground)',
-                                backgroundColor: isUpdateAvailable ? 'var(--primary)' : 'var(--foreground)',
-                                border: 'none',
+                                justifyContent: 'center',
+                                width: '28px',
+                                height: '28px',
                                 borderRadius: '6px',
+                                border: '1px solid var(--border)',
+                                backgroundColor: 'var(--secondary)',
+                                color: 'var(--muted-foreground)',
                                 cursor: actionBusy ? 'wait' : 'pointer',
                                 opacity: actionBusy ? 0.7 : 1,
                                 flexShrink: 0,
+                                padding: 0,
                               }}
                             >
                               {isInstalling
-                                ? t(isUpdateAvailable ? "marketplace.updating" : "marketplace.installing")
-                                : t(isUpdateAvailable ? "marketplace.update" : "marketplace.install")}
+                                ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                                : <Plus size={14} />}
                             </button>
                           )}
                         </div>

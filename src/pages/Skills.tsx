@@ -616,8 +616,12 @@ export function Skills() {
 
       const nameLang = config?.preferences?.skill_display_name_lang || "original";
       const pending = skillsToTranslate.filter((skill) => {
-        if (nameLang === "original") return true;
         const meta = skillMetadata?.[getSkillMetadataKey(skill)];
+        if (nameLang === "original") {
+          const hasAny = meta?.translated_name_zh || meta?.translated_name_en
+            || meta?.translated_desc_zh || meta?.translated_desc_en;
+          return !hasAny;
+        }
         return nameLang === "zh" ? !meta?.translated_name_zh : !meta?.translated_name_en;
       });
 
