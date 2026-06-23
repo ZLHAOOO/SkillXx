@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Spinner, SkeletonList } from "@/components/ui/loading";
-import { Plus, Download, X, ChevronDown, ExternalLink, Pencil, MoreHorizontal } from "lucide-react";
+import { Download, X, ChevronDown, ExternalLink, Pencil, MoreHorizontal } from "lucide-react";
 import { getProviderIcon, getProviderInitial } from "@/utils/providerIcon";
 
 export interface LlmProviderConfig {
@@ -234,13 +234,6 @@ export function ProviderManager() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [openMenuId]);
-
-  const handleAdd = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setShowAllPresets(false);
-    setShowForm(true);
-  };
 
   const applyPreset = (preset: typeof PROVIDER_PRESETS[0]) => {
     const url = preset.base_url_openai || preset.base_url_anthropic;
@@ -477,32 +470,7 @@ export function ProviderManager() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "8px 16px",
-            fontSize: "14px",
-            fontWeight: 500,
-            color: "var(--primary-foreground)",
-            backgroundColor: "var(--foreground)",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            transition: "opacity 0.15s",
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.opacity = "0.9"}
-          onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
-          onClick={handleAdd}
-        >
-          <Plus style={{ width: "14px", height: "14px" }} />
-          模型市场
-        </button>
-      </div>
-
+    <div style={{ maxWidth: "1200px" }}>
       {providers.length === 0 ? (
         <div
           style={{
@@ -517,7 +485,11 @@ export function ProviderManager() {
           </p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+          gap: "16px",
+        }}>
           {providers.map((provider) => (
             <div
               key={provider.id}
@@ -546,7 +518,7 @@ export function ProviderManager() {
                   <div style={{ fontSize: "13px", color: "var(--muted-foreground)", lineHeight: 1.6 }}>
                     <div>{t("llmProviders.model")}: {provider.model}</div>
                     {provider.website_url && (
-                      <div>
+                      <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         <span>{t("llmProviders.website")}: </span>
                         <a
                           href={provider.website_url}

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { ProviderManager } from "./llm/ProviderManager";
+import { ProviderMarketplace } from "./llm/ProviderMarketplace";
 import { ToolBindings } from "./llm/ToolBindings";
 
-type TabKey = "providers" | "bindings";
+type TabKey = "marketplace" | "providers" | "bindings";
 
 export function LlmModel() {
-  const [activeTab, setActiveTab] = useState<TabKey>("providers");
+  const [activeTab, setActiveTab] = useState<TabKey>("marketplace");
 
   return (
     <div
@@ -40,6 +41,23 @@ export function LlmModel() {
             gap: "0",
           }}
         >
+          <button
+            onClick={() => setActiveTab("marketplace")}
+            style={{
+              padding: "10px 16px",
+              fontSize: "14px",
+              fontWeight: 500,
+              border: "none",
+              borderBottom: activeTab === "marketplace" ? "2px solid var(--primary)" : "2px solid transparent",
+              color: activeTab === "marketplace" ? "var(--foreground)" : "var(--muted-foreground)",
+              backgroundColor: "transparent",
+              cursor: "pointer",
+              marginBottom: "-1px",
+              transition: "color 0.15s, border-color 0.15s",
+            }}
+          >
+            模型市场
+          </button>
           <button
             onClick={() => setActiveTab("providers")}
             style={{
@@ -84,6 +102,7 @@ export function LlmModel() {
           padding: "20px 24px 24px",
         }}
       >
+        {activeTab === "marketplace" && <ProviderMarketplace />}
         {activeTab === "providers" && <ProviderManager />}
         {activeTab === "bindings" && <ToolBindings />}
       </div>

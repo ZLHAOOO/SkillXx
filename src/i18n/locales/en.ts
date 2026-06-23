@@ -485,6 +485,7 @@ export const en = {
     timeout: "Timeout (sec)",
     save: "Save",
     saving: "Saving...",
+    addSuccess: "{name} added",
     saveSuccess: "Saved successfully",
     saveFailed: "Save failed",
     switch: "Switch",

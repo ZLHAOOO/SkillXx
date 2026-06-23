@@ -478,6 +478,7 @@ export const zh = {
     timeout: "超时（秒）",
     save: "保存",
     saving: "保存中...",
+    addSuccess: "{name} 已添加",
     saveSuccess: "保存成功",
     saveFailed: "保存失败",
     switch: "切换",
