@@ -6,7 +6,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { checkUpdate } from "@/services/updater";
 import { UpdateInfo } from "@/types";
 import { getSidebarChromeMetrics } from "./sidebarChrome";
-import { Sparkles, Bot, Store, Cog, Cpu, type LucideIcon } from "lucide-react";
+import { Sparkles, Bot, Store, Cog, Brain, type LucideIcon } from "lucide-react";
 
 interface NavItem {
   path: string;
@@ -17,7 +17,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: "/tools", labelKey: "nav.agents", icon: Bot },
   { path: "/", labelKey: "nav.skills", icon: Sparkles },
-  { path: "/llm-model", labelKey: "nav.llmModel", icon: Cpu },
+  { path: "/llm-model", labelKey: "nav.llmModel", icon: Brain },
   { path: "/marketplace", labelKey: "nav.marketplace", icon: Store },
   { path: "/settings", labelKey: "nav.settings", icon: Cog },
 ];

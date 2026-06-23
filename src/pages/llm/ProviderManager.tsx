@@ -143,7 +143,7 @@ const PROVIDER_PRESETS: {
 
 const PRESET_VISIBLE_COUNT = 10; // 2 rows × 5 cols
 
-function ProviderLogo({ name, id, size = 32 }: { name: string; id?: string; size?: number }) {
+function ProviderLogo({ name, id, size = 40 }: { name: string; id?: string; size?: number }) {
   const iconPath = getProviderIcon(name, id);
   const [failed, setFailed] = useState(false);
 
@@ -499,7 +499,7 @@ export function ProviderManager() {
           onClick={handleAdd}
         >
           <Plus style={{ width: "14px", height: "14px" }} />
-          {t("llmProviders.addProvider")}
+          模型市场
         </button>
       </div>
 
@@ -529,42 +529,44 @@ export function ProviderManager() {
                 position: "relative",
               }}
             >
-              {/* 名称行 */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                <ProviderLogo name={provider.name} id={provider.id} size={28} />
-                <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--foreground)" }}>
-                  {provider.name}
-                </span>
-                {provider.id === activeProviderId && (
-                  <Badge variant="default" style={{ fontSize: "11px" }}>
-                    {t("llmProviders.active")}
-                  </Badge>
-                )}
-              </div>
-
-              {/* 信息行 */}
-              <div style={{ fontSize: "13px", color: "var(--muted-foreground)", lineHeight: 1.6 }}>
-                <div>{t("llmProviders.model")}: {provider.model}</div>
-                {provider.website_url && (
-                  <a
-                    href={provider.website_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      fontSize: "12px",
-                      color: "var(--primary)",
-                      textDecoration: "none",
-                      opacity: 0.8,
-                      display: "inline-block",
-                      marginTop: "2px",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.8")}
-                  >
-                    🔗 {provider.website_url}
-                  </a>
-                )}
-                <div style={{ wordBreak: "break-all", marginTop: "2px" }}>{provider.base_url}</div>
+              {/* Header: logo left + name right, like skill cards */}
+              <div style={{ display: "flex", gap: "14px", marginBottom: "8px", alignItems: "flex-start" }}>
+                <ProviderLogo name={provider.name} id={provider.id} size={40} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--foreground)" }}>
+                      {provider.name}
+                    </span>
+                    {provider.id === activeProviderId && (
+                      <Badge variant="default" style={{ fontSize: "11px" }}>
+                        {t("llmProviders.active")}
+                      </Badge>
+                    )}
+                  </div>
+                  <div style={{ fontSize: "13px", color: "var(--muted-foreground)", lineHeight: 1.6 }}>
+                    <div>{t("llmProviders.model")}: {provider.model}</div>
+                    {provider.website_url && (
+                      <div>
+                        <span>{t("llmProviders.website")}: </span>
+                        <a
+                          href={provider.website_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: "13px",
+                            color: "var(--primary)",
+                            textDecoration: "none",
+                            opacity: 0.8,
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                          onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.8")}
+                        >
+                          {provider.website_url}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* 右上角操作按钮 */}

@@ -1,54 +1,53 @@
 /**
  * Smart icon matching for LLM providers
- * Tries /icons/providers/{id}.svg based on provider id/name.
+ * Tries /icons/providers/{filename} based on provider id/name.
  * Returns null if no match (caller should fall back to first-letter placeholder).
  */
 
 const ICON_MAP: [string[], string][] = [
   // Chinese providers (match on Chinese name or pinyin)
-  [["xiaomi", "小米", "mimo"], "xiaomi"],
-  [["volcengine", "火山", "ark", "字节"], "volcengine"],
-  [["bailian", "百炼", "dashscope", "qwen", "通义"], "qwen"],
-  [["hunyuan", "混元", "腾讯"], "hunyuan"],
-  [["stepfun", "阶跃"], "stepfun"],
-  [["longcat"], "longcat"],
-  [["worldrouter"], "worldrouter"],
-  [["zai", "z.ai"], "zai"],
-  [["bai", "baidu", "千帆", "百度"], "qwen"],  // fallback to qwen icon
-  [["ernie", "文心", "yiyan"], "longcat"],     // fallback to longcat icon
+  [["xiaomi", "小米", "mimo"], "xiaomi.svg"],
+  [["volcengine", "火山", "ark", "字节"], "volcengine.svg"],
+  [["bailian", "百炼", "dashscope", "qwen", "通义"], "qwen.svg"],
+  [["hunyuan", "混元", "腾讯"], "hunyuan.svg"],
+  [["stepfun", "阶跃"], "stepfun.svg"],
+  [["longcat"], "longcat.png"],  // PNG (from .icns)
+  [["worldrouter"], "worldrouter.png"],
+  [["zai", "z.ai"], "zai.svg"],
+  [["bai", "baidu", "千帆", "百度"], "qwen.svg"],  // fallback to qwen icon
+  [["ernie", "文心", "yiyan"], "longcat.png"],     // fallback to longcat icon
 
   // International providers (match on English name)
-  [["anthropic", "claude"], "anthropic"],
-  [["openai", "gpt", "chatgpt"], "openai"],
-  [["deepseek"], "deepseek"],
-  [["kimi", "moonshot"], "kimi-cn"],
-  [["minimax"], "minimax-cn"],
-  [["glm", "智谱", "bigmodel"], "glm"],
-  [["gemini", "google", "gemini"], "gemini"],
-  [["grok", "x.ai"], "grok"],
-  [["groq"], "groq"],
-  [["mistral"], "mistral"],
-  [["cohere"], "cohere"],
-  [["perplexity"], "perplexity"],
-  [["openrouter"], "openrouter"],
-  [["nvidia", "nemotron"], "nvidia"],
-  [["agnes"], "agnes"],
+  [["anthropic", "claude"], "anthropic.svg"],
+  [["openai", "gpt", "chatgpt"], "openai.svg"],
+  [["deepseek"], "deepseek.svg"],
+  [["kimi", "moonshot"], "kimi-cn.svg"],
+  [["minimax"], "minimax-cn.svg"],
+  [["glm", "智谱", "bigmodel"], "glm.svg"],
+  [["gemini", "google"], "gemini.svg"],
+  [["grok", "x.ai"], "grok.svg"],
+  [["groq"], "groq.svg"],
+  [["mistral"], "mistral.svg"],
+  [["cohere"], "cohere.svg"],
+  [["perplexity"], "perplexity.svg"],
+  [["openrouter"], "openrouter.svg"],
+  [["nvidia", "nemotron"], "nvidia.svg"],
 ];
 
 /**
  * Try to find an icon file for a provider by name or id.
- * Checks /icons/providers/{match}.svg and returns the first match.
+ * Returns the path from ICON_MAP or null.
  */
 export function getProviderIcon(name: string, id?: string): string | null {
   const lowerName = name.toLowerCase();
   const lowerId = (id || "").toLowerCase();
 
-  for (const [keywords, iconId] of ICON_MAP) {
+  for (const [keywords, filename] of ICON_MAP) {
     const match = keywords.some(
       (kw) => lowerName.includes(kw) || lowerId.includes(kw),
     );
     if (match) {
-      return `/icons/providers/${iconId}.svg`;
+      return `/icons/providers/${filename}`;
     }
   }
   return null;
