@@ -494,9 +494,16 @@ pub struct BatchTranslationFailure {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct BatchTranslationEntry {
+    pub instance_id: String,
+    pub translation: Option<SkillTranslationOutput>,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct BatchTranslationResult {
     pub succeeded: Vec<String>,
     pub failed: Vec<BatchTranslationFailure>,
+    pub results: Vec<BatchTranslationEntry>,
 }
 
 const BATCH_PROGRESS_EVENT: &str = "llm:batch-progress";
@@ -535,7 +542,7 @@ pub async fn translate_skills_batch(
     let concurrency = determine_concurrency(&provider);
     let semaphore: Arc<Semaphore> = Arc::new(Semaphore::new(concurrency));
 
-    let mut tasks: JoinSet<(usize, Result<String, String>, String)> = JoinSet::new();
+    let mut tasks: JoinSet<(usize, Result<String, String>, String, Option<SkillTranslationOutput>)> = JoinSet::new();
 
     for (idx, instance_id) in instance_ids.into_iter().enumerate() {
         let permit = Arc::clone(&semaphore);
@@ -552,7 +559,7 @@ pub async fn translate_skills_batch(
             let skill = match find_skill_by_instance(&skills_clone, &instance_id) {
                 Some(s) => s,
                 None => {
-                    return (idx, Err(instance_id.clone()), "skill not found".to_string());
+                    return (idx, Err(instance_id.clone()), "skill not found".to_string(), None);
                 }
             };
 
@@ -581,17 +588,17 @@ pub async fn translate_skills_batch(
             )
             .await
             {
-                Ok(_) => (idx, Ok(instance_id), String::new()),
-                Err(err) => (idx, Err(instance_id), err.to_string()),
+                Ok(result) => (idx, Ok(instance_id), String::new(), Some(result)),
+                Err(err) => (idx, Err(instance_id), err.to_string(), None),
             }
         });
     }
 
     // 收集结果
-    let mut results = Vec::new();
+    let mut raw_results = Vec::new();
     while let Some(result) = tasks.join_next().await {
         match result {
-            Ok(task_result) => results.push(task_result),
+            Ok(task_result) => raw_results.push(task_result),
             Err(e) => {
                 // JoinError - task panic，记录但继续
                 eprintln!("Task panicked: {:?}", e);
@@ -600,22 +607,31 @@ pub async fn translate_skills_batch(
     }
 
     // 按 index 排序保证顺序
-    results.sort_by_key(|(idx, _, _)| *idx);
+    raw_results.sort_by_key(|(idx, _, _, _)| *idx);
 
     let mut succeeded = Vec::new();
     let mut failed = Vec::new();
+    let mut results = Vec::new();
 
-    for (_, result, reason) in results {
+    for (_, result, reason, translation) in raw_results {
         match result {
-            Ok(instance_id) => succeeded.push(instance_id),
-            Err(instance_id) => failed.push(BatchTranslationFailure {
-                instance_id,
-                reason,
-            }),
+            Ok(instance_id) => {
+                succeeded.push(instance_id.clone());
+                results.push(BatchTranslationEntry {
+                    instance_id,
+                    translation,
+                });
+            }
+            Err(instance_id) => {
+                failed.push(BatchTranslationFailure {
+                    instance_id,
+                    reason,
+                });
+            }
         }
     }
 
-    Ok(BatchTranslationResult { succeeded, failed })
+    Ok(BatchTranslationResult { succeeded, failed, results })
 }
 
 #[tauri::command]
@@ -1028,12 +1044,21 @@ pub async fn translate_skill_names_batch(
 
     let mut succeeded = Vec::new();
     let mut failed = Vec::new();
+    let mut results = Vec::new();
 
     while let Some(result) = tasks.join_next().await {
         match result {
             Ok((_, Ok(id), data)) => {
                 // Parse the translated name and description
+                let mut translation: Option<SkillTranslationOutput> = None;
                 if let Some((name, desc)) = data.split_once('|') {
+                    translation = Some(SkillTranslationOutput {
+                        name: name.to_string(),
+                        description: desc.to_string(),
+                        content_md: None,
+                        cached: false,
+                    });
+
                     let metadata_key = format!("global:{}", id.split(':').last().unwrap_or(&id));
                     let existing = config.skill_metadata.get(&metadata_key).cloned().unwrap_or_default();
                     let mut updated = existing;
@@ -1052,7 +1077,11 @@ pub async fn translate_skill_names_batch(
 
                     config.skill_metadata.insert(metadata_key, updated);
                 }
-                succeeded.push(id);
+                succeeded.push(id.clone());
+                results.push(BatchTranslationEntry {
+                    instance_id: id,
+                    translation,
+                });
             }
             Ok((_, Err(id), err)) => {
                 failed.push(BatchTranslationFailure {
@@ -1069,5 +1098,5 @@ pub async fn translate_skill_names_batch(
         return Err(format!("Failed to save config: {}", e));
     }
 
-    Ok(BatchTranslationResult { succeeded, failed })
+    Ok(BatchTranslationResult { succeeded, failed, results })
 }

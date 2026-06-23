@@ -73,7 +73,7 @@ export function Marketplace() {
   const [hasMore, setHasMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [githubInstallDialogOpen, setGithubInstallDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, _setSearchQuery] = useState("");
   const [githubInstallUrl, setGithubInstallUrl] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedSkill, setSelectedSkill] = useState<MarketplaceSkill | null>(null);

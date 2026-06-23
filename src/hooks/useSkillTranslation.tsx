@@ -34,6 +34,10 @@ export interface BatchTranslationFailure {
 export interface BatchTranslationResult {
   succeeded: string[];
   failed: BatchTranslationFailure[];
+  results: Array<{
+    instance_id: string;
+    translation: SkillTranslationOutput | null;
+  }>;
 }
 
 export type SkillFileTranslationStatus = "started" | "completed" | "failed";
@@ -113,7 +117,7 @@ async function syncTranslationToMetadata(
   targetLang: string
 ): Promise<void> {
   const config = await invoke<AppConfig>("get_config");
-  const metadataKey = `skill:${instanceId}`;
+  const metadataKey = instanceId;
   const nextSkillMetadata = { ...config.skill_metadata };
   const existing = nextSkillMetadata[metadataKey] || {};
 
@@ -246,30 +250,37 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
           instanceIds,
           targetLang,
         });
+
+        // Store results in memory cache
+        for (const entry of result.results) {
+          if (entry.translation) {
+            const key = cacheKey(entry.instance_id, targetLang);
+            storeRef.current.results.set(key, entry.translation);
+          }
+        }
+
         // Sync batch results to metadata so they persist across refreshes
         try {
           const config = await invoke<AppConfig>("get_config");
           const nextSkillMetadata = { ...config.skill_metadata };
           let changed = false;
-          for (const id of result.succeeded) {
-            const cached = storeRef.current.results.get(cacheKey(id, targetLang));
-            if (cached) {
-              const metadataKey = `skill:${id}`;
-              const existing = nextSkillMetadata[metadataKey] || {};
-              if (targetLang === "zh") {
-                existing.translated_name_zh = cached.name;
-                existing.translated_desc_zh = cached.description;
-                existing.translated_name_en = null;
-                existing.translated_desc_en = null;
-              } else {
-                existing.translated_name_en = cached.name;
-                existing.translated_desc_en = cached.description;
-                existing.translated_name_zh = null;
-                existing.translated_desc_zh = null;
-              }
-              nextSkillMetadata[metadataKey] = existing;
-              changed = true;
+          for (const entry of result.results) {
+            if (!entry.translation) continue;
+            const metadataKey = entry.instance_id;
+            const existing = nextSkillMetadata[metadataKey] || {};
+            if (targetLang === "zh") {
+              existing.translated_name_zh = entry.translation.name;
+              existing.translated_desc_zh = entry.translation.description;
+              existing.translated_name_en = null;
+              existing.translated_desc_en = null;
+            } else {
+              existing.translated_name_en = entry.translation.name;
+              existing.translated_desc_en = entry.translation.description;
+              existing.translated_name_zh = null;
+              existing.translated_desc_zh = null;
             }
+            nextSkillMetadata[metadataKey] = existing;
+            changed = true;
           }
           if (changed) {
             await invoke("save_config", { config: { ...config, skill_metadata: nextSkillMetadata } });
