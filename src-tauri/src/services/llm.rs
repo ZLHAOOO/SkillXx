@@ -110,9 +110,10 @@ pub async fn chat(provider: &LlmProvider, req: ChatRequest) -> Result<String, Ll
     let url = format!("{base}/chat/completions");
 
     let mut builder = reqwest::Client::builder();
-    if let Some(secs) = provider.timeout_secs {
-        builder = builder.timeout(Duration::from_secs(secs as u64));
-    }
+    let timeout_secs = provider.timeout_secs.unwrap_or(120);
+    builder = builder
+        .timeout(Duration::from_secs(timeout_secs as u64))
+        .connect_timeout(Duration::from_secs(30));
     let client = builder
         .build()
         .map_err(|e| LlmError::NetworkError(e.to_string()))?;
@@ -210,6 +211,28 @@ pub async fn chat(provider: &LlmProvider, req: ChatRequest) -> Result<String, Ll
                         if let Some(content) = choice.delta.content {
                             full.push_str(&content);
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // Stream ended — drain any remaining buffered events
+    if !buffer.is_empty() {
+        let event = buffer.trim().to_string();
+        buffer.clear();
+        for line in event.lines() {
+            let data = match line.strip_prefix("data:") {
+                Some(d) => d.trim(),
+                None => continue,
+            };
+            if data.is_empty() || data == "[DONE]" {
+                continue;
+            }
+            if let Ok(parsed) = serde_json::from_str::<StreamChunk>(data) {
+                if let Some(choice) = parsed.choices.into_iter().next() {
+                    if let Some(content) = choice.delta.content {
+                        full.push_str(&content);
                     }
                 }
             }
