@@ -28,6 +28,7 @@ function App() {
   const [theme, setTheme] = useState<Theme>("system");
   const [fontFamily, setFontFamily] = useState<FontFamilyPreset>("system");
   const [configLoaded, setConfigLoaded] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { toasts, removeToast } = useToast();
 
   // Load preferences from config on mount
@@ -116,13 +117,13 @@ function App() {
         <BrowserRouter>
           <SkillTranslationProvider>
             <Routes>
-              <Route path="/" element={<Layout />}>
+              <Route path="/" element={<Layout collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />}>
                 <Route index element={<Skills />} />
                 <Route path="tools" element={<Tools />} />
                 <Route path="marketplace" element={<Marketplace />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
-              <Route element={<MinimalLayout />}>
+              <Route element={<MinimalLayout collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />}>
                 <Route path="llm-model" element={<LlmModel />} />
                 <Route path="/editor" element={<EditorPage />} />
               </Route>

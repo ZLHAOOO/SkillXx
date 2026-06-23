@@ -1,14 +1,12 @@
-import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-export function MinimalLayout() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+export function MinimalLayout({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
 
   return (
     <div className="flex h-screen relative">
-      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
+      <Sidebar collapsed={collapsed} onToggle={onToggle} />
       <main
         className="flex-1 overflow-auto relative glass-content"
         style={{

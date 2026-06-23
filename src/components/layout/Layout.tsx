@@ -6,13 +6,12 @@ import { Sidebar } from "./Sidebar";
 import { SyncReport, LinkReport } from "@/types";
 import { useTranslation } from "@/i18n";
 
-export function Layout() {
+export function Layout({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const { t } = useTranslation();
   const [remainingIssues, setRemainingIssues] = useState<number>(0);
   const [autoFixedCount, setAutoFixedCount] = useState<number>(0);
   const [showBanner, setShowBanner] = useState(false);
   const [fixing, setFixing] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     void autoCheckAndFix();
@@ -57,7 +56,7 @@ export function Layout() {
       className="flex h-screen relative"
     >
       {/* Sidebar - lower layer */}
-      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
+      <Sidebar collapsed={collapsed} onToggle={onToggle} />
 
       {/* Main content - elevated card */}
       <main
