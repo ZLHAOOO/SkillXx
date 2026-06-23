@@ -238,63 +238,43 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
       targetLang: string,
       onProgress?: (p: BatchTranslationProgress) => void
     ): Promise<BatchTranslationResult> => {
-      let unlisten: UnlistenFn | null = null;
-      if (onProgress) {
-        unlisten = await listen<BatchTranslationProgress>(
-          "llm:batch-progress",
-          (event) => onProgress(event.payload)
-        );
-      }
-      try {
-        const result = await invoke<BatchTranslationResult>("translate_skills_batch", {
-          instanceIds,
-          targetLang,
-        });
+      const succeeded: string[] = [];
+      const failed: BatchTranslationFailure[] = [];
+      const results: Array<{
+        instance_id: string;
+        translation: SkillTranslationOutput | null;
+      }> = [];
 
-        // Store results in memory cache
-        for (const entry of result.results) {
-          if (entry.translation) {
-            const key = cacheKey(entry.instance_id, targetLang);
-            storeRef.current.results.set(key, entry.translation);
-          }
+      for (let i = 0; i < instanceIds.length; i++) {
+        const instanceId = instanceIds[i];
+        if (onProgress) {
+          onProgress({
+            current: i + 1,
+            total: instanceIds.length,
+            instance_id: instanceId,
+            skill_name: instanceId,
+          });
         }
 
-        // Sync batch results to metadata so they persist across refreshes
         try {
-          const config = await invoke<AppConfig>("get_config");
-          const nextSkillMetadata = { ...config.skill_metadata };
-          let changed = false;
-          for (const entry of result.results) {
-            if (!entry.translation) continue;
-            const metadataKey = entry.instance_id;
-            const existing = nextSkillMetadata[metadataKey] || {};
-            if (targetLang === "zh") {
-              existing.translated_name_zh = entry.translation.name;
-              existing.translated_desc_zh = entry.translation.description;
-              existing.translated_name_en = null;
-              existing.translated_desc_en = null;
-            } else {
-              existing.translated_name_en = entry.translation.name;
-              existing.translated_desc_en = entry.translation.description;
-              existing.translated_name_zh = null;
-              existing.translated_desc_zh = null;
-            }
-            nextSkillMetadata[metadataKey] = existing;
-            changed = true;
-          }
-          if (changed) {
-            await invoke("save_config", { config: { ...config, skill_metadata: nextSkillMetadata } });
-          }
-        } catch {
-          // metadata sync failure shouldn't block the batch result
+          const translation = await translateSkill(instanceId, targetLang, false);
+          succeeded.push(instanceId);
+          results.push({ instance_id: instanceId, translation });
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : String(err);
+          failed.push({ instance_id: instanceId, reason });
+          results.push({ instance_id: instanceId, translation: null });
         }
-        bump();
-        return result;
-      } finally {
-        if (unlisten) unlisten();
+
+        // 每次翻译间隔 300ms，避免对 LLM API 造成并发压力
+        if (i < instanceIds.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
       }
+
+      return { succeeded, failed, results };
     },
-    [bump]
+    [translateSkill]
   );
 
   const translateSkillFiles = useCallback(
