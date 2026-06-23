@@ -868,15 +868,13 @@ export function Tools() {
           cursor: 'grab',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'var(--ring)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.12)';
+          e.currentTarget.style.transform = 'scale(1.02)';
         }}
         onMouseLeave={(e) => {
           if (dragOverToolId === tool.id) return;
-          e.currentTarget.style.borderColor = 'var(--border)';
           e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.transform = 'scale(1)';
         }}
       >
         {/* Top: Icon + Title + Status + Toggle */}
