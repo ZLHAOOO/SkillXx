@@ -7,7 +7,7 @@
 > **A unified desktop application for managing AI coding assistant skills.**
 > Seamlessly organize, sync, and share skills for **Claude Code, Codex, Opencode** and other AI tools.
 
-![Version](https://img.shields.io/badge/version-3.1.1-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.2.1-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
 [中文说明](./README_CN.md)
 
@@ -92,7 +92,13 @@ We welcome all forms of contribution!
 - **Found a bug?** Please submit an issue on our [Issues](../../issues) page.
 - **Have a feature request?** We'd love to hear your ideas! Feel free to open an issue to discuss new features.
 
-## 🆕 What's New in v3.1.1
+## 🆕 What's New in v3.2.1
+
+### Model Marketplace
+- **20+ LLM Providers**: Browse and add providers with one click — OpenAI, Anthropic, DeepSeek, Qwen, Kimi, Gemini, GLM, Xiaomi, Volcengine, Stepfun, Mistral, Grok, MiniMax, and more
+- **Smart Icon Matching**: Automatically matches provider icons by name (supports Chinese, English, pinyin, and aliases)
+- **Custom Provider**: Add your own LLM provider with custom Base URL, API Key, and model
+- **Grid Layout**: Provider cards in responsive grid with search and filter
 
 ### Architecture Refactoring
 - **Skills.tsx split**: 3,819 → 2,525 lines (-34%), extracted SkillCard, 3 dialog components, and 3 custom hooks

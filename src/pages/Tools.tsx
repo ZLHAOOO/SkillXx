@@ -49,6 +49,7 @@ export function Tools() {
   const [toolEditorToolId, setToolEditorToolId] = useState<string | null>(null);
   const [toolEditorQuery, setToolEditorQuery] = useState("");
   const [toolEditorEnabledOnly, setToolEditorEnabledOnly] = useState(false);
+  const [toolEditorPreserveOrder, setToolEditorPreserveOrder] = useState(false);
   const [togglingSkill, setTogglingSkill] = useState<string | null>(null);
   const [bulkTogglingToolId, setBulkTogglingToolId] = useState<string | null>(null);
   const [dragOverToolId, setDragOverToolId] = useState<string | null>(null);
@@ -203,6 +204,7 @@ export function Tools() {
     setToolEditorToolId(toolId);
     setToolEditorQuery("");
     setToolEditorEnabledOnly(false);
+    setToolEditorPreserveOrder(false);
   }, []);
 
   const closeToolSkillEditor = useCallback(() => {
@@ -671,8 +673,13 @@ export function Tools() {
     if (!toolEditorTool) {
       return [];
     }
+
+    if (toolEditorPreserveOrder) {
+      return [...skillIds];
+    }
+
     return orderSkillIdsForTool(skillIds, toolSkillEnabledMap);
-  }, [skillIds, toolEditorTool, toolSkillEnabledMap]);
+  }, [skillIds, toolEditorTool, toolSkillEnabledMap, toolEditorPreserveOrder]);
 
   const toolEditorFilteredSkillIds = useMemo(() => {
     if (!toolEditorTool) {
@@ -1414,8 +1421,8 @@ export function Tools() {
           doneLabel={t("common.done")}
           onQueryChange={setToolEditorQuery}
           onEnabledOnlyChange={setToolEditorEnabledOnly}
-          onToggle={(skillId, enabled) => handleToggleSkillForTool(toolEditorTool, skillId, enabled)}
-          onBulkToggle={() => handleBulkToggleToolSkills(toolEditorTool, toolEditorFilteredSkillIds)}
+          onToggle={(skillId, enabled) => { setToolEditorPreserveOrder(true); handleToggleSkillForTool(toolEditorTool, skillId, enabled); }}
+          onBulkToggle={() => { setToolEditorPreserveOrder(true); handleBulkToggleToolSkills(toolEditorTool, toolEditorFilteredSkillIds); }}
           onClose={closeToolSkillEditor}
         />
       )}

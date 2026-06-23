@@ -21,7 +21,7 @@ interface UseSkillActionsReturn {
   // Actions
   handleCreateSkill: (name: string, description: string) => Promise<void>;
   handleDelete: (skill: Skill) => Promise<void>;
-  handleToggle: (skillId: string, toolId: string, enabled: boolean) => Promise<void>;
+  handleToggle: (instanceId: string, toolId: string, enabled: boolean) => Promise<void>;
   handleBulkToggle: (skill: Skill, toolIds: string[]) => Promise<void>;
 }
 
@@ -55,7 +55,7 @@ export function useSkillActions({
   const handleDelete = useCallback(async (skill: Skill) => {
     setDeletingSkill(skill.instance_id);
     try {
-      await invoke("delete_skill", { skillId: skill.id });
+      await invoke("delete_skill", { instanceId: skill.instance_id });
       addToast(t("skills.deleteSuccess").replace("{name}", skill.name), "success");
       await refreshData();
     } catch (err) {
@@ -65,13 +65,13 @@ export function useSkillActions({
     }
   }, [addToast, refreshData, t]);
 
-  const handleToggle = useCallback(async (skillId: string, toolId: string, enabled: boolean) => {
-    setTogglingSkill(skillId);
+  const handleToggle = useCallback(async (instanceId: string, toolId: string, enabled: boolean) => {
+    setTogglingSkill(instanceId);
     try {
       if (enabled) {
-        await invoke("enable_skill", { skillId, toolId });
+        await invoke("enable_skill", { instanceId, toolId });
       } else {
-        await invoke("disable_skill", { skillId, toolId });
+        await invoke("disable_skill", { instanceId, toolId });
       }
       await refreshData();
     } catch (err) {
@@ -86,7 +86,7 @@ export function useSkillActions({
     // This would iterate through toolIds and call enable/disable for each
     try {
       for (const toolId of toolIds) {
-        await invoke("enable_skill", { skillId: skill.id, toolId });
+        await invoke("enable_skill", { instanceId: skill.instance_id, toolId });
       }
       await refreshData();
     } catch (err) {

@@ -165,6 +165,7 @@ export function Skills() {
   const [toolEditorSkillId, setToolEditorSkillId] = useState<string | null>(null);
   const [toolEditorQuery, setToolEditorQuery] = useState("");
   const [toolEditorEnabledOnly, setToolEditorEnabledOnly] = useState(false);
+  const [toolEditorPreserveOrder, setToolEditorPreserveOrder] = useState(false);
   const bulkTogglingSkillIdRef = useRef<string | null>(null);
   const [groupEditorPackageId, setGroupEditorPackageId] = useState<string | null>(null);
   const [groupEditorQuery, setGroupEditorQuery] = useState("");
@@ -570,6 +571,7 @@ export function Skills() {
     setSkillEditorTab(tab);
     setToolEditorQuery("");
     setToolEditorEnabledOnly(false);
+    setToolEditorPreserveOrder(false);
     setGroupEditorQuery("");
     setGroupEditorEnabledOnly(false);
     setTagDraft("");
@@ -1228,8 +1230,12 @@ export function Skills() {
       return [];
     }
 
+    if (toolEditorPreserveOrder) {
+      return [...toolIds];
+    }
+
     return orderToolIdsForSkill(toolIds, toolEditorSkill.enabled);
-  }, [toolEditorSkill, toolIds]);
+  }, [toolEditorSkill, toolIds, toolEditorPreserveOrder]);
 
   const toolEditorFilteredToolIds = useMemo(() => {
     if (!toolEditorSkill) {
@@ -2210,8 +2216,8 @@ export function Skills() {
           emptyLabel={t("skills.noToolsInFilter")}
           onQueryChange={setToolEditorQuery}
           onEnabledOnlyChange={setToolEditorEnabledOnly}
-          onToggle={(toolId, enabled) => handleToggle(toolEditorSkill.instance_id, toolId, enabled)}
-          onBulkToggle={() => handleBulkToggle(toolEditorSkill, toolEditorFilteredToolIds)}
+          onToggle={(toolId, enabled) => { setToolEditorPreserveOrder(true); handleToggle(toolEditorSkill.instance_id, toolId, enabled); }}
+          onBulkToggle={() => { setToolEditorPreserveOrder(true); handleBulkToggle(toolEditorSkill, toolEditorFilteredToolIds); }}
           tags={toolEditorTags}
           tagDraft={tagDraft}
           onTagDraftChange={setTagDraft}

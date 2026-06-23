@@ -6,7 +6,7 @@ import { ToolBindings } from "./llm/ToolBindings";
 type TabKey = "marketplace" | "providers" | "bindings";
 
 export function LlmModel() {
-  const [activeTab, setActiveTab] = useState<TabKey>("marketplace");
+  const [activeTab, setActiveTab] = useState<TabKey>("providers");
 
   return (
     <div
@@ -42,6 +42,23 @@ export function LlmModel() {
           }}
         >
           <button
+            onClick={() => setActiveTab("providers")}
+            style={{
+              padding: "10px 16px",
+              fontSize: "14px",
+              fontWeight: 500,
+              border: "none",
+              borderBottom: activeTab === "providers" ? "2px solid var(--primary)" : "2px solid transparent",
+              color: activeTab === "providers" ? "var(--foreground)" : "var(--muted-foreground)",
+              backgroundColor: "transparent",
+              cursor: "pointer",
+              marginBottom: "-1px",
+              transition: "color 0.15s, border-color 0.15s",
+            }}
+          >
+            模型列表
+          </button>
+          <button
             onClick={() => setActiveTab("marketplace")}
             style={{
               padding: "10px 16px",
@@ -57,23 +74,6 @@ export function LlmModel() {
             }}
           >
             模型市场
-          </button>
-          <button
-            onClick={() => setActiveTab("providers")}
-            style={{
-              padding: "10px 16px",
-              fontSize: "14px",
-              fontWeight: 500,
-              border: "none",
-              borderBottom: activeTab === "providers" ? "2px solid var(--primary)" : "2px solid transparent",
-              color: activeTab === "providers" ? "var(--foreground)" : "var(--muted-foreground)",
-              backgroundColor: "transparent",
-              cursor: "pointer",
-              marginBottom: "-1px",
-              transition: "color 0.15s, border-color 0.15s",
-            }}
-          >
-            供应商
           </button>
           <button
             onClick={() => setActiveTab("bindings")}

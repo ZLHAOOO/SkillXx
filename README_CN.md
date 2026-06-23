@@ -7,7 +7,7 @@
 > **一款统一的 AI 编码助手技能管理桌面应用。**
 > 无缝管理、同步和分享 **Claude Code、Codex、Opencode** 等 AI 工具的技能。
 
-![Version](https://img.shields.io/badge/version-3.1.1-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.2.1-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
 [English](./README.md)
 
@@ -75,6 +75,13 @@ WEBKIT_DISABLE_COMPOSITING_MODE=1 ./SkillX_1.0.1_amd64.AppImage
 - **🔒 安全加固**：文件路径验证、CSP 策略、URL 校验
 - **⚡ 性能优化**：配置缓存机制，提升响应速度
 - **🎨 UI 优化**：简约化设计，改进侧边栏、卡片和设置页面
+
+## 📅 v3.2.1 更新内容
+
+- **🏪 模型市场**：内置 20+ LLM 供应商目录（OpenAI / Anthropic / DeepSeek / Qwen / Kimi / Gemini / GLM / 小米 / 火山 / 阶跃 / Mistral / Grok / MiniMax 等），一键添加 Provider
+- **🎨 智能图标匹配**：根据供应商名称自动匹配图标（支持中英文名、拼音、别名）
+- **📐 Provider 网格布局**：响应式卡片网格，支持搜索和筛选
+- **✏️ 自定义供应商**：支持自定义 Base URL、API Key 和模型
 
 ## 🙏 致谢
 
