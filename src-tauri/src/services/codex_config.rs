@@ -212,9 +212,36 @@ fn normalize_codex_base_url(url: &str) -> String {
     }
 }
 
+/// Check if auth.json contains a non-OpenAI session token (e.g., ChatGPT login).
+/// If so, we should NOT overwrite auth.json to preserve the user's login.
+fn has_codex_session_token(auth_path: &PathBuf) -> bool {
+    if !auth_path.exists() {
+        return false;
+    }
+    if let Ok(content) = fs::read_to_string(auth_path) {
+        if let Ok(auth) = serde_json::from_str::<Value>(&content) {
+            // Check for OpenAI session token pattern (starts with "sess-")
+            if let Some(key) = auth.get("OPENAI_API_KEY").and_then(|v| v.as_str()) {
+                if key.starts_with("sess-") {
+                    return true;
+                }
+            }
+            // Check for experimental_bearer_token (ChatGPT Plus login)
+            if auth.get("experimental_bearer_token").is_some() {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 /// Write provider config into Codex's auth.json and config.toml
 /// Automatically creates backups before writing.
 /// Uses the OpenAI-compatible base_url.
+///
+/// If Codex has an existing ChatGPT login session (auth.json contains a
+/// session token), we skip writing auth.json to preserve the user's login.
+/// This matches CCSwitch's behavior and EchoBird's relayMode approach.
 pub fn apply_codex_provider(
     api_key: &str,
     base_url: &str,
@@ -242,14 +269,19 @@ pub fn apply_codex_provider(
         None
     };
 
-    // Write auth.json
-    let auth: Value = json!({
-        "OPENAI_API_KEY": api_key,
-    });
-    let auth_json = serde_json::to_string_pretty(&auth)
-        .map_err(|e| format!("Failed to serialize auth.json: {e}"))?;
-    fs::write(&auth_path, auth_json.as_bytes())
-        .map_err(|e| format!("Failed to write {}: {}", auth_path.display(), e))?;
+    // Write auth.json — but only if there's no existing ChatGPT session
+    // This protects the user's OpenAI ChatGPT login from being overwritten
+    if has_codex_session_token(&auth_path) {
+        // Skip auth.json write, user has a ChatGPT session we shouldn't destroy
+    } else {
+        let auth: Value = json!(
+            "OPENAI_API_KEY": api_key,
+        );
+        let auth_json = serde_json::to_string_pretty(&auth)
+            .map_err(|e| format!("Failed to serialize auth.json: {e}"))?;
+        fs::write(&auth_path, auth_json.as_bytes())
+            .map_err(|e| format!("Failed to write {}: {}", auth_path.display(), e))?;
+    }
 
     let normalized_base_url = normalize_codex_base_url(base_url);
 

@@ -215,34 +215,27 @@ impl ClaudeConfig {
             provider.base_url.clone()
         };
 
+        // Set authentication
         config.env.insert(
             "ANTHROPIC_AUTH_TOKEN".to_string(),
             provider.api_key.clone(),
         );
+
+        // Set base URL
         config.env.insert(
             "ANTHROPIC_BASE_URL".to_string(),
             base_url.clone(),
         );
+
+        // Set current model (the one user selected)
         config.env.insert(
             "ANTHROPIC_MODEL".to_string(),
             provider.model.clone(),
         );
-        config.env.insert(
-            "ANTHROPIC_DEFAULT_SONNET_MODEL".to_string(),
-            provider.model.clone(),
-        );
-        config.env.insert(
-            "ANTHROPIC_DEFAULT_OPUS_MODEL".to_string(),
-            provider.model.clone(),
-        );
-        config.env.insert(
-            "ANTHROPIC_DEFAULT_HAIKU_MODEL".to_string(),
-            provider.model.clone(),
-        );
-        config.env.insert(
-            "ANTHROPIC_DEFAULT_FABLE_MODEL".to_string(),
-            provider.model.clone(),
-        );
+
+        // Note: We do NOT set ANTHROPIC_DEFAULT_SONNET_MODEL, OPUS_MODEL, etc.
+        // EchoBird's approach: only set ANTHROPIC_MODEL, let Claude Code discover
+        // the full model list from the API. This prevents model selector confusion.
 
         config.write()?;
 
