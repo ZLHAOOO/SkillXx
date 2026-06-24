@@ -33,8 +33,8 @@ pub use llm_providers::{
     delete_llm_provider, fetch_models_for_config, get_active_provider, get_llm_providers, get_tool_bindings,
     multi_switch_llm_provider, save_llm_provider_multi, save_tool_bindings,
 };
-pub use claude_config::{apply_claude_provider, clear_claude_provider, read_claude_env, restart_claude_code_cmd, write_claude_env};
-pub use codex_config::{apply_codex_provider, clear_codex_provider, read_codex_env, restart_codex_cmd};
+pub use claude_config::{apply_claude_provider, clear_claude_provider, read_claude_env, restart_claude_code_cmd, write_claude_env, list_claude_backups, restore_claude_backup};
+pub use codex_config::{apply_codex_provider, clear_codex_provider, read_codex_env, restart_codex_cmd, list_codex_backups, restore_codex_backup, restore_codex_original};
 pub use marketplace::{
     check_marketplace_updates_if_stale, fetch_marketplace_skill_descriptions,
     fetch_marketplace_skills, fetch_skill_file_content, fetch_skill_files, get_marketplace_sources,

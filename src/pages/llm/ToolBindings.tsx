@@ -63,6 +63,10 @@ export function ToolBindings() {
   const [codexConfigWritten, setCodexConfigWritten] = useState(false);
   const [restartingCodex, setRestartingCodex] = useState(false);
 
+  // Backup/restore state
+  const [restoringClaude, setRestoringClaude] = useState(false);
+  const [restoringCodex, setRestoringCodex] = useState(false);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -72,7 +76,6 @@ export function ToolBindings() {
       ]);
       setProviders(providerList);
       setBindings(currentBindings);
-      // Reset claude config state when bindings change
       setClaudeConfigWritten(false);
     } catch (err) {
       addToast(t("llmProviders.bindings.loadFailed"), "error");
@@ -90,7 +93,6 @@ export function ToolBindings() {
     setBindings((prev) => {
       const next = { ...prev, [toolId]: providerId };
       setHasChanges(true);
-      // Reset config state when binding changes
       if (toolId === "claude-code") {
         setClaudeConfigWritten(false);
       }
@@ -130,7 +132,7 @@ export function ToolBindings() {
 
     setWritingClaudeConfig(true);
     try {
-      await invoke("apply_claude_provider", { provider: {
+      const result = await invoke<string>("apply_claude_provider", { provider: {
         id: provider.id,
         name: provider.name,
         base_url: provider.base_url,
@@ -144,7 +146,7 @@ export function ToolBindings() {
         timeout_secs: provider.timeout_secs,
       }});
       setClaudeConfigWritten(true);
-      addToast("Claude Code 配置已写入 ~/.claude/settings.json", "success");
+      addToast(result || "Claude Code 配置已写入", "success");
     } catch (err) {
       addToast("写入 Claude Code 配置失败: " + String(err), "error");
       console.error("Failed to write Claude config:", err);
@@ -176,7 +178,7 @@ export function ToolBindings() {
 
     setWritingCodexConfig(true);
     try {
-      await invoke("apply_codex_provider", { provider: {
+      const result = await invoke<string>("apply_codex_provider", { provider: {
         id: provider.id,
         name: provider.name,
         base_url: provider.base_url,
@@ -190,7 +192,7 @@ export function ToolBindings() {
         timeout_secs: provider.timeout_secs,
       }});
       setCodexConfigWritten(true);
-      addToast("Codex 配置已写入 ~/.codex/config.toml", "success");
+      addToast(result || "Codex 配置已写入", "success");
     } catch (err) {
       addToast("写入 Codex 配置失败: " + String(err), "error");
       console.error("Failed to write Codex config:", err);
@@ -210,6 +212,34 @@ export function ToolBindings() {
       console.error("Failed to restart Codex:", err);
     } finally {
       setRestartingCodex(false);
+    }
+  };
+
+  const handleRestoreClaude = async () => {
+    setRestoringClaude(true);
+    try {
+      const result = await invoke<string>("clear_claude_provider");
+      addToast(result || "Claude Code 配置已恢复", "success");
+      setClaudeConfigWritten(false);
+    } catch (err) {
+      addToast("恢复 Claude Code 配置失败: " + String(err), "error");
+      console.error("Failed to restore Claude config:", err);
+    } finally {
+      setRestoringClaude(false);
+    }
+  };
+
+  const handleRestoreCodex = async () => {
+    setRestoringCodex(true);
+    try {
+      const result = await invoke<string>("restore_codex_original");
+      addToast(result || "Codex 已恢复为原始 OpenAI 配置", "success");
+      setCodexConfigWritten(false);
+    } catch (err) {
+      addToast("恢复 Codex 配置失败: " + String(err), "error");
+      console.error("Failed to restore Codex config:", err);
+    } finally {
+      setRestoringCodex(false);
     }
   };
 
@@ -419,6 +449,10 @@ export function ToolBindings() {
             }}
           >
             将当前选中的大模型配置写入 Claude Code 的 settings.json，修改后需要重启 Claude Code 才能生效。
+            <br />
+            <span style={{ color: "var(--muted-foreground)", opacity: 0.7 }}>
+              写入前会自动备份原始配置，支持一键恢复。
+            </span>
           </div>
 
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -452,6 +486,15 @@ export function ToolBindings() {
                 </span>
               </>
             )}
+            <Button
+              onClick={handleRestoreClaude}
+              disabled={restoringClaude}
+              variant="outline"
+              size="sm"
+              style={{ borderColor: "#d4a574", color: "#d4a574" }}
+            >
+              {restoringClaude ? "恢复中..." : "恢复原始配置"}
+            </Button>
           </div>
         </div>
       )}
@@ -514,7 +557,11 @@ export function ToolBindings() {
               lineHeight: "1.5",
             }}
           >
-            将当前选中的大模型配置写入 Codex 的 config.toml，修改后需要重启 Codex 才能生效。
+            将当前选中的大模型配置写入 Codex 的 config.toml + auth.json，修改后需要重启 Codex 才能生效。
+            <br />
+            <span style={{ color: "var(--muted-foreground)", opacity: 0.7 }}>
+              写入前会自动备份原始配置，支持一键恢复为 OpenAI 官方配置。
+            </span>
           </div>
 
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -548,20 +595,24 @@ export function ToolBindings() {
                 </span>
               </>
             )}
+            <Button
+              onClick={handleRestoreCodex}
+              disabled={restoringCodex}
+              variant="outline"
+              size="sm"
+              style={{ borderColor: "#6b7280", color: "#6b7280" }}
+            >
+              {restoringCodex ? "恢复中..." : "恢复 OpenAI 官方配置"}
+            </Button>
           </div>
         </div>
       )}
 
+      {/* Save bindings button */}
       {hasChanges && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            paddingTop: "4px",
-          }}
-        >
-          <Button onClick={handleSave} variant="default" disabled={saving}>
-            {saving ? t("common.saving") : t("llmProviders.bindings.save")}
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <Button onClick={handleSave} disabled={saving} variant="default" size="sm">
+            {saving ? "保存中..." : "保存绑定"}
           </Button>
         </div>
       )}

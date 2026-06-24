@@ -13,7 +13,7 @@ pub fn read_codex_env() -> Result<std::collections::HashMap<String, String>, Str
 /// Completions. The config.toml base_url points to localhost instead of
 /// the real upstream.
 #[tauri::command]
-pub async fn apply_codex_provider(provider: LlmProviderConfig) -> Result<(), String> {
+pub async fn apply_codex_provider(provider: LlmProviderConfig) -> Result<String, String> {
     // Determine whether we need the protocol proxy.
     // Providers with api_format="openai" speak Chat Completions, but Codex
     // only speaks Responses API. The local proxy bridges this gap.
@@ -42,7 +42,7 @@ pub async fn apply_codex_provider(provider: LlmProviderConfig) -> Result<(), Str
             &proxy_url,
             &provider.model,
             &provider.name,
-        )?;
+        )
     } else {
         // Direct mode: provider speaks Responses API natively
         let base_url = if !provider.base_url_openai.is_empty() {
@@ -56,16 +56,37 @@ pub async fn apply_codex_provider(provider: LlmProviderConfig) -> Result<(), Str
             &base_url,
             &provider.model,
             &provider.name,
-        )?;
+        )
     }
-
-    Ok(())
 }
 
-/// Clear Codex provider config
+/// Clear Codex provider config (with auto-backup)
 #[tauri::command]
-pub fn clear_codex_provider() -> Result<(), String> {
+pub fn clear_codex_provider() -> Result<String, String> {
     crate::services::codex_config::clear_codex_provider()
+}
+
+/// Restore Codex to original OpenAI configuration
+#[tauri::command]
+pub fn restore_codex_original() -> Result<String, String> {
+    crate::services::codex_config::restore_codex_original()
+}
+
+/// List all available Codex config backups (auth and config separately)
+#[tauri::command]
+pub fn list_codex_backups(
+    file_prefix: String,
+) -> Result<Vec<String>, String> {
+    crate::services::codex_config::list_backups(&file_prefix)
+}
+
+/// Restore Codex config from a specific backup
+#[tauri::command]
+pub fn restore_codex_backup(
+    file_prefix: String,
+    backup_name: String,
+) -> Result<(), String> {
+    crate::services::codex_config::restore_backup(&file_prefix, &backup_name)
 }
 
 /// Restart Codex (kills and relaunches the process)

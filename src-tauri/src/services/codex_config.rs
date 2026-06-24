@@ -2,6 +2,153 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Maximum number of backups to keep
+const MAX_BACKUPS: usize = 5;
+
+/// Directory for storing config backups
+fn backup_dir() -> PathBuf {
+    dirs::home_dir()
+        .unwrap_or_default()
+        .join(".codex")
+        .join("backups")
+}
+
+/// Generate a timestamped backup filename
+fn backup_filename(prefix: &str) -> String {
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    format!("{}.bak-{}", prefix, ts)
+}
+
+/// List all available backups for a given file (auth or config), sorted newest first
+pub fn list_backups(file_prefix: &str) -> Result<Vec<String>, String> {
+    let dir = backup_dir();
+    if !dir.exists() {
+        return Ok(vec![]);
+    }
+    let mut backups: Vec<String> = fs::read_dir(&dir)
+        .map_err(|e| format!("Failed to read backup dir: {e}"))?
+        .filter_map(|entry| {
+            let entry = entry.ok()?;
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if name.starts_with(&format!("{}.bak-", file_prefix)) {
+                Some(name)
+            } else {
+                None
+            }
+        })
+        .collect();
+    backups.sort_by(|a, b| b.cmp(a)); // newest first
+    Ok(backups)
+}
+
+/// Create a backup of a specific file
+fn create_backup(src: &PathBuf, file_prefix: &str) -> Result<String, String> {
+    if !src.exists() {
+        return Err(format!("{} does not exist, nothing to backup", src.display()));
+    }
+
+    let dir = backup_dir();
+    fs::create_dir_all(&dir).map_err(|e| format!("Failed to create backup dir: {e}"))?;
+
+    let backup_name = backup_filename(file_prefix);
+    let backup_path = dir.join(&backup_name);
+
+    fs::copy(src, &backup_path)
+        .map_err(|e| format!("Failed to copy {} to backup: {e}", src.display()))?;
+
+    // Prune old backups (keep only MAX_BACKUPS per prefix)
+    let prefix_pattern = format!("{}.bak-", file_prefix);
+    let mut existing: Vec<fs::DirEntry> = fs::read_dir(&dir)
+        .map_err(|e| format!("Failed to read backup dir: {e}"))?
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            e.file_name()
+                .to_string_lossy()
+                .starts_with(&prefix_pattern)
+        })
+        .collect();
+
+    existing.sort_by(|a, b| {
+        let ta = a.metadata().ok().and_then(|m| m.modified().ok());
+        let tb = b.metadata().ok().and_then(|m| m.modified().ok());
+        tb.cmp(&ta)
+    });
+
+    for entry in existing.iter().skip(MAX_BACKUPS) {
+        let _ = fs::remove_file(entry.path());
+    }
+
+    Ok(backup_name)
+}
+
+/// Restore a specific file from a backup
+pub fn restore_backup(file_prefix: &str, backup_name: &str) -> Result<(), String> {
+    let dir = backup_dir();
+    let backup_path = dir.join(backup_name);
+
+    if !backup_path.exists() {
+        return Err(format!("Backup file not found: {backup_name}"));
+    }
+
+    let target = match file_prefix {
+        "auth" => get_codex_auth_path(),
+        "config" => get_codex_config_path(),
+        _ => return Err(format!("Unknown file prefix: {file_prefix}")),
+    };
+
+    fs::copy(&backup_path, &target)
+        .map_err(|e| format!("Failed to restore from backup: {e}"))?;
+
+    Ok(())
+}
+
+/// Restore Codex to original OpenAI configuration
+/// This removes the custom model provider and restores the default OpenAI setup
+pub fn restore_codex_original() -> Result<String, String> {
+    let config_path = get_codex_config_path();
+    let auth_path = get_codex_auth_path();
+
+    // Backup both files first
+    let auth_backup = if auth_path.exists() {
+        Some(create_backup(&auth_path, "auth")?)
+    } else {
+        None
+    };
+    let config_backup = if config_path.exists() {
+        Some(create_backup(&config_path, "config")?)
+    } else {
+        None
+    };
+
+    // Write original config.toml
+    let original_config = r#"model_provider = "openai"
+model = "o4-mini"
+disable_response_storage = true
+"#;
+    fs::write(&config_path, original_config.as_bytes())
+        .map_err(|e| format!("Failed to write original config.toml: {e}"))?;
+
+    // Write original auth.json (empty OPENAI_API_KEY placeholder — user must fill in)
+    let original_auth: Value = json!({
+        "OPENAI_API_KEY": ""
+    });
+    let auth_json = serde_json::to_string_pretty(&original_auth)
+        .map_err(|e| format!("Failed to serialize original auth.json: {e}"))?;
+    fs::write(&auth_path, auth_json.as_bytes())
+        .map_err(|e| format!("Failed to write original auth.json: {e}"))?;
+
+    let auth_name = auth_backup.unwrap_or_else(|| "none".to_string());
+    let config_name = config_backup.unwrap_or_else(|| "none".to_string());
+    Ok(format!(
+        "Restored to original OpenAI config. Backups: auth={}, config={}. Please set your OpenAI_API_KEY in auth.json.",
+        auth_name, config_name
+    ))
+}
 
 /// Path to Codex config directory
 pub fn get_codex_dir() -> PathBuf {
@@ -54,43 +201,53 @@ pub fn read_codex_live() -> Result<HashMap<String, String>, String> {
 /// - Otherwise, use as-is (user has a custom path)
 fn normalize_codex_base_url(url: &str) -> String {
     let trimmed = url.trim_end_matches('/');
-    let origin_only = match trimmed.split_once("://") {
-        Some((_scheme, rest)) => !rest.contains('/'),
-        None => !trimmed.contains('/'),
-    };
     if trimmed.ends_with("/v1") {
         trimmed.to_string()
-    } else if origin_only {
-        format!("{trimmed}/v1")
-    } else {
+    } else if trimmed.contains('/') {
+        // Has a path component, use as-is
         trimmed.to_string()
+    } else {
+        // Origin-only, append /v1
+        format!("{}/v1", trimmed)
     }
 }
 
 /// Write provider config into Codex's auth.json and config.toml
+/// Automatically creates backups before writing.
+/// Uses the OpenAI-compatible base_url.
 pub fn apply_codex_provider(
     api_key: &str,
     base_url: &str,
     model: &str,
     provider_name: &str,
-) -> Result<(), String> {
+) -> Result<String, String> {
     let codex_dir = get_codex_dir();
     fs::create_dir_all(&codex_dir)
-        .map_err(|e| format!("Failed to create Codex dir: {}", e))?;
+        .map_err(|e| format!("Failed to create Codex dir: {e}"))?;
+
+    let auth_path = get_codex_auth_path();
+    let config_path = get_codex_config_path();
+
+    // Backup auth.json
+    let auth_backup = if auth_path.exists() {
+        Some(create_backup(&auth_path, "auth")?)
+    } else {
+        None
+    };
+
+    // Backup config.toml
+    let config_backup = if config_path.exists() {
+        Some(create_backup(&config_path, "config")?)
+    } else {
+        None
+    };
 
     // Write auth.json
     let auth: Value = json!({
         "OPENAI_API_KEY": api_key,
     });
     let auth_json = serde_json::to_string_pretty(&auth)
-        .map_err(|e| format!("Failed to serialize auth.json: {}", e))?;
-    let auth_path = get_codex_auth_path();
-    // Read old auth for rollback
-    let old_auth = if auth_path.exists() {
-        Some(fs::read(&auth_path).map_err(|e| format!("Failed to read old auth: {}", e))?)
-    } else {
-        None
-    };
+        .map_err(|e| format!("Failed to serialize auth.json: {e}"))?;
     fs::write(&auth_path, auth_json.as_bytes())
         .map_err(|e| format!("Failed to write {}: {}", auth_path.display(), e))?;
 
@@ -108,56 +265,60 @@ base_url = "{normalized_base_url}"
 wire_api = "responses"
 requires_openai_auth = true"#
     );
+
+    fs::write(&config_path, &config_toml)
+        .map_err(|e| format!("Failed to write {}: {}", config_path.display(), e))?;
+
+    let auth_name = auth_backup.unwrap_or_else(|| "none".to_string());
+    let config_name = config_backup.unwrap_or_else(|| "none".to_string());
+    Ok(format!(
+        "Backups: auth={}, config={}. Provider applied (base_url: {}).",
+        auth_name, config_name, normalized_base_url
+    ))
+}
+
+/// Clear Codex provider config — remove OPENAI_API_KEY from auth.json
+/// and remove [model_providers.custom] section from config.toml.
+/// Automatically creates backups before clearing.
+pub fn clear_codex_provider() -> Result<String, String> {
+    let auth_path = get_codex_auth_path();
     let config_path = get_codex_config_path();
-    // Read old config for rollback
-    let old_config = if config_path.exists() {
-        Some(fs::read(&config_path).map_err(|e| format!("Failed to read old config: {}", e))?)
+
+    // Backup
+    let auth_backup = if auth_path.exists() {
+        Some(create_backup(&auth_path, "auth")?)
+    } else {
+        None
+    };
+    let config_backup = if config_path.exists() {
+        Some(create_backup(&config_path, "config")?)
     } else {
         None
     };
 
-    if let Err(e) = fs::write(&config_path, &config_toml) {
-        // Rollback auth.json
-        if let Some(old) = old_auth {
-            let _ = fs::write(&auth_path, old);
-        } else {
-            let _ = fs::remove_file(&auth_path);
-        }
-        return Err(format!("Failed to write {}: {}", config_path.display(), e));
-    }
-
-    // If this is the first write, and old config didn't exist, no rollback needed.
-    // If it was an update, restore old config on failure (already handled above).
-    drop(old_config);
-
-    Ok(())
-}
-
-/// Clear Codex provider config — remove OPENAI_API_KEY from auth.json
-/// and remove [model_providers.custom] section from config.toml
-pub fn clear_codex_provider() -> Result<(), String> {
     // Clear auth.json
-    let auth_path = get_codex_auth_path();
-    if auth_path.exists() {
-        let auth: Value = json!({});
-        let auth_json = serde_json::to_string_pretty(&auth)
-            .map_err(|e| format!("Failed to serialize auth.json: {}", e))?;
-        fs::write(&auth_path, auth_json.as_bytes())
-            .map_err(|e| format!("Failed to write {}: {}", auth_path.display(), e))?;
-    }
+    let auth: Value = json!({});
+    let auth_json = serde_json::to_string_pretty(&auth)
+        .map_err(|e| format!("Failed to serialize auth.json: {e}"))?;
+    fs::write(&auth_path, auth_json.as_bytes())
+        .map_err(|e| format!("Failed to write {}: {}", auth_path.display(), e))?;
 
-    // Set model_provider back to "openai" and clear custom section
-    let config_path = get_codex_config_path();
+    // Restore model_provider to "openai" and remove custom section
     if config_path.exists() {
         let content = fs::read_to_string(&config_path)
             .map_err(|e| format!("Failed to read {}: {}", config_path.display(), e))?;
-        // Replace model_provider = "custom" with model_provider = "openai"
-        let updated = content.replace("model_provider = \"custom\"", "model_provider = \"openai\"");
+        let updated = content
+            .replace("model_provider = \"custom\"", "model_provider = \"openai\"");
         fs::write(&config_path, updated)
             .map_err(|e| format!("Failed to write {}: {}", config_path.display(), e))?;
     }
 
-    Ok(())
+    let auth_name = auth_backup.unwrap_or_else(|| "none".to_string());
+    let config_name = config_backup.unwrap_or_else(|| "none".to_string());
+    Ok(format!(
+        "Backups: auth={}, config={}. Codex config cleared (reverted to openai provider).",
+        auth_name, config_name
+    ))
 }
 
 /// Restart Codex by killing and relaunching the process.
@@ -176,12 +337,8 @@ pub fn restart_codex() -> Result<String, String> {
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     // Force kill any stragglers
-    let _ = Command::new("killall")
-        .args(["-9", "Codex"])
-        .output();
-    let _ = Command::new("killall")
-        .args(["-9", "codex"])
-        .output();
+    let _ = Command::new("killall").args(["-9", "Codex"]).output();
+    let _ = Command::new("killall").args(["-9", "codex"]).output();
 
     std::thread::sleep(std::time::Duration::from_millis(500));
 
@@ -191,7 +348,7 @@ pub fn restart_codex() -> Result<String, String> {
         let output = Command::new("open")
             .args(["-a", "Codex"])
             .output()
-            .map_err(|e| format!("Failed to relaunch Codex: {}", e))?;
+            .map_err(|e| format!("Failed to relaunch Codex: {e}"))?;
         if output.status.success() {
             return Ok("Codex restarted successfully".to_string());
         }
@@ -211,15 +368,13 @@ pub fn restart_codex() -> Result<String, String> {
 pub fn restart_codex() -> Result<String, String> {
     use std::process::Command;
 
-    let _ = Command::new("pkill")
-        .args(["-f", "codex"])
-        .output();
+    let _ = Command::new("pkill").args(["-f", "codex"]).output();
 
     std::thread::sleep(std::time::Duration::from_millis(500));
 
     let _ = Command::new("codex")
         .spawn()
-        .map_err(|e| format!("Failed to relaunch Codex: {}", e))?;
+        .map_err(|e| format!("Failed to relaunch Codex: {e}"))?;
 
     Ok("Codex restarted successfully".to_string())
 }

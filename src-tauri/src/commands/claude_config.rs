@@ -9,21 +9,21 @@ pub fn read_claude_env() -> Result<std::collections::HashMap<String, String>, St
 }
 
 /// Write a provider's config into Claude Code's settings.json env section
+/// Automatically creates a backup before writing.
 #[tauri::command]
-pub fn apply_claude_provider(provider: LlmProviderConfig) -> Result<(), String> {
+pub fn apply_claude_provider(provider: LlmProviderConfig) -> Result<String, String> {
     use crate::services::claude_config::{ClaudeConfig, ProviderEnvConfig};
     let config = ClaudeConfig::read()?;
-    // Always use Anthropic-format URL for Claude Code, since Claude Code
-    // communicates using Anthropic's API protocol. If the provider was configured
-    // with OpenAI format, base_url would contain the wrong URL.
-    let base_url = if !provider.base_url_anthropic.is_empty() {
-        provider.base_url_anthropic
+    let base_url_anthropic = provider.base_url_anthropic.clone();
+    let base_url = if !base_url_anthropic.is_empty() {
+        base_url_anthropic.clone()
     } else {
         provider.base_url
     };
     let env_config = ProviderEnvConfig {
         api_key: provider.api_key,
         base_url,
+        base_url_anthropic,
         model: provider.model,
     };
     config.apply_provider(&env_config)
@@ -31,17 +31,32 @@ pub fn apply_claude_provider(provider: LlmProviderConfig) -> Result<(), String> 
 
 /// Write raw provider config into Claude Code's settings.json
 #[tauri::command]
-pub fn write_claude_env(env_config: crate::services::claude_config::ProviderEnvConfig) -> Result<(), String> {
+pub fn write_claude_env(
+    env_config: crate::services::claude_config::ProviderEnvConfig,
+) -> Result<String, String> {
     use crate::services::claude_config::ClaudeConfig;
     let config = ClaudeConfig::read()?;
     config.apply_provider(&env_config)
 }
 
 /// Clear all ANTHROPIC_* env vars from Claude Code's settings
+/// Automatically creates a backup before clearing.
 #[tauri::command]
-pub fn clear_claude_provider() -> Result<(), String> {
+pub fn clear_claude_provider() -> Result<String, String> {
     use crate::services::claude_config::ClaudeConfig;
     ClaudeConfig::clear_provider()
+}
+
+/// List all available Claude Code config backups
+#[tauri::command]
+pub fn list_claude_backups() -> Result<Vec<String>, String> {
+    crate::services::claude_config::list_backups()
+}
+
+/// Restore Claude Code config from a specific backup
+#[tauri::command]
+pub fn restore_claude_backup(backup_name: String) -> Result<(), String> {
+    crate::services::claude_config::restore_backup(&backup_name)
 }
 
 /// Restart Claude Code (kills and relaunches the process)
