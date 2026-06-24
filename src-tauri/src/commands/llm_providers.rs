@@ -1,6 +1,82 @@
 use crate::models::config::LlmProviderConfig;
 use crate::services::config_manager::ConfigManager;
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelInfo {
+    pub id: String,
+    #[serde(default)]
+    pub owned_by: Option<String>,
+}
+
+#[tauri::command]
+pub async fn fetch_models_for_config(
+    base_url: String,
+    api_key: String,
+    is_full_url: bool,
+    models_url: Option<String>,
+) -> Result<Vec<ModelInfo>, String> {
+    let trimmed_url = base_url.trim().trim_end_matches('/');
+    if trimmed_url.is_empty() {
+        return Err("Base URL is required".to_string());
+    }
+
+    let url = if let Some(murl) = models_url {
+        if !murl.starts_with("http://") && !murl.starts_with("https://") {
+            return Err("Invalid models URL".to_string());
+        }
+        murl
+    } else if is_full_url {
+        trimmed_url.to_string()
+    } else {
+        format!("{}/v1/models", trimmed_url)
+    };
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .connect_timeout(Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get(&url)
+        .header(CONTENT_TYPE, "application/json")
+        .header(AUTHORIZATION, format!("Bearer {}", api_key))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let status = response.status();
+    if !status.is_success() {
+        let text = response.text().await.unwrap_or_default();
+        return Err(format!("HTTP {}: {}", status.as_u16(), text));
+    }
+
+    #[derive(Deserialize)]
+    struct ModelsResponse {
+        data: Vec<RawModel>,
+    }
+
+    #[derive(Deserialize)]
+    struct RawModel {
+        id: String,
+        owned_by: Option<String>,
+    }
+
+    let resp: ModelsResponse = response.json().await.map_err(|e| e.to_string())?;
+    let models: Vec<ModelInfo> = resp
+        .data
+        .into_iter()
+        .map(|m| ModelInfo {
+            id: m.id,
+            owned_by: m.owned_by,
+        })
+        .collect();
+
+    Ok(models)
+}
 
 #[tauri::command]
 pub fn get_llm_providers() -> Result<Vec<LlmProviderConfig>, String> {

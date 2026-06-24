@@ -19,6 +19,15 @@ pub fn get_llm_provider() -> Result<Option<LlmProvider>, String> {
     Ok(config.llm_provider)
 }
 
+/// Get the resolved translation provider:
+/// 1. If translation_provider_id is set in preferences, find that provider
+/// 2. Otherwise fall back to the legacy llm_provider field
+/// 3. Returns null if no provider is available
+#[tauri::command]
+pub fn get_translation_provider() -> Result<Option<LlmProvider>, String> {
+    load_provider_or_error().map(Some).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn save_llm_provider(provider: LlmProvider) -> Result<(), String> {
     if provider.base_url.trim().is_empty() {
@@ -94,6 +103,36 @@ pub struct MarketplaceTranslationInput {
 fn load_provider_or_error() -> Result<LlmProvider, LlmError> {
     let manager = ConfigManager::new();
     let config = manager.load().map_err(|e| LlmError::NetworkError(e))?;
+
+    // First, try the dedicated translation_provider_id preference
+    if let Some(ref pref_id) = config.preferences.as_ref().and_then(|p| p.translation_provider_id.as_ref()) {
+        if let Some(p) = config.llm_providers.iter().find(|p| p.id == **pref_id) {
+            return Ok(LlmProvider {
+                base_url: p.base_url.clone(),
+                api_key: p.api_key.clone(),
+                model: p.model.clone(),
+                temperature: p.temperature,
+                max_tokens: p.max_tokens,
+                timeout_secs: p.timeout_secs,
+            });
+        }
+    }
+
+    // Fallback to active_provider_id (the provider currently selected in the LLM page)
+    if let Some(ref active_id) = config.active_provider_id {
+        if let Some(p) = config.llm_providers.iter().find(|p| p.id == **active_id) {
+            return Ok(LlmProvider {
+                base_url: p.base_url.clone(),
+                api_key: p.api_key.clone(),
+                model: p.model.clone(),
+                temperature: p.temperature,
+                max_tokens: p.max_tokens,
+                timeout_secs: p.timeout_secs,
+            });
+        }
+    }
+
+    // Fallback to legacy llm_provider
     config.llm_provider.ok_or(LlmError::NotConfigured)
 }
 

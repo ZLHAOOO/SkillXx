@@ -11,6 +11,9 @@ export interface LlmProviderConfig {
   id: string;
   name: string;
   base_url: string;
+  base_url_openai: string;
+  base_url_anthropic: string;
+  api_format: string;
   api_key: string;
   model: string;
   temperature?: number;
@@ -22,7 +25,7 @@ const TOOL_IDS = ["claude-code", "codex", "gemini", "opencode", "openclaw", "her
 
 const TOOL_NAMES: Record<string, string> = {
   "claude-code": "Claude Code",
-  "codex": "Codex CLI",
+  "codex": "Codex",
   "gemini": "Gemini CLI",
   "opencode": "OpenCode",
   "openclaw": "OpenClaw",
@@ -50,6 +53,16 @@ export function ToolBindings() {
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Claude Code config write state
+  const [writingClaudeConfig, setWritingClaudeConfig] = useState(false);
+  const [claudeConfigWritten, setClaudeConfigWritten] = useState(false);
+  const [restartingClaude, setRestartingClaude] = useState(false);
+
+  // Codex config write state
+  const [writingCodexConfig, setWritingCodexConfig] = useState(false);
+  const [codexConfigWritten, setCodexConfigWritten] = useState(false);
+  const [restartingCodex, setRestartingCodex] = useState(false);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -59,6 +72,8 @@ export function ToolBindings() {
       ]);
       setProviders(providerList);
       setBindings(currentBindings);
+      // Reset claude config state when bindings change
+      setClaudeConfigWritten(false);
     } catch (err) {
       addToast(t("llmProviders.bindings.loadFailed"), "error");
       console.error("Failed to load tool bindings:", err);
@@ -75,6 +90,13 @@ export function ToolBindings() {
     setBindings((prev) => {
       const next = { ...prev, [toolId]: providerId };
       setHasChanges(true);
+      // Reset config state when binding changes
+      if (toolId === "claude-code") {
+        setClaudeConfigWritten(false);
+      }
+      if (toolId === "codex") {
+        setCodexConfigWritten(false);
+      }
       return next;
     });
   };
@@ -82,7 +104,7 @@ export function ToolBindings() {
   const getProviderLabel = (providerId: string): string => {
     const provider = providers.find((p) => p.id === providerId);
     if (!provider) return t("llmProviders.bindings.noProviders");
-    return `${provider.name} \u2192 ${provider.model}`;
+    return `${provider.name} → ${provider.model}`;
   };
 
   const handleSave = async () => {
@@ -98,6 +120,103 @@ export function ToolBindings() {
       setSaving(false);
     }
   };
+
+  const handleWriteClaudeConfig = async () => {
+    const providerId = bindings["claude-code"];
+    if (!providerId) return;
+
+    const provider = providers.find((p) => p.id === providerId);
+    if (!provider) return;
+
+    setWritingClaudeConfig(true);
+    try {
+      await invoke("apply_claude_provider", { provider: {
+        id: provider.id,
+        name: provider.name,
+        base_url: provider.base_url,
+        base_url_openai: provider.base_url_openai || "",
+        base_url_anthropic: provider.base_url_anthropic || "",
+        api_format: provider.api_format || "",
+        api_key: provider.api_key,
+        model: provider.model,
+        temperature: provider.temperature,
+        max_tokens: provider.max_tokens,
+        timeout_secs: provider.timeout_secs,
+      }});
+      setClaudeConfigWritten(true);
+      addToast("Claude Code 配置已写入 ~/.claude/settings.json", "success");
+    } catch (err) {
+      addToast("写入 Claude Code 配置失败: " + String(err), "error");
+      console.error("Failed to write Claude config:", err);
+    } finally {
+      setWritingClaudeConfig(false);
+    }
+  };
+
+  const handleRestartClaudeCode = async () => {
+    setRestartingClaude(true);
+    try {
+      const result = await invoke<string>("restart_claude_code_cmd");
+      addToast(result || "Claude Code 已重启", "success");
+      setClaudeConfigWritten(false);
+    } catch (err) {
+      addToast("重启 Claude Code 失败: " + String(err), "error");
+      console.error("Failed to restart Claude Code:", err);
+    } finally {
+      setRestartingClaude(false);
+    }
+  };
+
+  const handleWriteCodexConfig = async () => {
+    const providerId = bindings["codex"];
+    if (!providerId) return;
+
+    const provider = providers.find((p) => p.id === providerId);
+    if (!provider) return;
+
+    setWritingCodexConfig(true);
+    try {
+      await invoke("apply_codex_provider", { provider: {
+        id: provider.id,
+        name: provider.name,
+        base_url: provider.base_url,
+        base_url_openai: provider.base_url_openai || "",
+        base_url_anthropic: provider.base_url_anthropic || "",
+        api_format: provider.api_format || "",
+        api_key: provider.api_key,
+        model: provider.model,
+        temperature: provider.temperature,
+        max_tokens: provider.max_tokens,
+        timeout_secs: provider.timeout_secs,
+      }});
+      setCodexConfigWritten(true);
+      addToast("Codex 配置已写入 ~/.codex/config.toml", "success");
+    } catch (err) {
+      addToast("写入 Codex 配置失败: " + String(err), "error");
+      console.error("Failed to write Codex config:", err);
+    } finally {
+      setWritingCodexConfig(false);
+    }
+  };
+
+  const handleRestartCodex = async () => {
+    setRestartingCodex(true);
+    try {
+      const result = await invoke<string>("restart_codex_cmd");
+      addToast(result || "Codex 已重启", "success");
+      setCodexConfigWritten(false);
+    } catch (err) {
+      addToast("重启 Codex 失败: " + String(err), "error");
+      console.error("Failed to restart Codex:", err);
+    } finally {
+      setRestartingCodex(false);
+    }
+  };
+
+  const claudeCodeBinding = bindings["claude-code"];
+  const claudeCodeProvider = providers.find((p) => p.id === claudeCodeBinding);
+  const codexBinding = bindings["codex"];
+  const codexProvider = providers.find((p) => p.id === codexBinding);
 
   if (loading) {
     return (
@@ -241,6 +360,198 @@ export function ToolBindings() {
         })}
       </div>
 
+      {/* Claude Code config section */}
+      {claudeCodeBinding && claudeCodeProvider && (
+        <div
+          style={{
+            marginTop: "8px",
+            padding: "16px",
+            borderRadius: "8px",
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--secondary)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "8px",
+            }}
+          >
+            <div
+              style={{
+                width: "28px",
+                height: "28px",
+                borderRadius: "50%",
+                backgroundColor: TOOL_COLORS["claude-code"],
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+                fontSize: "12px",
+                flexShrink: 0,
+              }}
+            >
+              C
+            </div>
+            <span style={{ fontWeight: 600, fontSize: "14px" }}>
+              Claude Code 配置
+            </span>
+            <Badge
+              style={{
+                fontSize: "11px",
+                backgroundColor: "var(--primary)",
+                color: "var(--primary-foreground)",
+              }}
+            >
+              {claudeCodeProvider.name}
+            </Badge>
+          </div>
+
+          <div
+            style={{
+              fontSize: "12px",
+              color: "var(--muted-foreground)",
+              marginBottom: "12px",
+              lineHeight: "1.5",
+            }}
+          >
+            将当前选中的大模型配置写入 Claude Code 的 settings.json，修改后需要重启 Claude Code 才能生效。
+          </div>
+
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {!claudeConfigWritten ? (
+              <Button
+                onClick={handleWriteClaudeConfig}
+                disabled={writingClaudeConfig}
+                variant="default"
+                size="sm"
+              >
+                {writingClaudeConfig ? "写入中..." : "写入 Claude Code 配置"}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={handleRestartClaudeCode}
+                  disabled={restartingClaude}
+                  variant="default"
+                  size="sm"
+                >
+                  {restartingClaude ? "重启中..." : "重启 Claude Code"}
+                </Button>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--muted-foreground)",
+                    alignSelf: "center",
+                  }}
+                >
+                  配置已写入，重启后生效
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Codex config section */}
+      {codexBinding && codexProvider && (
+        <div
+          style={{
+            marginTop: "8px",
+            padding: "16px",
+            borderRadius: "8px",
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--secondary)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "8px",
+            }}
+          >
+            <div
+              style={{
+                width: "28px",
+                height: "28px",
+                borderRadius: "50%",
+                backgroundColor: TOOL_COLORS["codex"],
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+                fontSize: "12px",
+                flexShrink: 0,
+              }}
+            >
+              C
+            </div>
+            <span style={{ fontWeight: 600, fontSize: "14px" }}>
+              Codex 配置
+            </span>
+            <Badge
+              style={{
+                fontSize: "11px",
+                backgroundColor: "var(--primary)",
+                color: "var(--primary-foreground)",
+              }}
+            >
+              {codexProvider.name}
+            </Badge>
+          </div>
+
+          <div
+            style={{
+              fontSize: "12px",
+              color: "var(--muted-foreground)",
+              marginBottom: "12px",
+              lineHeight: "1.5",
+            }}
+          >
+            将当前选中的大模型配置写入 Codex 的 config.toml，修改后需要重启 Codex 才能生效。
+          </div>
+
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {!codexConfigWritten ? (
+              <Button
+                onClick={handleWriteCodexConfig}
+                disabled={writingCodexConfig}
+                variant="default"
+                size="sm"
+              >
+                {writingCodexConfig ? "写入中..." : "写入 Codex 配置"}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={handleRestartCodex}
+                  disabled={restartingCodex}
+                  variant="default"
+                  size="sm"
+                >
+                  {restartingCodex ? "重启中..." : "重启 Codex"}
+                </Button>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--muted-foreground)",
+                    alignSelf: "center",
+                  }}
+                >
+                  配置已写入，重启后生效
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {hasChanges && (
         <div
           style={{
@@ -250,7 +561,7 @@ export function ToolBindings() {
           }}
         >
           <Button onClick={handleSave} variant="default" disabled={saving}>
-            {saving ? t("llmProviders.bindings.saving") || t("common.saving") : t("llmProviders.bindings.save")}
+            {saving ? t("common.saving") : t("llmProviders.bindings.save")}
           </Button>
         </div>
       )}

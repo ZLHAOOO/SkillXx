@@ -109,6 +109,9 @@ export interface UserPreferences {
   skill_display_name_lang: "original" | "zh" | "en";
   skill_display_desc_lang: "original" | "zh" | "en";
 
+  // Translation
+  translation_provider_id?: string | null;
+
   // Pin
   pinned_keys: string[];
 }

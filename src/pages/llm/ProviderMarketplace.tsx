@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { Check, Plus } from "lucide-react";
+import { useState } from "react";
+import { Plus } from "lucide-react";
 import providerDirectory from "@/data/providerDirectory.json";
 import { getProviderIcon, getProviderInitial } from "@/utils/providerIcon";
 import { ProviderAddModal } from "./ProviderAddModal";
@@ -17,11 +16,9 @@ interface ProviderDirectoryEntry {
 
 function ProviderMarketplaceCard({
   entry,
-  isAdded,
   onAddClick,
 }: {
   entry: ProviderDirectoryEntry;
-  isAdded: boolean;
   onAddClick: (entry: ProviderDirectoryEntry) => void;
 }) {
   const iconPath = getProviderIcon(entry.name, entry.id);
@@ -39,43 +36,26 @@ function ProviderMarketplaceCard({
     >
       {/* 右上角操作按钮 */}
       <div style={{ position: "absolute", top: "12px", right: "12px" }}>
-        {isAdded ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "30px",
-              height: "30px",
-              borderRadius: "6px",
-              backgroundColor: "var(--muted)",
-              color: "var(--muted-foreground)",
-            }}
-          >
-            <Check style={{ width: "16px", height: "16px" }} />
-          </div>
-        ) : (
-          <button
-            onClick={() => onAddClick(entry)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "30px",
-              height: "30px",
-              borderRadius: "6px",
-              backgroundColor: "var(--muted)",
-              color: "var(--muted-foreground)",
-              border: "none",
-              cursor: "pointer",
-              transition: "opacity 0.15s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-          >
-            <Plus style={{ width: "16px", height: "16px" }} />
-          </button>
-        )}
+        <button
+          onClick={() => onAddClick(entry)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "30px",
+            height: "30px",
+            borderRadius: "6px",
+            backgroundColor: "var(--muted)",
+            color: "var(--muted-foreground)",
+            border: "none",
+            cursor: "pointer",
+            transition: "opacity 0.15s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+        >
+          <Plus style={{ width: "16px", height: "16px" }} />
+        </button>
       </div>
 
       <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", paddingRight: "36px" }}>
@@ -130,26 +110,7 @@ function ProviderMarketplaceCard({
 }
 
 export function ProviderMarketplace() {
-  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState<ProviderDirectoryEntry | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const loadAddedProviders = useCallback(async () => {
-    try {
-      const providers = await invoke<ProviderDirectoryEntry[]>("get_llm_providers");
-      const ids = new Set(providers.map((p) => p.id));
-      setAddedIds(ids);
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadAddedProviders();
-  }, [loadAddedProviders, refreshKey]);
 
   const handleAddClick = (entry: ProviderDirectoryEntry) => {
     setSelectedEntry(entry);
@@ -169,20 +130,11 @@ export function ProviderMarketplace() {
 
   const handleModalSaved = () => {
     setSelectedEntry(null);
-    setRefreshKey((k) => k + 1);
   };
 
   const handleModalClose = () => {
     setSelectedEntry(null);
   };
-
-  if (loading) {
-    return (
-      <div style={{ padding: "24px", textAlign: "center", color: "var(--muted-foreground)" }}>
-        加载中...
-      </div>
-    );
-  }
 
   return (
     <div style={{ maxWidth: "1200px" }}>
@@ -242,7 +194,6 @@ export function ProviderMarketplace() {
           <ProviderMarketplaceCard
             key={entry.id}
             entry={entry}
-            isAdded={addedIds.has(entry.id)}
             onAddClick={handleAddClick}
           />
         ))}

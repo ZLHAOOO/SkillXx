@@ -1,5 +1,7 @@
 #[allow(dead_code)]
 pub mod auth;
+pub mod claude_config;
+pub mod codex_config;
 pub mod config;
 pub mod editors;
 pub mod feedback;
@@ -23,14 +25,16 @@ pub use files::{read_directory_tree, read_file, write_file};
 pub use llm::{
     clear_llm_provider, clear_translation_cache, get_cached_marketplace_translations,
     get_cached_skill_translations, get_cached_text_translation, get_llm_provider,
-    save_llm_provider, test_llm_provider, translate_skill,
+    get_translation_provider, save_llm_provider, test_llm_provider, translate_skill,
     translate_skill_files, translate_skill_name_desc, translate_skill_name_desc_custom,
     translate_skills_batch, translate_text_content,
 };
 pub use llm_providers::{
-    delete_llm_provider, get_active_provider, get_llm_providers, get_tool_bindings,
+    delete_llm_provider, fetch_models_for_config, get_active_provider, get_llm_providers, get_tool_bindings,
     multi_switch_llm_provider, save_llm_provider_multi, save_tool_bindings,
 };
+pub use claude_config::{apply_claude_provider, clear_claude_provider, read_claude_env, restart_claude_code_cmd, write_claude_env};
+pub use codex_config::{apply_codex_provider, clear_codex_provider, read_codex_env, restart_codex_cmd};
 pub use marketplace::{
     check_marketplace_updates_if_stale, fetch_marketplace_skill_descriptions,
     fetch_marketplace_skills, fetch_skill_file_content, fetch_skill_files, get_marketplace_sources,

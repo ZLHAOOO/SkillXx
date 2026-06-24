@@ -12,7 +12,6 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { ExternalLink, Link2, Plus, Loader2 } from "lucide-react";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { PageHeader } from "@/components/ui/page-header";
-import { PageLoader } from "@/components/ui/loading";
 import { ToastContainer, useToast } from "@/components/ui/toast";
 import { InstallCountBadge } from "@/components/marketplace/InstallCountBadge";
 import {
@@ -34,7 +33,7 @@ import { getSkillColor } from "@/lib/getSkillColor";
 import { formatTranslationError } from "@/lib/formatTranslationError";
 import { SearchBar } from "@/components/marketplace/SearchBar";
 import { PlatformSkillCard } from "@/components/marketplace/PlatformSkillCard";
-import type { PlatformSkill, PlatformInstallResult } from "@/types";
+import type { AppConfig, PlatformSkill, PlatformInstallResult } from "@/types";
 
 const DESCRIPTION_BATCH_SIZE = 12;
 const DIRECT_GITHUB_INSTALL_ID = "__github_direct_install__";
@@ -89,6 +88,7 @@ export function Marketplace() {
   const [platformSearchResults, setPlatformSearchResults] = useState<PlatformSkill[]>([]);
   const [platformSearching, setPlatformSearching] = useState(false);
   const [installingPlatformSkill, setInstallingPlatformSkill] = useState<string | null>(null);
+  const [enabledPlatforms, setEnabledPlatforms] = useState<string[]>([]);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const listRequestSeqRef = useRef(0);
   const remoteLoadSeqRef = useRef(0);
@@ -96,6 +96,7 @@ export function Marketplace() {
   const descriptionFetchedRef = useRef<Set<string>>(new Set());
   const descriptionRequestSeqRef = useRef(0);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const initialRef = useRef(true);
   const normalizedRemoteQuery = useMemo(
     () => deferredSearchQuery.trim(),
     [deferredSearchQuery],
@@ -176,9 +177,39 @@ export function Marketplace() {
     }).finally(() => {
       if (remoteLoadSeqRef.current === loadSeq) {
         setSearching(false);
+        initialRef.current = false;
       }
     });
   }, [loadSkills, normalizedRemoteQuery]);
+
+  // Load enabled marketplace sources from config for the search bar dropdown
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const config = await invoke<AppConfig>("get_config");
+        if (!cancelled) {
+          const SOURCE_TO_PLATFORM: Record<string, string> = {
+            "src_skills_sh_home": "skills.sh",
+            "src_composio_awesome_claude_skills": "awesome-claude-skills",
+            "skillhub": "skillhub",
+            "clawhub": "clawhub",
+            "redskill": "redskill",
+          };
+          const enabled = config.marketplace_sources
+            ?.filter((s) => s.enabled)
+            .map((s) => SOURCE_TO_PLATFORM[s.id])
+            .filter((p): p is string => p !== undefined) ?? [];
+          setEnabledPlatforms(enabled);
+        }
+      } catch {
+        // Silently ignore - SearchBar falls back to showing all platforms
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (skills.length === 0) return;
@@ -644,24 +675,8 @@ export function Marketplace() {
     });
   }, [selectedTags, skills]);
 
-  if (initialLoading) {
-    return (
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        overflow: 'hidden',
-        backgroundColor: 'var(--background)',
-      }}>
-        <PageHeader title={t("marketplace.title")} />
-        <main style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
-          <PageLoader />
-        </main>
-      </div>
-    );
-  }
-
+  // Always render page structure (header, search bar, etc.)
+  // Skills grid shows skeleton/empty state based on loading and data
   return (
     <div style={{
       flex: 1,
@@ -736,7 +751,7 @@ export function Marketplace() {
             marginBottom: '24px',
             paddingTop: '8px',
           }}>
-            <SearchBar onSearch={handlePlatformSearch} onInstallByUrl={handleInstallByUrl} loading={platformSearching} />
+            <SearchBar onSearch={handlePlatformSearch} onInstallByUrl={handleInstallByUrl} loading={platformSearching} enabledPlatforms={enabledPlatforms} />
           </div>
 
           {/* Platform Search Results */}
@@ -827,7 +842,35 @@ export function Marketplace() {
             </div>
           )}
 
-          {filteredSkills.length === 0 ? (
+          {initialLoading && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '12px',
+            }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} style={{
+                  backgroundColor: 'var(--secondary)',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border)',
+                  padding: '16px',
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: 'var(--muted)', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ height: '14px', width: '70%', backgroundColor: 'var(--muted)', borderRadius: '4px', marginBottom: '6px' }} />
+                      <div style={{ height: '11px', width: '40%', backgroundColor: 'var(--muted)', borderRadius: '4px' }} />
+                    </div>
+                  </div>
+                  <div style={{ height: '11px', width: '90%', backgroundColor: 'var(--muted)', borderRadius: '4px', marginBottom: '6px' }} />
+                  <div style={{ height: '11px', width: '60%', backgroundColor: 'var(--muted)', borderRadius: '4px' }} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!initialLoading && filteredSkills.length === 0 ? (
             <div style={{
               textAlign: 'center',
               padding: '32px 20px',

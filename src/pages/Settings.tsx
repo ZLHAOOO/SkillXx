@@ -7,12 +7,10 @@ import {
   DetectedEditor,
   UpdateInfo,
   MarketplaceSource,
-  LlmProvider,
 } from "@/types";
 import { defaultPreferences } from "@/constants/preferences";
 import { checkUpdate, downloadAndInstall } from "@/services/updater";
-import { useTranslation, Language, TranslationPath } from "@/i18n";
-import { useSkillTranslation } from "@/hooks/useSkillTranslation";
+import { useTranslation, Language } from "@/i18n";
 import { useTheme } from "@/hooks/useTheme";
 import { resolveTelemetryConsent } from "@/telemetry/consent";
 import { getEditorIcon } from "@/assets/editors";
@@ -37,6 +35,7 @@ export function Settings() {
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ percent: number; status: string } | null>(null);
+  const [llmProviders, setLlmProviders] = useState<Array<{ id: string; name: string; model: string }>>([]);
   const { toasts, addToast, removeToast } = useToast();
 
   const tRef = useRef(t);
@@ -78,6 +77,19 @@ export function Settings() {
       }
     }
     loadEditors();
+  }, []);
+
+  // Load LLM providers for translation provider selector
+  useEffect(() => {
+    async function loadProviders() {
+      try {
+        const providers = await invoke<Array<{ id: string; name: string; model: string }>>("get_llm_providers");
+        setLlmProviders(providers);
+      } catch {
+        // silently ignore - dropdown will show empty
+      }
+    }
+    loadProviders();
   }, []);
 
   // Auto-check for updates on mount
@@ -518,7 +530,7 @@ export function Settings() {
             <SettingsRow
               label={t("settings.skillDisplayDescLang")}
               description={t("settings.skillDisplayDescLangDesc")}
-              isLast={true}
+              isLast={false}
             >
               <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--muted)', borderRadius: '6px', padding: '2px' }}>
                 {(["original", "zh", "en"] as const).map((lang) => (
@@ -542,6 +554,36 @@ export function Settings() {
                   </button>
                 ))}
               </div>
+            </SettingsRow>
+
+            <SettingsRow
+              label={t("settings.translationProvider")}
+              description={t("settings.translationProviderDesc")}
+              isLast={true}
+            >
+              <select
+                value={prefs.translation_provider_id ?? ""}
+                onChange={(e) => updatePreference("translation_provider_id", e.target.value || null)}
+                style={{
+                  padding: '6px 28px 6px 10px',
+                  fontSize: '12px',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  backgroundColor: 'var(--background)',
+                  color: 'var(--foreground)',
+                  outline: 'none',
+                  appearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  minWidth: '160px',
+                }}
+              >
+                <option value="">{t("settings.translationProviderNone")}</option>
+                {llmProviders.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name || p.id}</option>
+                ))}
+              </select>
             </SettingsRow>
           </SettingsCard>
 
@@ -581,18 +623,6 @@ export function Settings() {
               </div>
             </SettingsRow>
 
-            {/* CLI Tools Installation */}
-            <SettingsRow
-              label="第三方平台 CLI"
-              description="安装 SkillHub 和 ClawHub 的命令行工具，用于搜索和安装第三方技能"
-              isLast={marketplaceRows.length === 0}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <CliToolInstaller tool="skillhub" label="SkillHub CLI" />
-                <CliToolInstaller tool="clawhub" label="ClawHub CLI" />
-              </div>
-            </SettingsRow>
-
             {marketplaceRows.length === 0 ? (
               <div style={{
                 padding: '16px 0',
@@ -606,7 +636,11 @@ export function Settings() {
                 const isLast = index === marketplaceRows.length - 1;
                 const typeLabel = source.source_type === "github_repo"
                   ? t("settings.marketplaceSourceTypeGithub")
-                  : t("settings.marketplaceSourceTypeApi");
+                  : source.source_type === "crawler"
+                    ? t("settings.marketplaceSourceTypeCrawler")
+                    : t("settings.marketplaceSourceTypeApi");
+                const isSkillHub = source.id === "skillhub";
+                const isRedSkill = source.id === "redskill";
                 return (
                   <SettingsRow
                     key={`${source.id}-source`}
@@ -614,10 +648,13 @@ export function Settings() {
                     description={`${typeLabel} · ${source.url}`}
                     isLast={isLast}
                   >
-                    <Toggle
-                      checked={source.enabled}
-                      onChange={(v) => updateMarketplaceSource(source.id, { enabled: v })}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {(isSkillHub || isRedSkill) && <CliInstallCell tool={source.id} label={source.name} />}
+                      <Toggle
+                        checked={source.enabled}
+                        onChange={(v) => updateMarketplaceSource(source.id, { enabled: v })}
+                      />
+                    </div>
                   </SettingsRow>
                 );
               })
@@ -668,17 +705,6 @@ export function Settings() {
                 ]}
               />
             </SettingsRow>
-          </SettingsCard>
-
-          {/* AI Translation */}
-          <SectionTitle>{t("settings.llmTitle")}</SectionTitle>
-          <SettingsCard>
-            <LlmProviderSection
-              provider={config.llm_provider ?? null}
-              onChange={(p) => setConfig((prev) => prev ? { ...prev, llm_provider: p } : prev)}
-              addToast={addToast}
-              t={t}
-            />
           </SettingsCard>
 
 
@@ -1378,336 +1404,7 @@ function SegmentedControl({ value, onChange, options }: SegmentedControlProps) {
   );
 }
 
-type ToastFn = (msg: string, kind?: "success" | "error" | "info") => void;
-type TFn = (key: TranslationPath) => string;
-
-interface LlmErrorPayload {
-  kind?: string;
-  info?: unknown;
-}
-
-function formatLlmError(err: unknown, t: TFn): string {
-  if (typeof err === "object" && err !== null && "kind" in err) {
-    const e = err as LlmErrorPayload;
-    switch (e.kind) {
-      case "not_configured":
-        return t("settings.llmErrorNotConfigured");
-      case "bad_base_url":
-        return t("settings.llmErrorBadBaseUrl");
-      case "network_error":
-        return t("settings.llmErrorNetwork");
-      case "unauthorized":
-        return t("settings.llmErrorUnauthorized");
-      case "rate_limited":
-        return t("settings.llmErrorRateLimited");
-      case "server_error": {
-        const info = e.info as { status?: number } | undefined;
-        const code = String(info?.status ?? 0);
-        return t("settings.llmErrorServer").replace("{code}", code);
-      }
-      case "timeout":
-        return t("settings.llmErrorTimeout");
-      case "parse_error":
-        return t("settings.llmErrorParse");
-      case "content_too_large":
-        return t("settings.llmErrorTooLarge");
-    }
-  }
-  return typeof err === "string" ? err : String(err);
-}
-
-function isValidBaseUrl(url: string): boolean {
-  const trimmed = url.trim();
-  return /^https?:\/\/.+/.test(trimmed);
-}
-
-interface LlmProviderSectionProps {
-  provider: LlmProvider | null;
-  onChange: (p: LlmProvider | null) => void;
-  addToast: ToastFn;
-  t: TFn;
-}
-
-function LlmProviderSection({ provider, onChange, addToast, t }: LlmProviderSectionProps) {
-  const { refreshConfigured } = useSkillTranslation();
-  const [baseUrl, setBaseUrl] = useState(provider?.base_url ?? "");
-  const [apiKey, setApiKey] = useState(provider?.api_key ?? "");
-  const [model, setModel] = useState(provider?.model ?? "gpt-4o-mini");
-  const [showKey, setShowKey] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const buildProvider = (): LlmProvider | null => {
-    const base = baseUrl.trim();
-    const key = apiKey.trim();
-    const m = model.trim();
-    if (!base || !key || !m) return null;
-    if (!isValidBaseUrl(base)) return null;
-    return {
-      base_url: base.replace(/\/+$/, ""),
-      api_key: key,
-      model: m,
-      temperature: null,
-      max_tokens: null,
-      timeout_secs: null,
-    };
-  };
-
-  const validateForm = (): LlmProvider | null => {
-    if (baseUrl.trim() && !isValidBaseUrl(baseUrl)) {
-      addToast(t("settings.llmErrorBadBaseUrl"), "error");
-      return null;
-    }
-    return buildProvider();
-  };
-
-  const handleTest = async () => {
-    const p = validateForm();
-    if (!p) return;
-    setTesting(true);
-    try {
-      await invoke<string>("test_llm_provider", { provider: p });
-      addToast(t("settings.llmTestSuccess"), "success");
-    } catch (err) {
-      addToast(formatLlmError(err, t), "error");
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const handleSave = async () => {
-    const p = validateForm();
-    if (!p) return;
-    setSaving(true);
-    try {
-      await invoke("save_llm_provider", { provider: p });
-      addToast(t("settings.llmSaved"), "success");
-      onChange(p);
-      void refreshConfigured();
-    } catch (err) {
-      addToast(typeof err === "string" ? err : String(err), "error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleClear = async () => {
-    try {
-      await invoke("clear_llm_provider");
-      setBaseUrl("");
-      setApiKey("");
-      setModel("");
-      addToast(t("settings.llmCleared"), "info");
-      onChange(null);
-      void refreshConfigured();
-    } catch (err) {
-      addToast(typeof err === "string" ? err : String(err), "error");
-    }
-  };
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "6px 10px",
-    fontSize: "13px",
-    border: "1px solid var(--border)",
-    borderRadius: "6px",
-    backgroundColor: "var(--background)",
-    color: "var(--foreground)",
-    outline: "none",
-  };
-
-  return (
-    <div style={{ padding: "12px 0" }}>
-      <p
-        style={{
-          fontSize: "12px",
-          color: "var(--muted-foreground)",
-          margin: "0 0 16px 0",
-        }}
-      >
-        {t("settings.llmDesc")}
-      </p>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        <Field label={t("settings.llmBaseUrl")} hint={t("settings.llmBaseUrlHint")}>
-          <input
-            type="text"
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="https://api.openai.com/v1"
-            style={inputStyle}
-          />
-        </Field>
-
-        <Field label={t("settings.llmApiKey")}>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <input
-              type={showKey ? "text" : "password"}
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-..."
-              style={inputStyle}
-            />
-            <button
-              type="button"
-              onClick={() => setShowKey((v) => !v)}
-              style={{
-                padding: "0 12px",
-                fontSize: "12px",
-                border: "1px solid var(--border)",
-                borderRadius: "6px",
-                background: "transparent",
-                color: "var(--foreground)",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {showKey ? t("settings.llmHideKey") : t("settings.llmShowKey")}
-            </button>
-          </div>
-        </Field>
-
-        <Field label={t("settings.llmModel")} hint={t("settings.llmModelHint")}>
-          <input
-            type="text"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            placeholder="gpt-4o-mini"
-            style={inputStyle}
-            list="llm-model-presets"
-          />
-          <datalist id="llm-model-presets">
-            <option value="gpt-4o-mini" />
-            <option value="gpt-4o" />
-            <option value="deepseek-chat" />
-            <option value="qwen-plus" />
-            <option value="claude-3-5-haiku-latest" />
-          </datalist>
-        </Field>
-
-        <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-          <button
-            type="button"
-            onClick={handleTest}
-            disabled={testing || saving}
-            style={{
-              padding: "6px 14px",
-              fontSize: "13px",
-              border: "1px solid var(--border)",
-              borderRadius: "6px",
-              background: "transparent",
-              color: "var(--foreground)",
-              cursor: testing ? "not-allowed" : "pointer",
-              opacity: testing ? 0.6 : 1,
-            }}
-          >
-            {testing ? t("settings.llmTesting") : t("settings.llmTest")}
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={testing || saving}
-            style={{
-              padding: "6px 14px",
-              fontSize: "13px",
-              border: "none",
-              borderRadius: "6px",
-              background: "var(--primary)",
-              color: "var(--primary-foreground)",
-              cursor: saving ? "not-allowed" : "pointer",
-              opacity: saving ? 0.6 : 1,
-            }}
-          >
-            {t("settings.llmSave")}
-          </button>
-          {provider && (
-            <button
-              type="button"
-              onClick={handleClear}
-              disabled={testing || saving}
-              style={{
-                padding: "6px 14px",
-                fontSize: "13px",
-                border: "1px solid var(--border)",
-                borderRadius: "6px",
-                background: "transparent",
-                color: "var(--muted-foreground)",
-                cursor: "pointer",
-                marginLeft: "auto",
-              }}
-            >
-              {t("settings.llmClear")}
-            </button>
-          )}
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await invoke("clear_translation_cache");
-                addToast(t("settings.llmCacheCleared"), "info");
-              } catch (err) {
-                addToast(typeof err === "string" ? err : String(err), "error");
-              }
-            }}
-            style={{
-              fontSize: "12px",
-              color: "var(--muted-foreground)",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-              textDecoration: "underline",
-            }}
-          >
-            {t("settings.llmClearCache")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <label
-        style={{
-          fontSize: "12px",
-          fontWeight: 500,
-          color: "var(--foreground)",
-        }}
-      >
-        {label}
-      </label>
-      {children}
-      {hint && (
-        <span style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>
-          {hint}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function CliToolInstaller({ tool, label }: { tool: string; label: string }) {
+function CliInstallCell({ tool, label }: { tool: string; label: string }) {
   const { addToast } = useToast();
   const [installed, setInstalled] = useState<boolean | null>(null);
   const [installing, setInstalling] = useState(false);
@@ -1720,7 +1417,7 @@ function CliToolInstaller({ tool, label }: { tool: string; label: string }) {
     try {
       const result = await invoke<boolean>("check_cli_installed", { tool });
       setInstalled(result);
-    } catch (err) {
+    } catch {
       setInstalled(false);
     }
   };
@@ -1730,7 +1427,7 @@ function CliToolInstaller({ tool, label }: { tool: string; label: string }) {
     try {
       const result = await invoke<{ success: boolean; message: string }>("install_cli_tool", { tool });
       if (result.success) {
-        addToast(`${label} 安装成功`, "success");
+        addToast(`${label} CLI 安装成功`, "success");
         setInstalled(true);
       } else {
         addToast(result.message, "error");
@@ -1742,39 +1439,41 @@ function CliToolInstaller({ tool, label }: { tool: string; label: string }) {
     }
   };
 
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <span style={{ fontSize: '12px', color: 'var(--foreground)', minWidth: '100px' }}>
-        {label}
+  if (installed === null) {
+    return (
+      <span style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>检查中...</span>
+    );
+  }
+
+  if (installed) {
+    return (
+      <span style={{ fontSize: '12px', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+        已安装
       </span>
-      {installed === null ? (
-        <span style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>检查中...</span>
-      ) : installed ? (
-        <span style={{ fontSize: '12px', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M20 6L9 17l-5-5"/>
-          </svg>
-          已安装
-        </span>
-      ) : (
-        <button
-          onClick={handleInstall}
-          disabled={installing}
-          style={{
-            padding: '4px 10px',
-            fontSize: '11px',
-            fontWeight: 500,
-            color: 'var(--primary-foreground)',
-            backgroundColor: 'var(--primary)',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: installing ? 'not-allowed' : 'pointer',
-            opacity: installing ? 0.6 : 1,
-          }}
-        >
-          {installing ? '安装中...' : '一键安装'}
-        </button>
-      )}
-    </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleInstall}
+      disabled={installing}
+      style={{
+        padding: '4px 10px',
+        fontSize: '11px',
+        fontWeight: 500,
+        color: 'var(--primary-foreground)',
+        backgroundColor: 'var(--primary)',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: installing ? 'not-allowed' : 'pointer',
+        opacity: installing ? 0.6 : 1,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {installing ? '安装中...' : '安装 CLI'}
+    </button>
   );
 }

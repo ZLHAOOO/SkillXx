@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 import skillhubLogo from "@/assets/platforms/SkillHub.png";
 import clawhubLogo from "@/assets/platforms/clawd-logo.png";
 import skillsShLogo from "@/assets/platforms/skills-sh.svg";
 import awesomeSkillsLogo from "@/assets/platforms/awesome-skills.svg";
 
+// RedSkill logo as inline SVG (no asset file yet)
+const redskillLogoSvg = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23e53935"><circle cx="12" cy="12" r="10"/></svg>`;
+
 interface SearchBarProps {
   onSearch: (platform: string, query: string) => void;
   onInstallByUrl: (platform: string, url: string) => void;
   loading: boolean;
+  enabledPlatforms?: string[];
 }
 
 const platformLogos: Record<string, string> = {
@@ -15,6 +19,7 @@ const platformLogos: Record<string, string> = {
   "awesome-claude-skills": awesomeSkillsLogo,
   "skillhub": skillhubLogo,
   "clawhub": clawhubLogo,
+  "redskill": redskillLogoSvg,
 };
 
 const platformLabels: Record<string, string> = {
@@ -22,6 +27,7 @@ const platformLabels: Record<string, string> = {
   "awesome-claude-skills": "awesome-claude-skills",
   "skillhub": "SkillHub",
   "clawhub": "ClawHub",
+  "redskill": "Red Skill",
 };
 
 const searchIcon = (
@@ -51,12 +57,29 @@ const formStyle: React.CSSProperties = {
 };
 
 
-export function SearchBar({ onSearch, onInstallByUrl, loading }: SearchBarProps) {
+const ALL_PLATFORMS = ["skills.sh", "awesome-claude-skills", "skillhub", "clawhub", "redskill"] as const;
+
+export function SearchBar({ onSearch, onInstallByUrl, loading, enabledPlatforms }: SearchBarProps) {
   const [mode, setMode] = useState<"search" | "link">("search");
-  const [platform, setPlatform] = useState<"skills.sh" | "awesome-claude-skills" | "skillhub" | "clawhub">("skills.sh");
+  // Only platforms that are enabled in Settings appear in the dropdown
+  const availablePlatforms = useMemo(
+    () => enabledPlatforms
+      ? ALL_PLATFORMS.filter((p) => enabledPlatforms.includes(p))
+      : ALL_PLATFORMS,
+    [enabledPlatforms],
+  );
+  const [platform, setPlatform] = useState<typeof ALL_PLATFORMS[number]>(availablePlatforms[0] ?? "skills.sh");
   const [searchQuery, setSearchQuery] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
+
+  // Auto-switch platform if the currently selected one becomes disabled
+  useEffect(() => {
+    if (!availablePlatforms.includes(platform)) {
+      setPlatform(availablePlatforms[0] ?? "skills.sh");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabledPlatforms]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +95,7 @@ export function SearchBar({ onSearch, onInstallByUrl, loading }: SearchBarProps)
     }
   };
 
-  const handlePlatformSelect = (newPlatform: "skills.sh" | "awesome-claude-skills" | "skillhub" | "clawhub") => {
+  const handlePlatformSelect = (newPlatform: typeof ALL_PLATFORMS[number]) => {
     setPlatform(newPlatform);
     setShowDropdown(false);
   };
@@ -142,7 +165,7 @@ export function SearchBar({ onSearch, onInstallByUrl, loading }: SearchBarProps)
                     backgroundColor: "var(--popover)", border: "1px solid var(--border)",
                     borderRadius: "10px", boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)", padding: "4px", zIndex: 101,
                   }}>
-                    {(["skills.sh", "awesome-claude-skills", "skillhub", "clawhub"] as const).map((p) => (
+                    {availablePlatforms.map((p) => (
                       <button key={p} type="button" onClick={() => handlePlatformSelect(p)} style={{
                         display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "8px 10px",
                         fontSize: "12px", fontWeight: platform === p ? 600 : 400,
@@ -151,12 +174,14 @@ export function SearchBar({ onSearch, onInstallByUrl, loading }: SearchBarProps)
                           "awesome-claude-skills": "#f59e0b",
                           "skillhub": "var(--primary)",
                           "clawhub": "#8b5cf6",
+                          "redskill": "#e53935",
                         }[p] : "var(--foreground)",
                         backgroundColor: platform === p ? {
                           "skills.sh": "rgba(99, 102, 241, 0.1)",
                           "awesome-claude-skills": "rgba(245, 158, 11, 0.1)",
                           "skillhub": "rgba(59, 130, 246, 0.1)",
                           "clawhub": "rgba(139, 92, 246, 0.1)",
+                          "redskill": "rgba(229, 57, 53, 0.1)",
                         }[p] : "transparent",
                         border: "none", borderRadius: "6px", cursor: "pointer", textAlign: "left",
                       }}>

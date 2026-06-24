@@ -468,14 +468,36 @@ fn merge_remote_sources_into_config(
         .map(|source| (source.id, source.enabled))
         .collect();
 
+    let remote_ids: HashSet<String> = remote_sources.iter().map(|s| s.id.clone()).collect();
+
+    // Preserve local-only sources (e.g. ClawHub) that are not in the remote list
+    let local_only: Vec<MarketplaceSource> = config
+        .marketplace_sources
+        .clone()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|s| !remote_ids.contains(&s.id))
+        .collect();
+
     for source in &mut remote_sources {
         source.enabled = enabled_map.get(&source.id).copied().unwrap_or(true);
         source.builtin = true;
         source.api_key = None;
     }
 
-    config.marketplace_sources = Some(remote_sources.clone());
-    remote_sources
+    let mut merged = remote_sources.into_iter().chain(local_only).collect::<Vec<_>>();
+
+    // Ensure all builtin default sources are present (e.g. ClawHub added after initial setup)
+    let defaults = AppConfig::default().marketplace_sources.unwrap_or_default();
+    let merged_ids: HashSet<String> = merged.iter().map(|s| s.id.clone()).collect();
+    for default_source in defaults {
+        if !merged_ids.contains(&default_source.id) {
+            merged.push(default_source);
+        }
+    }
+
+    config.marketplace_sources = Some(merged.clone());
+    merged
 }
 
 async fn load_marketplace_sources_for_runtime(
@@ -588,6 +610,108 @@ pub async fn fetch_marketplace_skills(
         }
     }
 
+    // Safety timeout: if network ops hang (e.g. DNS stall), return empty rather than blocking forever
+    const NETWORK_TIMEOUT_SECS: u64 = 15;
+    // Clone values used by both the helper and the timeout-error fallback
+    let config_for_inner = config.clone();
+    let github_token_for_inner = github_token.clone();
+    let cache_for_inner = cache.clone();
+    let app_cache_for_inner = app_cache.clone();
+    let sources_and_result: Result<
+        (
+            Vec<crate::models::MarketplaceSource>,
+            Option<Vec<String>>,
+            MarketplaceSkillsResponse,
+        ),
+        String,
+    > = match tokio::time::timeout(
+        std::time::Duration::from_secs(NETWORK_TIMEOUT_SECS),
+        fetch_marketplace_skills_inner(
+            manager,
+            config_for_inner,
+            github_token_for_inner,
+            page,
+            normalized_query.clone(),
+            normalized_source_filter.clone(),
+            cache_for_inner,
+            app_cache_for_inner,
+        ),
+    )
+    .await
+    {
+        Ok(inner) => inner,
+        Err(_) => {
+            // Timeout: return cached data if available, otherwise empty
+            if page == 1 {
+                if let Some(cached) = cache.get_any() {
+                    let installed_skills =
+                        load_cached_or_scanned_skills(app_cache.inner(), &config.skills_dir)?;
+                    return Ok(merge_installed_marketplace_skills_into_page(
+                        MarketplaceSkillsResponse {
+                            skills: cached,
+                            has_more: false,
+                        },
+                        page,
+                        &installed_skills,
+                        &local_sources,
+                        normalized_query.as_deref(),
+                        &normalized_source_filter,
+                        &config.skills_dir,
+                        github_token.as_deref(),
+                    )
+                    .await);
+                }
+            }
+            return Ok(MarketplaceSkillsResponse {
+                skills: Vec::new(),
+                has_more: false,
+            });
+        }
+    };
+
+    let (sources, runtime_cache_source_scope, result) = sources_and_result?;
+
+    cache.set_page(
+        page,
+        normalized_query.clone(),
+        runtime_cache_source_scope.clone(),
+        result.clone(),
+    );
+
+    let installed_skills = load_cached_or_scanned_skills(app_cache.inner(), &config.skills_dir)?;
+    Ok(merge_installed_marketplace_skills_into_page(
+        result,
+        page,
+        &installed_skills,
+        &sources,
+        normalized_query.as_deref(),
+        &normalized_source_filter,
+        &config.skills_dir,
+        github_token.as_deref(),
+    )
+    .await)
+}
+
+/// Inner async logic for fetching marketplace skills, returns tuple with sources and result.
+/// Extracted into a named function so the timeout wrapper can properly type-check it.
+#[allow(clippy::too_many_arguments)]
+async fn fetch_marketplace_skills_inner(
+    manager: ConfigManager,
+    mut config: crate::models::AppConfig,
+    github_token: Option<String>,
+    page: u32,
+    normalized_query: Option<String>,
+    normalized_source_filter: Option<Vec<String>>,
+    cache: State<'_, MarketplaceCache>,
+    app_cache: State<'_, AppCache>,
+) -> Result<
+    (
+        Vec<crate::models::MarketplaceSource>,
+        Option<Vec<String>>,
+        MarketplaceSkillsResponse,
+    ),
+    String,
+> {
     let sources = load_marketplace_sources_for_runtime(&manager, &mut config).await;
     let runtime_cache_source_scope =
         resolve_cache_source_scope(&normalized_source_filter, &sources);
@@ -627,45 +751,31 @@ pub async fn fetch_marketplace_skills(
                     );
                     let installed_skills =
                         load_cached_or_scanned_skills(app_cache.inner(), &config.skills_dir)?;
-                    return Ok(merge_installed_marketplace_skills_into_page(
-                        MarketplaceSkillsResponse {
-                            skills: filtered,
-                            has_more: false,
-                        },
-                        page,
-                        &installed_skills,
-                        &sources,
-                        normalized_query.as_deref(),
-                        &normalized_source_filter,
-                        &config.skills_dir,
-                        github_token.as_deref(),
-                    )
-                    .await);
+                    return Ok((
+                        sources.clone(),
+                        runtime_cache_source_scope.clone(),
+                        merge_installed_marketplace_skills_into_page(
+                            MarketplaceSkillsResponse {
+                                skills: filtered,
+                                has_more: false,
+                            },
+                            page,
+                            &installed_skills,
+                            &sources,
+                            normalized_query.as_deref(),
+                            &normalized_source_filter,
+                            &config.skills_dir,
+                            github_token.as_deref(),
+                        )
+                        .await,
+                    ));
                 }
             }
             return Err(err);
         }
     };
 
-    cache.set_page(
-        page,
-        normalized_query.clone(),
-        runtime_cache_source_scope.clone(),
-        result.clone(),
-    );
-
-    let installed_skills = load_cached_or_scanned_skills(app_cache.inner(), &config.skills_dir)?;
-    Ok(merge_installed_marketplace_skills_into_page(
-        result,
-        page,
-        &installed_skills,
-        &sources,
-        normalized_query.as_deref(),
-        &normalized_source_filter,
-        &config.skills_dir,
-        github_token.as_deref(),
-    )
-    .await)
+    Ok((sources, runtime_cache_source_scope, result))
 }
 
 #[tauri::command]

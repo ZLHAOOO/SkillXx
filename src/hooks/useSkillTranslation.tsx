@@ -151,7 +151,7 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
 
   const refreshConfigured = useCallback(async (): Promise<boolean> => {
     try {
-      const provider = await invoke<unknown>("get_llm_provider");
+      const provider = await invoke<unknown>("get_translation_provider");
       const configured = provider != null;
       setIsConfigured(configured);
       return configured;

@@ -35,6 +35,9 @@ pub struct UserPreferences {
     /// Pinned skill/group keys (sorted by key for deterministic save)
     #[serde(default)]
     pub pinned_keys: Vec<String>,
+    /// Provider ID selected for AI translation (None = fallback to active provider)
+    #[serde(default)]
+    pub translation_provider_id: Option<String>,
 }
 
 fn default_skill_display_lang() -> String {
@@ -64,6 +67,10 @@ pub struct LlmProviderConfig {
     pub id: String,
     pub name: String,
     pub base_url: String,
+    #[serde(default)]
+    pub base_url_anthropic: String,
+    #[serde(default)]
+    pub base_url_openai: String,
     pub api_key: String,
     pub model: String,
     #[serde(default)]
@@ -128,18 +135,45 @@ fn default_false() -> bool {
 fn default_marketplace_sources() -> Vec<MarketplaceSource> {
     vec![
         MarketplaceSource {
+            id: "src_composio_awesome_claude_skills".to_string(),
+            name: "awesome-claude-skills".to_string(),
+            url: "https://github.com/ComposioHQ/awesome-claude-skills".to_string(),
+            source_type: SourceType::Api,
+            enabled: true,
+            builtin: true,
+            api_key: None,
+        },
+        MarketplaceSource {
             id: "src_skills_sh_home".to_string(),
-            name: "skills.sh Homepage".to_string(),
+            name: "skills.sh".to_string(),
             url: "https://skills.sh".to_string(),
+            source_type: SourceType::Api,
+            enabled: true,
+            builtin: true,
+            api_key: None,
+        },
+        MarketplaceSource {
+            id: "clawhub".to_string(),
+            name: "ClawHub".to_string(),
+            url: "https://clawhub.ai".to_string(),
+            source_type: SourceType::Api,
+            enabled: true,
+            builtin: true,
+            api_key: None,
+        },
+        MarketplaceSource {
+            id: "skillhub".to_string(),
+            name: "SkillHub".to_string(),
+            url: "https://skillhub.sh".to_string(),
             source_type: SourceType::Crawler,
             enabled: true,
             builtin: true,
             api_key: None,
         },
         MarketplaceSource {
-            id: "src_composio_awesome_claude_skills".to_string(),
-            name: "awesome-claude-skills".to_string(),
-            url: "https://github.com/ComposioHQ/awesome-claude-skills".to_string(),
+            id: "redskill".to_string(),
+            name: "RedSkill".to_string(),
+            url: "https://redskill.xiaohongshu.net".to_string(),
             source_type: SourceType::Crawler,
             enabled: true,
             builtin: true,
@@ -164,6 +198,7 @@ impl Default for UserPreferences {
             skill_display_name_lang: default_skill_display_lang(),
             skill_display_desc_lang: default_skill_display_desc_lang(),
             pinned_keys: Vec::new(),
+            translation_provider_id: None,
         }
     }
 }
@@ -404,11 +439,23 @@ mod tests {
     #[test]
     fn default_marketplace_sources_matches_remote_source_ids() {
         let sources = default_marketplace_sources();
-        assert_eq!(sources.len(), 2);
-        assert_eq!(sources[0].id, "src_skills_sh_home");
-        assert_eq!(sources[0].source_type, SourceType::Crawler);
-        assert_eq!(sources[1].id, "src_composio_awesome_claude_skills");
-        assert_eq!(sources[1].source_type, SourceType::Crawler);
+        assert_eq!(sources.len(), 5);
+        assert_eq!(sources[0].id, "src_composio_awesome_claude_skills");
+        assert_eq!(sources[0].name, "awesome-claude-skills");
+        assert_eq!(sources[0].source_type, SourceType::Api);
+        assert_eq!(sources[1].id, "src_skills_sh_home");
+        assert_eq!(sources[1].name, "skills.sh");
+        assert_eq!(sources[1].source_type, SourceType::Api);
+        assert_eq!(sources[2].id, "clawhub");
+        assert_eq!(sources[2].source_type, SourceType::Api);
+        assert!(sources[2].builtin);
+        assert_eq!(sources[3].id, "skillhub");
+        assert_eq!(sources[3].source_type, SourceType::Crawler);
+        assert!(sources[3].builtin);
+        assert_eq!(sources[4].id, "redskill");
+        assert_eq!(sources[4].name, "RedSkill");
+        assert_eq!(sources[4].source_type, SourceType::Crawler);
+        assert!(sources[4].builtin);
     }
 
     #[test]

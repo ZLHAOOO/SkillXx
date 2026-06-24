@@ -1,4 +1,7 @@
+use crate::services::clawhub::ClawHubService;
+use crate::services::config_manager::ConfigManager;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use std::process::Command;
 
 use crate::models::marketplace::MarketplaceSkillsResponse;
@@ -32,6 +35,9 @@ pub async fn check_cli_installed(tool: String) -> Result<bool, String> {
             .output(),
         "clawhub" => Command::new("bash")
             .args(["-c", "which clawhub 2>/dev/null || echo not_found"])
+            .output(),
+        "redskill" => Command::new("bash")
+            .args(["-c", "which redskill 2>/dev/null || echo not_found"])
             .output(),
         _ => return Err(format!("Unknown tool: {}", tool)),
     };
@@ -85,7 +91,7 @@ pub async fn install_cli_tool(tool: String) -> Result<InstallResult, String> {
                     .args(["-c", "which clawhub || echo not_found"])
                     .output()
                     .map_err(|e| format!("Failed to verify installation: {}", e))?;
-                
+
                 let verify_str = String::from_utf8_lossy(&verify_output.stdout);
                 if verify_str.contains("not_found") {
                     // Try to find npm global bin path
@@ -93,16 +99,16 @@ pub async fn install_cli_tool(tool: String) -> Result<InstallResult, String> {
                         .args(["root", "-g"])
                         .output()
                         .map_err(|e| format!("Failed to get npm root: {}", e))?;
-                    
+
                     let npm_root = String::from_utf8_lossy(&npm_root_output.stdout).trim().to_string();
                     let npm_bin = npm_root.replace("node_modules", "bin");
-                    
+
                     return Ok(InstallResult {
                         success: true,
                         message: format!("ClawHub CLI installed. You may need to restart your terminal or add {} to your PATH", npm_bin),
                     });
                 }
-                
+
                 return Ok(InstallResult {
                     success: true,
                     message: "ClawHub CLI installed successfully".to_string(),
@@ -115,8 +121,35 @@ pub async fn install_cli_tool(tool: String) -> Result<InstallResult, String> {
                 message: format!("Failed to install ClawHub CLI: {}", stderr),
             })
         }
+        "redskill" => {
+            // RedSkill uses curl script installation
+            let output = Command::new("bash")
+                .args(["-c", "curl -fsSL https://fe-video-qc.xhscdn.com/fe-platform-file/104101b8320fbjem2620653u0hejenq0004pf88g6ask5i.sh | bash -s -- --cli-only"])
+                .output()
+                .map_err(|e| format!("Failed to run installation script: {}", e))?;
+
+            if output.status.success() {
+                return Ok(InstallResult {
+                    success: true,
+                    message: "RedSkill CLI installed successfully".to_string(),
+                });
+            }
+
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            Ok(InstallResult {
+                success: false,
+                message: format!("Failed to install RedSkill CLI: {}", stderr),
+            })
+        }
         _ => Err(format!("Unknown tool: {}", tool)),
     }
+}
+
+fn is_clawhub_enabled() -> Result<bool, String> {
+    let manager = ConfigManager::new();
+    let config = manager.load().map_err(|e| e.to_string())?;
+    let sources = config.marketplace_sources.unwrap_or_default();
+    Ok(sources.iter().any(|s| s.id == "clawhub" && s.enabled))
 }
 
 /// Search for skills on a platform (SkillHub, ClawHub, skills.sh, awesome-claude-skills)
@@ -148,12 +181,12 @@ pub async fn search_marketplace(
             let stdout = String::from_utf8_lossy(&output.stdout);
             parse_search_results(&stdout, &platform)
         }
-        "clawhub" => {
-            let output = Command::new("clawhub")
+        "redskill" => {
+            let output = Command::new("redskill")
                 .arg("search")
                 .arg(&query)
                 .output()
-                .map_err(|e| format!("Failed to execute clawhub CLI: {}", e))?;
+                .map_err(|e| format!("Failed to execute redskill CLI: {}", e))?;
 
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
@@ -165,6 +198,15 @@ pub async fn search_marketplace(
 
             let stdout = String::from_utf8_lossy(&output.stdout);
             parse_search_results(&stdout, &platform)
+        }
+        "clawhub" => {
+            if !is_clawhub_enabled()? {
+                return Err("ClawHub is disabled in settings".to_string());
+            }
+            let skills = ClawHubService::search(&query, Some(20))
+                .await
+                .map_err(|e| format!("ClawHub API search failed: {}", e))?;
+            Ok(skills)
         }
         "skills.sh" | "awesome-claude-skills" => {
             let source_id = match platform.as_str() {
@@ -331,21 +373,12 @@ pub async fn install_from_platform(
                 })
             }
         }
-        "clawhub" => {
-            // ClawHub installs to <workdir>/<dir>/<slug> by default
-            // We want to install to ~/.skillx/skills/<slug>
-            // Use --workdir ~/.skillx and --dir skills
-            let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
-            let workdir = format!("{}/.skillx", home);
-            let output = Command::new("clawhub")
+        "redskill" => {
+            let output = Command::new("redskill")
                 .arg("install")
-                .arg("--workdir")
-                .arg(&workdir)
-                .arg("--dir")
-                .arg("skills")
                 .arg(&slug)
                 .output()
-                .map_err(|e| format!("Failed to execute clawhub CLI: {}", e))?;
+                .map_err(|e| format!("Failed to execute redskill CLI: {}", e))?;
 
             if output.status.success() {
                 Ok(InstallResult {
@@ -358,6 +391,25 @@ pub async fn install_from_platform(
                     success: false,
                     message: format!("Installation failed: {}", stderr),
                 })
+            }
+        }
+        "clawhub" => {
+            if !is_clawhub_enabled()? {
+                return Ok(InstallResult {
+                    success: false,
+                    message: "ClawHub is disabled in settings".to_string(),
+                });
+            }
+            let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+            let skills_dir = PathBuf::from(home).join(".skillx").join("skills");
+            let install_dir = skills_dir.join(&slug);
+
+            match ClawHubService::install_skill(&slug, &install_dir).await {
+                Ok(result) => Ok(result),
+                Err(e) => Ok(InstallResult {
+                    success: false,
+                    message: format!("Installation failed: {}", e),
+                }),
             }
         }
         "skills.sh" | "awesome-claude-skills" => {

@@ -1,18 +1,18 @@
-// @ts-nocheck
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "@/i18n";
 import { useToast } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Spinner, SkeletonList } from "@/components/ui/loading";
-import { Download, X, ChevronDown, ExternalLink, Pencil, MoreHorizontal } from "lucide-react";
+import { SkeletonList } from "@/components/ui/loading";
+import { MoreHorizontal } from "lucide-react";
 import { getProviderIcon, getProviderInitial } from "@/utils/providerIcon";
+import { ProviderAddModal } from "./ProviderAddModal";
 
 export interface LlmProviderConfig {
   id: string;
   name: string;
   base_url: string;
+  base_url_openai: string;
+  base_url_anthropic: string;
   api_key: string;
   model: string;
   models: string[];
@@ -23,33 +23,7 @@ export interface LlmProviderConfig {
   api_format?: string;
 }
 
-interface ProviderFormData {
-  name: string;
-  base_url: string;
-  api_key: string;
-  model: string;
-  models: string[];
-  website_url: string;
-  api_format: "openai" | "anthropic";
-  temperature: string;
-  max_tokens: string;
-  timeout_secs: string;
-}
-
-const emptyForm: ProviderFormData = {
-  name: "",
-  base_url: "",
-  api_key: "",
-  model: "",
-  models: [],
-  website_url: "",
-  api_format: "openai",
-  temperature: "",
-  max_tokens: "",
-  timeout_secs: "",
-};
-
-const PROVIDER_PRESETS: {
+interface Preset {
   id: string;
   name: string;
   base_url_openai: string;
@@ -57,7 +31,9 @@ const PROVIDER_PRESETS: {
   model: string;
   website_url: string;
   color: string;
-}[] = [
+}
+
+const DEFAULT_PRESETS: Preset[] = [
   {
     id: "anthropic",
     name: "Anthropic",
@@ -139,9 +115,97 @@ const PROVIDER_PRESETS: {
     website_url: "https://platform.xiaomimimo.com",
     color: "#ff6900",
   },
+  {
+    id: "qwen",
+    name: "Qwen",
+    base_url_openai: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    base_url_anthropic: "https://dashscope.aliyuncs.com/apps/anthropic",
+    model: "qwen3-coder-plus",
+    website_url: "https://dashscope.aliyuncs.com",
+    color: "#ff6a00",
+  },
+  {
+    id: "gemini",
+    name: "Gemini",
+    base_url_openai: "https://generativelanguage.googleapis.com/v1beta/openai",
+    base_url_anthropic: "",
+    model: "gemini-3-flash-preview",
+    website_url: "https://aistudio.google.com",
+    color: "#4285f4",
+  },
+  {
+    id: "grok",
+    name: "Grok",
+    base_url_openai: "https://api.x.ai/v1",
+    base_url_anthropic: "",
+    model: "grok-4",
+    website_url: "https://x.ai",
+    color: "#000000",
+  },
+  {
+    id: "perplexity",
+    name: "Perplexity",
+    base_url_openai: "https://api.perplexity.ai",
+    base_url_anthropic: "",
+    model: "sonar-pro",
+    website_url: "https://perplexity.ai",
+    color: "#20808d",
+  },
+  {
+    id: "openrouter",
+    name: "OpenRouter",
+    base_url_openai: "https://openrouter.ai/api/v1",
+    base_url_anthropic: "https://openrouter.ai/api/anthropic",
+    model: "openrouter/auto",
+    website_url: "https://openrouter.ai",
+    color: "#6366f1",
+  },
+  {
+    id: "nvidia",
+    name: "NVIDIA",
+    base_url_openai: "https://integrate.api.nvidia.com/v1",
+    base_url_anthropic: "",
+    model: "nvidia/llama-3.1-nemotron-70b-instruct",
+    website_url: "https://integrate.api.nvidia.com",
+    color: "#76b900",
+  },
+  {
+    id: "longcat",
+    name: "LongCat",
+    base_url_openai: "https://api.longcat.chat/v1",
+    base_url_anthropic: "",
+    model: "longcat-v3",
+    website_url: "https://longcat.chat/platform",
+    color: "#6c5ce7",
+  },
+  {
+    id: "stepfun",
+    name: "阶跃星辰",
+    base_url_openai: "https://api.stepfun.com/v1",
+    base_url_anthropic: "",
+    model: "step-3",
+    website_url: "https://www.stepfun.com",
+    color: "#00b4d8",
+  },
+  {
+    id: "hunyuan",
+    name: "腾讯混元",
+    base_url_openai: "https://api.hunyuan.cloud.tencent.com/v1",
+    base_url_anthropic: "",
+    model: "hunyuan-turbos-latest",
+    website_url: "https://hunyuan.tencent.com",
+    color: "#0052d9",
+  },
+  {
+    id: "agnes",
+    name: "Agnes",
+    base_url_openai: "https://api.agnes.chat/v1",
+    base_url_anthropic: "",
+    model: "agnes-3",
+    website_url: "https://agnes.chat",
+    color: "#7c3aed",
+  },
 ];
-
-const PRESET_VISIBLE_COUNT = 10; // 2 rows × 5 cols
 
 function ProviderLogo({ name, id, size = 40 }: { name: string; id?: string; size?: number }) {
   const iconPath = getProviderIcon(name, id);
@@ -160,7 +224,6 @@ function ProviderLogo({ name, id, size = 40 }: { name: string; id?: string; size
     );
   }
 
-  // Fallback: first letter placeholder
   const initial = getProviderInitial(name);
   return (
     <div
@@ -183,33 +246,44 @@ function ProviderLogo({ name, id, size = 40 }: { name: string; id?: string; size
   );
 }
 
+// Build a ProviderDirectoryEntry from a preset for the modal
+function presetToEntry(preset: Preset) {
+  return {
+    id: preset.id,
+    name: preset.name,
+    base_url_openai: preset.base_url_openai,
+    base_url_anthropic: preset.base_url_anthropic,
+    model: preset.model,
+    website_url: preset.website_url,
+    icon: "",
+  };
+}
+
+type ModalMode =
+  | { type: "preset"; presetId: string }
+  | { type: "custom" }
+  | { type: "edit"; provider: LlmProviderConfig };
+
 export function ProviderManager() {
   const { t } = useTranslation();
-  const { addToast, removeToast } = useToast();
+  const { addToast } = useToast();
 
   const [providers, setProviders] = useState<LlmProviderConfig[]>([]);
-  const [activeProviderId, setActiveProviderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [showAllPresets, setShowAllPresets] = useState(false);
-  const [form, setForm] = useState<ProviderFormData>(emptyForm);
-  // Model fetching state
-  const [fetchedModels, setFetchedModels] = useState<{ id: string; ownedBy: string | null }[]>([]);
-  const [isFetchingModels, setIsFetchingModels] = useState(false);
-  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [editingWebsite, setEditingWebsite] = useState(false);
-  const [tempWebsite, setTempWebsite] = useState("");
+  const [modalMode, setModalMode] = useState<ModalMode | null>(null);
+  const [presets, setPresets] = useState(DEFAULT_PRESETS);
+  const [showAllPresets, setShowAllPresets] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const dragIndexRef = useRef<number | null>(null);
+  const justDroppedRef = useRef(false);
 
   const fetchProviders = useCallback(async () => {
     setLoading(true);
     try {
       const result = await invoke<LlmProviderConfig[]>("get_llm_providers");
       setProviders(result);
-      const active = await invoke<LlmProviderConfig | null>("get_active_provider");
-      setActiveProviderId(active?.id ?? null);
     } catch (err) {
       addToast(t("llmProviders.loadFailed"), "error");
       console.error("Failed to load providers:", err);
@@ -222,7 +296,7 @@ export function ProviderManager() {
     fetchProviders();
   }, [fetchProviders]);
 
-  // 点击外部关闭菜单
+  // Close dropdown menu on outside click
   useEffect(() => {
     if (!openMenuId) return;
     const handler = (e: MouseEvent) => {
@@ -235,198 +309,62 @@ export function ProviderManager() {
     return () => document.removeEventListener("mousedown", handler);
   }, [openMenuId]);
 
-  const applyPreset = (preset: typeof PROVIDER_PRESETS[0]) => {
-    const url = preset.base_url_openai || preset.base_url_anthropic;
-    const apiFormat = preset.base_url_openai ? "openai" : "anthropic";
-    setForm({
-      ...emptyForm,
-      name: preset.name,
-      base_url: url,
-      model: preset.model,
-      models: [preset.model],
-      website_url: preset.website_url,
-      api_format: apiFormat,
-    });
-    setEditingId(null);
-    setShowForm(true);
+  const handleAddPreset = (presetId: string) => {
+    setModalMode({ type: "preset", presetId });
   };
 
-  const handleFormatToggle = (fmt: "openai" | "anthropic") => {
-    if (form.api_format === fmt) return;
-
-    // Try to find a matching preset URL for the new format
-    const matchingPreset = PROVIDER_PRESETS.find(
-      (p) =>
-        form.base_url === p.base_url_openai ||
-        form.base_url === p.base_url_anthropic,
-    );
-
-    let newUrl = form.base_url;
-    if (matchingPreset) {
-      if (fmt === "openai" && matchingPreset.base_url_openai) {
-        newUrl = matchingPreset.base_url_openai;
-      } else if (fmt === "anthropic" && matchingPreset.base_url_anthropic) {
-        newUrl = matchingPreset.base_url_anthropic;
-      }
-    }
-
-    setForm({ ...form, api_format: fmt, base_url: newUrl });
+  const handleAddCustom = () => {
+    setModalMode({ type: "custom" });
   };
 
-  const handleFetchModels = async () => {
-    if (!form.base_url.trim() || !form.api_key.trim()) {
-      addToast(t("llmProviders.fetchModelsNeedConfig"), "error");
+  const handleDragStart = (index: number) => {
+    justDroppedRef.current = false;
+    dragIndexRef.current = index;
+    setDragIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    const from = dragIndexRef.current;
+    if (from === null || from === index) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      dragIndexRef.current = null;
       return;
     }
-
-    setIsFetchingModels(true);
-    setFetchedModels([]);
-    setShowModelDropdown(false);
-
-    try {
-      const result = await invoke<{ id: string; ownedBy: string | null }[]>(
-        "fetch_models_for_config",
-        {
-          base_url: form.base_url.trim(),
-          api_key: form.api_key.trim(),
-          is_full_url: false,
-          models_url: null,
-        },
-      );
-      setFetchedModels(result);
-      if (result.length > 0) {
-        setShowModelDropdown(true);
-      }
-    } catch (err) {
-      const errMsg = String(err);
-      if (errMsg.includes("401") || errMsg.includes("403")) {
-        addToast(t("llmProviders.fetchModelsAuthFailed"), "error");
-      } else if (errMsg.includes("timeout")) {
-        addToast(t("llmProviders.fetchModelsTimeout"), "error");
-      } else if (errMsg.includes("All candidates failed")) {
-        addToast(t("llmProviders.fetchModelsEndpointNotFound"), "error");
-      } else {
-        addToast(t("llmProviders.fetchModelsFailed"), "error");
-      }
-      console.error("Fetch models failed:", err);
-    } finally {
-      setIsFetchingModels(false);
-    }
+    const newPresets = [...presets];
+    const [moved] = newPresets.splice(from, 1);
+    newPresets.splice(index, 0, moved);
+    setPresets(newPresets);
+    justDroppedRef.current = true;
+    setDragIndex(null);
+    setDragOverIndex(null);
+    dragIndexRef.current = null;
   };
 
-  const handleSelectFetchedModel = (modelId: string) => {
-    if (!form.models.includes(modelId)) {
-      const newModels = [...form.models, modelId];
-      setForm({ ...form, models: newModels, model: modelId });
-    } else {
-      setForm({ ...form, model: modelId });
-    }
-    setShowModelDropdown(false);
-  };
-
-  const handleAddModel = () => {
-    const trimmed = prompt(t("llmProviders.addModelPrompt"));
-    if (trimmed && trimmed.trim()) {
-      const modelId = trimmed.trim();
-      const newModels = [...form.models, modelId];
-      setForm({ ...form, models: newModels, model: modelId });
-    }
-  };
-
-  const handleRemoveModel = (modelId: string) => {
-    const newModels = form.models.filter((m) => m !== modelId);
-    let newPrimary = form.model;
-    if (form.model === modelId && newModels.length > 0) {
-      newPrimary = newModels[0];
-    }
-    setForm({ ...form, models: newModels, model: newPrimary });
-  };
-
-  const handleSelectModel = (modelId: string) => {
-    setForm({ ...form, model: modelId });
-  };
-
-  const handleWebsiteEdit = () => {
-    setTempWebsite(form.website_url);
-    setEditingWebsite(true);
-  };
-
-  const handleWebsiteSave = () => {
-    setForm({ ...form, website_url: tempWebsite });
-    setEditingWebsite(false);
-  };
-
-  const handleWebsiteCancel = () => {
-    setEditingWebsite(false);
-    setTempWebsite("");
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
+    dragIndexRef.current = null;
   };
 
   const handleEdit = (provider: LlmProviderConfig) => {
-    setEditingId(provider.id);
-    const models = provider.models && provider.models.length > 0 ? provider.models : [provider.model];
-    setForm({
-      name: provider.name,
-      base_url: provider.base_url,
-      api_key: provider.api_key,
-      model: provider.model,
-      models: models,
-      website_url: provider.website_url || "",
-      api_format: provider.api_format === "anthropic" ? "anthropic" : "openai",
-      temperature: provider.temperature != null ? String(provider.temperature) : "",
-      max_tokens: provider.max_tokens != null ? String(provider.max_tokens) : "",
-      timeout_secs: provider.timeout_secs != null ? String(provider.timeout_secs) : "",
-    });
-    setFetchedModels([]);
-    setShowModelDropdown(false);
-    setShowForm(true);
+    setModalMode({ type: "edit", provider });
+    setOpenMenuId(null);
   };
 
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setForm(emptyForm);
+  const handleModalClose = () => {
+    setModalMode(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!form.name.trim() || !form.base_url.trim() || !form.api_key.trim() || !form.model.trim()) {
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const models = form.models.length > 0 ? form.models : [form.model.trim()];
-      const payload: LlmProviderConfig = {
-        id: editingId ?? crypto.randomUUID(),
-        name: form.name.trim(),
-        base_url: form.base_url.trim(),
-        api_key: form.api_key.trim(),
-        model: form.model.trim(),
-        models: models,
-        website_url: form.website_url.trim() || null,
-        api_format: form.api_format,
-        temperature: form.temperature ? parseFloat(form.temperature) : undefined,
-        max_tokens: form.max_tokens ? parseInt(form.max_tokens, 10) : undefined,
-        timeout_secs: form.timeout_secs ? parseInt(form.timeout_secs, 10) : undefined,
-      };
-
-      await invoke("save_llm_provider_multi", { provider: payload });
-
-      if (editingId) {
-        setProviders((prev) => prev.map((p) => (p.id === editingId ? payload : p)));
-      } else {
-        setProviders((prev) => [...prev, payload]);
-      }
-
-      handleCancel();
-      addToast(t("llmProviders.saveSuccess"), "success");
-    } catch (err) {
-      addToast(t("llmProviders.saveFailed"), "error");
-      console.error("Save provider failed:", err);
-    } finally {
-      setSaving(false);
-    }
+  const handleModalSaved = () => {
+    setModalMode(null);
+    fetchProviders();
   };
 
   const handleDelete = async (id: string) => {
@@ -448,22 +386,24 @@ export function ProviderManager() {
     }
   };
 
-  const handleSwitch = async (id: string) => {
-    const toastId = addToast(t("common.saving"), "info");
-    try {
-      await invoke<boolean>("multi_switch_llm_provider", { id });
-      setActiveProviderId(id);
-      const provider = providers.find((p) => p.id === id);
-      removeToast(toastId);
-      if (provider) {
-        addToast(t("llmProviders.switchSuccess").replace("{name}", provider.name), "success");
-      }
-    } catch (err) {
-      removeToast(toastId);
-      addToast(t("llmProviders.saveFailed"), "error");
-      console.error("Switch provider failed:", err);
+  // Build the entry/provider props for ProviderAddModal
+  const getModalProps = () => {
+    if (!modalMode) return null;
+
+    if (modalMode.type === "edit") {
+      return { provider: modalMode.provider };
     }
+
+    if (modalMode.type === "custom") {
+      return { entry: { id: "__custom__", name: "", base_url_openai: "", base_url_anthropic: "", model: "", website_url: "", icon: "" } as any };
+    }
+
+    const preset = presets.find((p) => p.id === modalMode.presetId);
+    if (!preset) return null;
+    return { entry: presetToEntry(preset) as any };
   };
+
+  const modalProps = modalMode ? getModalProps()! : null;
 
   if (loading) {
     return <SkeletonList count={3} />;
@@ -471,7 +411,7 @@ export function ProviderManager() {
 
   return (
     <div style={{ maxWidth: "1200px" }}>
-      {providers.length === 0 ? (
+      {providers.length === 0 && !modalMode ? (
         <div
           style={{
             textAlign: "center",
@@ -485,100 +425,193 @@ export function ProviderManager() {
           </p>
         </div>
       ) : (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-          gap: "16px",
-        }}>
-          {providers.map((provider) => (
-            <div
-              key={provider.id}
+        <>
+          {/* Preset quick-select + Add buttons */}
+          <div
+            style={{ marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}
+          >
+            <button
+              type="button"
+              onClick={handleAddCustom}
               style={{
-                borderRadius: "10px",
-                border: "1px solid var(--border)",
-                backgroundColor: "var(--secondary)",
-                padding: "16px",
-                position: "relative",
+                padding: "3px 12px",
+                fontSize: "12px",
+                fontWeight: 500,
+                color: "var(--primary)",
+                backgroundColor: "transparent",
+                border: "1px dashed var(--primary)",
+                borderRadius: "9999px",
+                cursor: "pointer",
+                lineHeight: "18px",
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--primary) 8%, transparent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
               }}
             >
-              {/* Header: logo left + name right, like skill cards */}
-              <div style={{ display: "flex", gap: "14px", marginBottom: "8px", alignItems: "flex-start" }}>
-                <ProviderLogo name={provider.name} id={provider.id} size={40} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                    <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--foreground)" }}>
-                      {provider.name}
-                    </span>
-                    {provider.id === activeProviderId && (
-                      <Badge variant="default" style={{ fontSize: "11px" }}>
-                        {t("llmProviders.active")}
-                      </Badge>
-                    )}
-                  </div>
-                  <div style={{ fontSize: "13px", color: "var(--muted-foreground)", lineHeight: 1.6 }}>
-                    <div>{t("llmProviders.model")}: {provider.model}</div>
-                    {provider.website_url && (
-                      <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        <span>{t("llmProviders.website")}: </span>
-                        <a
-                          href={provider.website_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            fontSize: "13px",
-                            color: "var(--primary)",
-                            textDecoration: "none",
-                            opacity: 0.8,
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-                          onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.8")}
-                        >
-                          {provider.website_url}
-                        </a>
-                      </div>
-                    )}
+              + 自定义
+            </button>
+            {presets.slice(
+              0,
+              showAllPresets
+                ? presets.length
+                : 12,
+            ).map((preset, index) => (
+              <button
+                key={preset.id}
+                type="button"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = "move";
+                  handleDragStart(index);
+                }}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                onClick={() => {
+                  if (!justDroppedRef.current) {
+                    handleAddPreset(preset.id);
+                  }
+                  justDroppedRef.current = false;
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "3px 10px 3px 6px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: dragIndex === index ? "var(--muted-foreground)" : "var(--foreground)",
+                  backgroundColor: dragOverIndex === index && dragIndex !== index
+                    ? "color-mix(in srgb, var(--primary) 10%, var(--secondary))"
+                    : "var(--secondary)",
+                  border: dragOverIndex === index && dragIndex !== index
+                    ? "1px solid var(--primary)"
+                    : "1px solid var(--border)",
+                  borderRadius: "9999px",
+                  cursor: "grab",
+                  transition: "background-color 0.15s, border-color 0.15s, opacity 0.15s",
+                  opacity: dragIndex === index ? 0.4 : 1,
+                  lineHeight: "18px",
+                }}
+              >
+                {preset.name}
+              </button>
+            ))}
+            {presets.length > 12 && (
+              <button
+                type="button"
+                onClick={() => setShowAllPresets(!showAllPresets)}
+                style={{
+                  padding: "3px 10px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "var(--muted-foreground)",
+                  backgroundColor: "transparent",
+                  border: "1px dashed var(--border)",
+                  borderRadius: "9999px",
+                  cursor: "pointer",
+                  lineHeight: "18px",
+                }}
+              >
+                {showAllPresets ? "收起" : `+${presets.length - 12}`}
+              </button>
+            )}
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: "16px",
+            }}
+          >
+            {providers.map((provider) => (
+              <div
+                key={provider.id}
+                style={{
+                  borderRadius: "10px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--secondary)",
+                  padding: "16px",
+                  position: "relative",
+                }}
+              >
+                {/* Header: logo left + model name right, provider name as subtitle */}
+                <div style={{ display: "flex", gap: "14px", marginBottom: "8px", alignItems: "flex-start" }}>
+                  <ProviderLogo name={provider.name} id={provider.id} size={40} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
+                      <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {provider.model}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "13px", color: "var(--muted-foreground)", lineHeight: 1.8 }}>
+                      <div>{t("llmProviders.vendor")}: {provider.name}</div>
+                      {provider.website_url && (
+                        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <span>{t("llmProviders.website")}: </span>
+                          <a
+                            href={provider.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              fontSize: "13px",
+                              color: "var(--primary)",
+                              textDecoration: "none",
+                              opacity: 0.8,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                            onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.8")}
+                          >
+                            {provider.website_url}
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* 右上角操作按钮 */}
-              <div style={{ position: "absolute", top: "12px", right: "12px" }} data-provider-menu>
-                <button
-                  onClick={() => setOpenMenuId(openMenuId === provider.id ? null : provider.id)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "4px",
-                    borderRadius: "6px",
-                    color: "var(--muted-foreground)",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--muted)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
-                  <MoreHorizontal style={{ width: 18, height: 18 }} />
-                </button>
-                {openMenuId === provider.id && (
-                  <div
+                {/* 右上角操作按钮 */}
+                <div style={{ position: "absolute", top: "12px", right: "12px" }} data-provider-menu>
+                  <button
+                    onClick={() => setOpenMenuId(openMenuId === provider.id ? null : provider.id)}
                     style={{
-                      position: "absolute",
-                      top: "100%",
-                      right: 0,
-                      marginTop: "4px",
-                      backgroundColor: "var(--background)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "8px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      zIndex: 50,
-                      minWidth: "120px",
-                      overflow: "hidden",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "4px",
+                      borderRadius: "6px",
+                      color: "var(--muted-foreground)",
+                      display: "flex",
+                      alignItems: "center",
                     }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--muted)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
-                    {provider.id !== activeProviderId && (
+                    <MoreHorizontal style={{ width: 18, height: 18 }} />
+                  </button>
+                  {openMenuId === provider.id && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        right: 0,
+                        marginTop: "4px",
+                        backgroundColor: "var(--background)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        zIndex: 50,
+                        minWidth: "120px",
+                        overflow: "hidden",
+                      }}
+                    >
                       <button
-                        onClick={() => { handleSwitch(provider.id); setOpenMenuId(null); }}
+                        onClick={() => handleEdit(provider)}
                         style={{
                           display: "block",
                           width: "100%",
@@ -593,426 +626,42 @@ export function ProviderManager() {
                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--muted)")}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                       >
-                        {t("llmProviders.switch")}
+                        {t("common.edit")}
                       </button>
-                    )}
-                    <button
-                      onClick={() => { handleEdit(provider); setOpenMenuId(null); }}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        padding: "8px 14px",
-                        fontSize: "13px",
-                        textAlign: "left",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "var(--foreground)",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--muted)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    >
-                      {t("common.edit")}
-                    </button>
-                    <button
-                      onClick={() => { handleDelete(provider.id); setOpenMenuId(null); }}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        padding: "8px 14px",
-                        fontSize: "13px",
-                        textAlign: "left",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "var(--destructive)",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--muted)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    >
-                      {t("common.delete")}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            borderRadius: "8px",
-            border: "1px solid var(--border)",
-            backgroundColor: "var(--background)",
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
-          }}
-        >
-          <h3
-            style={{
-              margin: 0,
-              fontSize: "15px",
-              fontWeight: 600,
-              color: "var(--foreground)",
-            }}
-          >
-            {editingId ? t("llmProviders.editTitle") : t("llmProviders.addTitle")}
-          </h3>
-
-          {!editingId && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span
-                style={{
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  color: "var(--muted-foreground)",
-                }}
-              >
-                快速选择
-              </span>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "6px",
-                }}
-              >
-                {PROVIDER_PRESETS.slice(
-                  0,
-                  showAllPresets
-                    ? PROVIDER_PRESETS.length
-                    : PRESET_VISIBLE_COUNT,
-                ).map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      padding: "4px 10px",
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      color: "var(--foreground)",
-                      backgroundColor: "var(--secondary)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      transition: "background-color 0.15s, border-color 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--muted)";
-                      e.currentTarget.style.borderColor = preset.color;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--secondary)";
-                      e.currentTarget.style.borderColor = "var(--border)";
-                    }}
-                    onClick={() => applyPreset(preset)}
-                  >
-                    <span
-                      style={{
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        backgroundColor: preset.color,
-                        flexShrink: 0,
-                      }}
-                    />
-                    {preset.name}
-                  </button>
-                ))}
-                {PROVIDER_PRESETS.length > PRESET_VISIBLE_COUNT && (
-                  <button
-                    type="button"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "3px",
-                      padding: "4px 8px",
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      color: "var(--muted-foreground)",
-                      backgroundColor: "transparent",
-                      border: "1px dashed var(--border)",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => setShowAllPresets(!showAllPresets)}
-                  >
-                    {showAllPresets ? "收起" : `+${PROVIDER_PRESETS.length - PRESET_VISIBLE_COUNT}`}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <span
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "var(--foreground)",
-                }}
-              >
-                {t("llmProviders.name")}
-              </span>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder={t("llmProviders.namePlaceholder")}
-                required
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--input)",
-                  backgroundColor: "var(--background)",
-                  color: "var(--foreground)",
-                  fontSize: "13px",
-                  outline: "none",
-                }}
-              />
-            </label>
-
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--foreground)",
-                    flexShrink: 0,
-                  }}
-                >
-                  {t("llmProviders.baseUrl")}
-                </span>
-                <div style={{ display: "flex", gap: "4px" }}>
-                  {(["openai", "anthropic"] as const).map((fmt) => (
-                    <button
-                      key={fmt}
-                      type="button"
-                      style={{
-                        padding: "2px 8px",
-                        fontSize: "11px",
-                        fontWeight: 500,
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        border: "1px solid",
-                        borderColor:
-                          form.api_format === fmt
-                            ? "var(--primary)"
-                            : "var(--border)",
-                        backgroundColor:
-                          form.api_format === fmt
-                            ? "var(--primary)"
-                            : "transparent",
-                        color:
-                          form.api_format === fmt
-                            ? "var(--primary-foreground)"
-                            : "var(--muted-foreground)",
-                        transition: "all 0.15s",
-                      }}
-                      onClick={() => handleFormatToggle(fmt)}
-                    >
-                      {fmt === "openai" ? "兼容 OpenAI" : "兼容 Anthropic"}
-                    </button>
-                  ))}
+                      <button
+                        onClick={() => { handleDelete(provider.id); setOpenMenuId(null); }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          padding: "8px 14px",
+                          fontSize: "13px",
+                          textAlign: "left",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "var(--destructive)",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--muted)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      >
+                        {t("common.delete")}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-              <input
-                type="url"
-                value={form.base_url}
-                onChange={(e) => setForm({ ...form, base_url: e.target.value })}
-                placeholder={t("llmProviders.baseUrlPlaceholder")}
-                required
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--input)",
-                  backgroundColor: "var(--background)",
-                  color: "var(--foreground)",
-                  fontSize: "13px",
-                  outline: "none",
-                }}
-              />
-            </label>
-
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <span
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "var(--foreground)",
-                }}
-              >
-                {t("llmProviders.apiKey")}
-              </span>
-              <input
-                type="password"
-                value={form.api_key}
-                onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-                placeholder={t("llmProviders.apiKeyPlaceholder")}
-                required
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--input)",
-                  backgroundColor: "var(--background)",
-                  color: "var(--foreground)",
-                  fontSize: "13px",
-                  outline: "none",
-                }}
-              />
-            </label>
-
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <span
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "var(--foreground)",
-                }}
-              >
-                {t("llmProviders.model")}
-              </span>
-              <input
-                type="text"
-                value={form.model}
-                onChange={(e) => setForm({ ...form, model: e.target.value })}
-                placeholder={t("llmProviders.modelPlaceholder")}
-                required
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--input)",
-                  backgroundColor: "var(--background)",
-                  color: "var(--foreground)",
-                  fontSize: "13px",
-                  outline: "none",
-                }}
-              />
-            </label>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "12px",
-              }}
-            >
-              <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--foreground)",
-                  }}
-                >
-                  {t("llmProviders.temperature")}
-                </span>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="2"
-                  value={form.temperature}
-                  onChange={(e) => setForm({ ...form, temperature: e.target.value })}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: "6px",
-                    border: "1px solid var(--input)",
-                    backgroundColor: "var(--background)",
-                    color: "var(--foreground)",
-                    fontSize: "13px",
-                    outline: "none",
-                  }}
-                />
-              </label>
-
-              <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--foreground)",
-                  }}
-                >
-                  {t("llmProviders.maxTokens")}
-                </span>
-                <input
-                  type="number"
-                  min="1"
-                  value={form.max_tokens}
-                  onChange={(e) => setForm({ ...form, max_tokens: e.target.value })}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: "6px",
-                    border: "1px solid var(--input)",
-                    backgroundColor: "var(--background)",
-                    color: "var(--foreground)",
-                    fontSize: "13px",
-                    outline: "none",
-                  }}
-                />
-              </label>
-
-              <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--foreground)",
-                  }}
-                >
-                  {t("llmProviders.timeout")}
-                </span>
-                <input
-                  type="number"
-                  min="1"
-                  value={form.timeout_secs}
-                  onChange={(e) => setForm({ ...form, timeout_secs: e.target.value })}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: "6px",
-                    border: "1px solid var(--input)",
-                    backgroundColor: "var(--background)",
-                    color: "var(--foreground)",
-                    fontSize: "13px",
-                    outline: "none",
-                  }}
-                />
-              </label>
-            </div>
+            ))}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "8px",
-            }}
-          >
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              {t("common.cancel")}
-            </Button>
-            <Button type="submit" variant="default" disabled={saving}>
-              {saving ? t("llmProviders.saving") || t("common.saving") : t("llmProviders.save")}
-            </Button>
-          </div>
-        </form>
+          {/* Modal */}
+          {modalProps && (
+            <ProviderAddModal
+              {...modalProps}
+              onClose={handleModalClose}
+              onSaved={handleModalSaved}
+            />
+          )}
+        </>
       )}
     </div>
   );
