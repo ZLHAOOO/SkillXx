@@ -274,9 +274,7 @@ pub fn apply_codex_provider(
     if has_codex_session_token(&auth_path) {
         // Skip auth.json write, user has a ChatGPT session we shouldn't destroy
     } else {
-        let auth: Value = json!(
-            "OPENAI_API_KEY": api_key,
-        );
+        let auth: Value = json!({ "OPENAI_API_KEY": api_key });
         let auth_json = serde_json::to_string_pretty(&auth)
             .map_err(|e| format!("Failed to serialize auth.json: {e}"))?;
         fs::write(&auth_path, auth_json.as_bytes())
