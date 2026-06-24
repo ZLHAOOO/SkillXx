@@ -252,7 +252,35 @@ function SkillCardComponent({
         </div>
       )}
 
-      {/* Footer */}
+      {/* Scope Label - between description and footer divider */}
+      {item.scopeLabel && (
+        <span style={{
+          display: "inline-flex",
+          alignItems: "center",
+          height: "18px",
+          padding: "0 5px",
+          fontSize: "10px",
+          fontWeight: 600,
+          letterSpacing: "0.04em",
+          color: item.scopeLabel === "project"
+            ? "var(--primary-foreground, #fff)"
+            : "var(--muted-foreground)",
+          backgroundColor: item.scopeLabel === "project"
+            ? "var(--primary, #6366f1)"
+            : "var(--background)",
+          border: item.scopeLabel === "project"
+            ? "none"
+            : "1px solid var(--border)",
+          borderRadius: "3px",
+          marginBottom: "10px",
+        }}>
+          {item.scopeLabel === "project"
+            ? t("skills.scopeProject")
+            : t("skills.scopeGlobal")}
+        </span>
+      )}
+
+      {/* Footer - only tool logos below divider */}
       <div style={{
         paddingTop: "12px",
         borderTop: "1px solid var(--border)",
@@ -260,32 +288,6 @@ function SkillCardComponent({
         flexDirection: "column",
         gap: "8px",
       }}>
-        {item.scopeLabel && (
-          <span style={{
-            display: "inline-flex",
-            alignItems: "center",
-            height: "18px",
-            padding: "0 6px",
-            fontSize: "10px",
-            fontWeight: 600,
-            letterSpacing: "0.02em",
-            color: item.scopeLabel === "project"
-              ? "var(--primary-foreground, #fff)"
-              : "var(--muted-foreground)",
-            backgroundColor: item.scopeLabel === "project"
-              ? "var(--primary, #6366f1)"
-              : "var(--background)",
-            border: item.scopeLabel === "project"
-              ? "none"
-              : "1px solid var(--border)",
-            borderRadius: "4px",
-            alignSelf: "flex-start",
-          }}>
-            {item.scopeLabel === "project"
-              ? t("skills.scopeProject")
-              : t("skills.scopeGlobal")}
-          </span>
-        )}
         {item.kind === "group" && (
           <div style={{
             fontSize: "12px",
