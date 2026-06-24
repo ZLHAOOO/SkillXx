@@ -256,6 +256,7 @@ function SkillCardComponent({
       {item.scopeLabel && (
         <span style={{
           display: "inline-flex",
+          alignSelf: "flex-start",
           alignItems: "center",
           height: "18px",
           padding: "0 5px",
