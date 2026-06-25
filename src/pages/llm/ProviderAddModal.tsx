@@ -167,27 +167,8 @@ export function ProviderAddModal({
   const showOpenaiBtn = isEdit || isCustom || !isAnthropicPreset;
   const showAnthropicBtn = isEdit || isCustom || !isOpenaiPreset;
 
-  const handlePlatformToggle = (platform: "openai" | "anthropic") => {
-    if (isEdit) {
-      // When editing, swap base_url to match the selected format
-      const newBaseUrl = platform === "openai"
-        ? (form.base_url_openai || form.base_url)
-        : (form.base_url_anthropic || form.base_url);
-      setForm({ ...form, api_format: platform, base_url: newBaseUrl });
-      return;
-    }
-    if (isCustom) {
-      setForm({ ...form, api_format: platform });
-      return;
-    }
-    if (platform === "openai" && entry!.base_url_openai) {
-      setForm({ ...form, api_format: "openai", base_url: entry!.base_url_openai });
-    } else if (platform === "anthropic" && entry!.base_url_anthropic) {
-      setForm({ ...form, api_format: "anthropic", base_url: entry!.base_url_anthropic });
-    } else {
-      setForm({ ...form, api_format: platform });
-    }
-  };
+  // Platform toggle is no longer needed — both URLs are shown as separate inputs.
+  // This function is kept as a no-op for backward compatibility.
 
   const handleFetchModels = async () => {
     if (!form.base_url.trim() || !form.api_key.trim()) {
@@ -200,8 +181,12 @@ export function ProviderAddModal({
     setShowModelDropdown(false);
 
     try {
+      // Use the URL matching the current api_format
+      const fetchUrl = form.api_format === "anthropic"
+        ? (form.base_url_anthropic.trim() || form.base_url.trim())
+        : (form.base_url_openai.trim() || form.base_url.trim());
       const result = await invoke<ModelInfo[]>("fetch_models_for_config", {
-        base_url: form.base_url.trim(),
+        base_url: fetchUrl,
         api_key: form.api_key.trim(),
         is_full_url: false,
         models_url: null,
@@ -445,82 +430,106 @@ export function ProviderAddModal({
               />
             </label>
 
-            {/* Base URL */}
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--foreground)",
-                  }}
-                >
-                  {t("llmProviders.baseUrl")}
-                </span>
-                {showOpenaiBtn && (
-                  <button
-                    type="button"
-                    onClick={() => handlePlatformToggle("openai")}
+            {/* Base URLs: OpenAI + Anthropic (side by side when both visible) */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {/* OpenAI Base URL */}
+              {(showOpenaiBtn || isEdit) && (
+                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span
                     style={{
-                      padding: "2px 8px",
-                      borderRadius: "4px",
-                      border: "1px solid",
-                      borderColor: form.api_format === "openai" ? "var(--primary)" : "var(--border)",
-                      backgroundColor: form.api_format === "openai" ? "var(--primary)" : "transparent",
-                      color: form.api_format === "openai" ? "var(--primary-foreground)" : "var(--muted-foreground)",
-                      fontSize: "11px",
+                      fontSize: "13px",
                       fontWeight: 500,
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                      lineHeight: "18px",
+                      color: "var(--foreground)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
                     }}
                   >
-                    {isEdit ? "OpenAI" : t("llmProviders.openaiPlatform")}
-                  </button>
-                )}
-                {showAnthropicBtn && (
-                  <button
-                    type="button"
-                    onClick={() => handlePlatformToggle("anthropic")}
+                    <span style={{ color: "#f97316" }}>●</span>
+                    OpenAI Base URL
+                  </span>
+                  <input
+                    type="url"
+                    value={form.base_url_openai}
+                    onChange={(e) => setForm({ ...form, base_url_openai: e.target.value })}
+                    placeholder="https://api.openai.com/v1"
                     style={{
-                      padding: "2px 8px",
-                      borderRadius: "4px",
-                      border: "1px solid",
-                      borderColor: form.api_format === "anthropic" ? "var(--primary)" : "var(--border)",
-                      backgroundColor: form.api_format === "anthropic" ? "var(--primary)" : "transparent",
-                      color: form.api_format === "anthropic" ? "var(--primary-foreground)" : "var(--muted-foreground)",
-                      fontSize: "11px",
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--input)",
+                      backgroundColor: "var(--background)",
+                      color: "var(--foreground)",
+                      fontSize: "13px",
+                      outline: "none",
+                    }}
+                  />
+                </label>
+              )}
+
+              {/* Anthropic Base URL */}
+              {(showAnthropicBtn || isEdit) && (
+                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span
+                    style={{
+                      fontSize: "13px",
                       fontWeight: 500,
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                      lineHeight: "18px",
+                      color: "var(--foreground)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
                     }}
                   >
-                    {isEdit ? "Anthropic" : t("llmProviders.anthropicPlatform")}
-                  </button>
-                )}
-              </div>
-              <input
-                type="url"
-                value={form.base_url}
-                onChange={(e) => setForm({ ...form, base_url: e.target.value })}
-                required
-                placeholder={
-                  form.api_format === "anthropic"
-                    ? "https://api.anthropic.com"
-                    : "https://api.openai.com/v1"
-                }
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--input)",
-                  backgroundColor: "var(--background)",
-                  color: "var(--foreground)",
-                  fontSize: "13px",
-                  outline: "none",
-                }}
-              />
-            </label>
+                    <span style={{ color: "#6366f1" }}>●</span>
+                    Anthropic Base URL
+                  </span>
+                  <input
+                    type="url"
+                    value={form.base_url_anthropic}
+                    onChange={(e) => setForm({ ...form, base_url_anthropic: e.target.value })}
+                    placeholder="https://api.anthropic.com"
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--input)",
+                      backgroundColor: "var(--background)",
+                      color: "var(--foreground)",
+                      fontSize: "13px",
+                      outline: "none",
+                    }}
+                  />
+                </label>
+              )}
+
+              {/* Fallback: show single base_url if neither platform button is shown */}
+              {!showOpenaiBtn && !showAnthropicBtn && !isEdit && (
+                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "var(--foreground)",
+                    }}
+                  >
+                    {t("llmProviders.baseUrl")}
+                  </span>
+                  <input
+                    type="url"
+                    value={form.base_url}
+                    onChange={(e) => setForm({ ...form, base_url: e.target.value })}
+                    placeholder="https://api.openai.com/v1"
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--input)",
+                      backgroundColor: "var(--background)",
+                      color: "var(--foreground)",
+                      fontSize: "13px",
+                      outline: "none",
+                    }}
+                  />
+                </label>
+              )}
+            </div>
 
             {/* API Key */}
             <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
