@@ -147,8 +147,8 @@
     "id": "stepfun",
     "name": "阶跃星辰",
     "base_url_openai": "https://api.stepfun.com/v1",
-    "base_url_anthropic": "",
-    "model": "step-3",
+    "base_url_anthropic": "https://api.stepfun.com",
+    "model": "step-3.5-flash",
     "website_url": "https://www.stepfun.com",
     "icon": "stepfun.svg"
   },
