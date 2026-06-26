@@ -21,6 +21,12 @@ export interface LlmProviderConfig {
   timeout_secs?: number;
 }
 
+export interface ToolInfo {
+  id: string;
+  name: string;
+  detected: boolean;
+}
+
 const TOOL_IDS = ["claude-code", "codex", "gemini", "opencode", "openclaw", "hermes"] as const;
 
 const TOOL_NAMES: Record<string, string> = {
@@ -67,15 +73,23 @@ export function ToolBindings() {
   const [restoringClaude, setRestoringClaude] = useState(false);
   const [restoringCodex, setRestoringCodex] = useState(false);
 
+  const [tools, setTools] = useState<ToolInfo[]>([]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [providerList, currentBindings] = await Promise.all([
+      const [providerList, currentBindings, toolList] = await Promise.all([
         invoke<LlmProviderConfig[]>("get_llm_providers"),
         invoke<ToolBindings>("get_tool_bindings"),
+        invoke<ToolInfo[]>("detect_tools"),
       ]);
       setProviders(providerList);
       setBindings(currentBindings);
+      // Filter tools: only show main tools + hermes profiles
+      const filteredTools = toolList.filter(
+        (tool) => TOOL_IDS.includes(tool.id as any) || tool.id.startsWith("hermes-")
+      );
+      setTools(filteredTools);
       setClaudeConfigWritten(false);
     } catch (err) {
       addToast(t("llmProviders.bindings.loadFailed"), "error");
@@ -292,9 +306,11 @@ export function ToolBindings() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {TOOL_IDS.map((toolId) => {
-          const toolName = TOOL_NAMES[toolId] ?? toolId;
-          const toolColor = TOOL_COLORS[toolId] ?? "#6b7280";
+        {tools.map((tool) => {
+          const toolId = tool.id;
+          const toolName = tool.name;
+          const isHermesProfile = toolId.startsWith("hermes-");
+          const toolColor = isHermesProfile ? "#f59e0b" : (TOOL_COLORS[toolId] ?? "#6b7280");
           const initial = toolName.charAt(0).toUpperCase();
           const currentBinding = bindings[toolId] ?? "";
           const currentLabel = currentBinding ? getProviderLabel(currentBinding) : "—";

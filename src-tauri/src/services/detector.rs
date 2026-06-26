@@ -1,5 +1,6 @@
 use rayon::prelude::*;
 use std::env;
+use std::fs;
 use std::process::Command; // Enable parallel processing
 
 use crate::models::{
@@ -26,6 +27,9 @@ impl DetectorService {
 
         tools.extend(builtin_tools);
 
+        // Detect Hermes profiles (independent agents)
+        tools.extend(Self::detect_hermes_profiles(&saved_config));
+
         if let Some(config) = saved_config {
             let mut custom_tools: Vec<(String, CustomToolConfig)> =
                 config.custom_tools.into_iter().collect();
@@ -38,6 +42,70 @@ impl DetectorService {
 
             for (id, custom) in custom_tools {
                 tools.push(Self::detect_custom_tool(&id, &custom));
+            }
+        }
+
+        tools
+    }
+
+    /// Detect Hermes profiles (independent agents with their own skills)
+    fn detect_hermes_profiles(saved_config: &Option<crate::models::AppConfig>) -> Vec<Tool> {
+        let home_dir = match dirs::home_dir() {
+            Some(home) => home,
+            None => return Vec::new(),
+        };
+
+        let profiles_dir = home_dir.join(".hermes").join("profiles");
+        if !profiles_dir.exists() {
+            return Vec::new();
+        }
+
+        let mut tools = Vec::new();
+
+        if let Ok(entries) = fs::read_dir(&profiles_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if !path.is_dir() {
+                    continue;
+                }
+
+                let dir_name = match path.file_name().and_then(|n| n.to_str()) {
+                    Some(name) => name.to_string(),
+                    None => continue,
+                };
+
+                // Skip hidden directories
+                if dir_name.starts_with('.') {
+                    continue;
+                }
+
+                let agent_id = format!("hermes-{}", dir_name);
+                let skills_path = path.join("skills");
+                let config_path = path.clone();
+
+                // Check if this agent was previously configured
+                let enabled = saved_config
+                    .as_ref()
+                    .and_then(|c| c.tools.get(&agent_id))
+                    .map(|tc| tc.enabled)
+                    .unwrap_or(false);
+
+                let tool_config = ToolConfig {
+                    enabled,
+                    detected: true,
+                    skills_path,
+                    config_path,
+                };
+
+                tools.push(Tool {
+                    id: agent_id.clone(),
+                    name: format!("Hermes / {}", dir_name),
+                    detected: true,
+                    cli_available: false, // Individual agents don't have their own CLI
+                    config: tool_config,
+                    source: ToolSource::Builtin,
+                    icon_path: None,
+                });
             }
         }
 

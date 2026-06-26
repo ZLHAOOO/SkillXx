@@ -7,7 +7,7 @@
 > **一款统一的 AI 编码助手技能管理桌面应用。**
 > 无缝管理、同步和分享 **Claude Code、Codex、Opencode** 等 AI 工具的技能。
 
-![Version](https://img.shields.io/badge/version-3.2.1-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.2.2-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
 [English](./README.md)
 

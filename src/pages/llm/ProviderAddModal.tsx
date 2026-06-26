@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, ExternalLink } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "@/i18n";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
@@ -221,7 +222,7 @@ export function ProviderAddModal({
 
   const handleOpenApiKeyPage = () => {
     if (form.website_url) {
-      window.open(form.website_url, "_blank");
+      openUrl(form.website_url);
     }
   };
 
@@ -392,7 +393,7 @@ export function ProviderAddModal({
 
             {/* Website URL */}
             <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span
                   style={{
                     fontSize: "13px",
@@ -400,14 +401,14 @@ export function ProviderAddModal({
                     color: "var(--foreground)",
                   }}
                 >
-                  "官网链接"
+                  官网链接
                 </span>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleOpenApiKeyPage}
                   disabled={!form.website_url}
-                  style={{ whiteSpace: "nowrap", fontSize: "12px", padding: "2px 8px", height: "24px", lineHeight: "18px" }}
+                  style={{ whiteSpace: "nowrap", fontSize: "12px", padding: "2px 10px", height: "24px", lineHeight: "18px", borderRadius: "9999px", borderColor: "var(--primary)", color: "var(--primary)", backgroundColor: "transparent" }}
                 >
                   <ExternalLink style={{ width: "13px", height: "13px", marginRight: "3px" }} />
                   {t("llmProviders.getApiKey")}
@@ -445,7 +446,6 @@ export function ProviderAddModal({
                       gap: "6px",
                     }}
                   >
-                    <span style={{ color: "#f97316" }}>●</span>
                     OpenAI Base URL
                   </span>
                   <input
@@ -479,7 +479,6 @@ export function ProviderAddModal({
                       gap: "6px",
                     }}
                   >
-                    <span style={{ color: "#6366f1" }}>●</span>
                     Anthropic Base URL
                   </span>
                   <input
@@ -763,10 +762,10 @@ export function ProviderAddModal({
               marginTop: "20px",
             }}
           >
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} style={{ borderRadius: "9999px" }}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" variant="default" disabled={saving}>
+            <Button type="submit" variant="default" disabled={saving} style={{ borderRadius: "9999px" }}>
               {saving ? t("common.saving") : isEdit ? t("llmProviders.save") : "添加"}
             </Button>
           </div>
