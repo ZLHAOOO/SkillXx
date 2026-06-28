@@ -98,8 +98,8 @@ export function ToolDetectionStep({ onNext, onBack }: ToolDetectionStepProps) {
                     justifyContent: 'space-between',
                     padding: '12px 14px',
                     borderRadius: '10px',
-                    backgroundColor: tool.detected ? 'rgba(9, 105, 218, 0.08)' : 'var(--secondary)',
-                    border: tool.detected ? '1px solid rgba(9, 105, 218, 0.2)' : '1px solid transparent',
+                    backgroundColor: tool.detected ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--secondary)',
+                    border: tool.detected ? '1px solid color-mix(in srgb, var(--primary) 20%, transparent)' : '1px solid transparent',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

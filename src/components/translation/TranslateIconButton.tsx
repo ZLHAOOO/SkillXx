@@ -155,7 +155,7 @@ export function TranslateIconButton({
             backgroundColor: "var(--popover)",
             border: "1px solid var(--border)",
             borderRadius: 8,
-            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.25)",
+            boxShadow: "0 8px 24px color-mix(in srgb, var(--foreground) 20%, transparent)",
             zIndex: 9999,
             display: "flex",
             flexDirection: "column",

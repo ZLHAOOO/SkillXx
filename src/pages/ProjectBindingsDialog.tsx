@@ -379,7 +379,7 @@ export function ProjectBindingsDialog({
                       justifyContent: "space-between",
                       gap: "12px",
                       backgroundColor: isActive
-                        ? "rgba(9, 105, 218, 0.04)"
+                        ? "color-mix(in srgb, var(--primary) 4%, transparent)"
                         : "transparent",
                     }}
                   >
@@ -413,8 +413,8 @@ export function ProjectBindingsDialog({
                                 fontSize: "10px",
                                 fontWeight: 600,
                                 color: "var(--primary)",
-                                backgroundColor: "rgba(9, 105, 218, 0.1)",
-                                border: "1px solid rgba(9, 105, 218, 0.2)",
+                                backgroundColor: "color-mix(in srgb, var(--primary) 10%, transparent)",
+                                border: "1px solid color-mix(in srgb, var(--primary) 20%, transparent)",
                                 borderRadius: "999px",
                                 padding: "2px 8px",
                                 flexShrink: 0,
@@ -482,7 +482,7 @@ export function ProjectBindingsDialog({
                             padding: "7px 10px",
                             fontSize: "12px",
                             fontWeight: 500,
-                            color: "#dc2626",
+                            color: "var(--destructive)",
                             backgroundColor: "transparent",
                             border: "1px solid transparent",
                             borderRadius: "8px",
@@ -492,8 +492,8 @@ export function ProjectBindingsDialog({
                           }}
                           onMouseEnter={(e) => {
                             if (!saving) {
-                              e.currentTarget.style.backgroundColor = "rgba(220, 38, 38, 0.1)";
-                              e.currentTarget.style.borderColor = "rgba(220, 38, 38, 0.2)";
+                              e.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--destructive) 10%, transparent)";
+                              e.currentTarget.style.borderColor = "color-mix(in srgb, var(--destructive) 20%, transparent)";
                             }
                           }}
                           onMouseLeave={(e) => {
@@ -514,12 +514,12 @@ export function ProjectBindingsDialog({
                           alignItems: "center",
                           gap: "8px",
                           padding: "6px 8px",
-                          backgroundColor: "rgba(220, 38, 38, 0.08)",
+                          backgroundColor: "color-mix(in srgb, var(--destructive) 8%, transparent)",
                           borderRadius: "10px",
-                          border: "1px solid rgba(220, 38, 38, 0.2)",
+                          border: "1px solid color-mix(in srgb, var(--destructive) 20%, transparent)",
                         }}
                       >
-                        <span style={{ fontSize: "12px", fontWeight: 500, color: "#dc2626" }}>
+                        <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--destructive)" }}>
                           {t("settings.confirmDelete")}
                         </span>
                         <button
@@ -530,8 +530,8 @@ export function ProjectBindingsDialog({
                             padding: "5px 10px",
                             fontSize: "12px",
                             fontWeight: 600,
-                            color: "#ffffff",
-                            backgroundColor: "#dc2626",
+                            color: "var(--destructive-foreground, #ffffff)",
+                            backgroundColor: "var(--destructive)",
                             border: "none",
                             borderRadius: "6px",
                             cursor: saving ? "wait" : "pointer",

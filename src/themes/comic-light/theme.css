@@ -1,0 +1,104 @@
+/* ============================================================================
+   漫画 · 亮色
+   漫画纸色 + 粗墨线 + 硬偏移阴影 + 高饱和原色 + Bangers 字体
+   ============================================================================ */
+
+[data-theme-style="comic"][data-mode="light"] {
+  --background: #FFFEF0;
+  --foreground: #1A1A1A;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A1A;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A1A;
+  --primary: #FF006E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFF4D6;
+  --secondary-foreground: #1A1A1A;
+  --muted: #FFF4D6;
+  --muted-foreground: #4A4A4A;
+  --accent: #FFD600;
+  --accent-foreground: #1A1A1A;
+  --destructive: #FF1744;
+  --border: #1A1A1A;
+  --input: #1A1A1A;
+  --ring: #FF006E;
+  --chart-1: #FF006E;
+  --chart-2: #2563FF;
+  --chart-3: #FFD600;
+  --chart-4: #00C853;
+  --chart-5: #FF1744;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1A1A1A;
+  --sidebar-primary: #FF006E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #FFF4D6;
+  --sidebar-accent-foreground: #1A1A1A;
+  --sidebar-border: #1A1A1A;
+  --sidebar-ring: #FF006E;
+
+  --color-error: #FF1744;
+  --color-error-bg: rgba(255, 23, 68, 0.14);
+  --color-error-border: rgba(255, 23, 68, 0.4);
+  --color-success: #00C853;
+  --color-success-bg: rgba(0, 200, 83, 0.14);
+  --color-success-border: rgba(0, 200, 83, 0.4);
+  --color-warning: #FFB300;
+  --color-warning-bg: rgba(255, 179, 0, 0.14);
+  --color-warning-border: rgba(255, 179, 0, 0.4);
+  --color-primary-action: #FF006E;
+  --color-primary-action-hover: #D10058;
+
+  --color-bg: #FFFEF0;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-sunken: #FFF4D6;
+  --color-sidebar-bg: #FFFFFF;
+  --color-fg: #1A1A1A;
+  --color-fg-muted: #4A4A4A;
+  --color-fg-subtle: #707070;
+  --color-border-thin: #1A1A1A;
+  --color-accent: #FF006E;
+  --color-accent-strong: #D10058;
+  --color-accent-fg: #FFFFFF;
+  --color-accent-soft: rgba(255, 0, 110, 0.12);
+  --color-card-bg: #FFFFFF;
+  --color-card-border: #1A1A1A;
+  --color-banner-bg: #FFD600;
+  --color-banner-border: #1A1A1A;
+  --color-hero-accent-bg: #FF006E;
+  --color-hero-accent-fg: #FFFFFF;
+
+  --shadow-sm: 3px 3px 0 0 #1A1A1A;
+  --shadow-md: 5px 5px 0 0 #1A1A1A;
+  --shadow-lg: 8px 8px 0 0 #1A1A1A;
+  --shadow-inset: inset 0 0 0 2px #1A1A1A;
+  --glow-accent: 0 0 0 transparent;
+  --scanline: radial-gradient(circle at 50% 50%, rgba(26,26,26,0.18) 1px, transparent 1.5px) 0 0 / 8px 8px;
+  --clip-corner: 0;
+  --font-display: "Bangers", "Impact", "Arial Black", var(--app-font-family, sans-serif);
+  --font-body: var(--app-font-family, -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
+  --font-mono: "Space Mono", "JetBrains Mono", "SF Mono", Menlo, monospace;
+
+  --color-scrollbar: #1A1A1A;
+  --color-scrollbar-hover: #4A4A4A;
+  --color-body-bg: #FFFEF0;
+  --radius: 0.375rem;
+}
+
+[data-theme-style="comic"][data-mode="light"] .glass-content {
+  background: var(--color-bg-elevated, #FFFFFF);
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme-style="comic"][data-mode="light"] .glass-sidebar {
+  background: #FFFFFF;
+  border-right: 3px solid #1A1A1A;
+}
+
+/* —— 形态 token：漫画 · sharp + 3px 粗墨边 + 硬偏移阴影 —— */
+[data-theme-style="comic"][data-mode="light"] {
+  --radius-card: 6px;            /* sharp 漫画圆角 */
+  --radius-button: 4px;          /* hard 按钮 */
+  --border-w-card: 3px;          /* 3px 粗墨线 */
+  --shadow-toast: 5px 5px 0 0 #1A1A1A;  /* POW! 硬偏移 */
+}

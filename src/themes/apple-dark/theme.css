@@ -1,0 +1,106 @@
+/* ============================================================================
+   简约 · 暗色
+   黑/深灰中性色 + 大圆角 + 浅投影 + 灰按钮 + 绿/橙仅作 status 点缀
+   ============================================================================ */
+
+[data-theme-style="apple"][data-mode="dark"] {
+  --background: #0E0E0E;
+  --foreground: #F2F2F2;
+  --card: #1A1A1A;
+  --card-foreground: #F2F2F2;
+  --popover: #1A1A1A;
+  --popover-foreground: #F2F2F2;
+  --primary: #C8C8C8;
+  --primary-foreground: #0E0E0E;
+  --secondary: #1A1A1A;
+  --secondary-foreground: #F2F2F2;
+  --muted: #050505;
+  --muted-foreground: #9A9A9A;
+  --accent: #1A1A1A;
+  --accent-foreground: #F2F2F2;
+  --destructive: #D88080;
+  --border: rgba(255, 255, 255, 0.06);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #C8C8C8;
+  --chart-1: #C8C8C8;
+  --chart-2: #8FA0B0;
+  --chart-3: #6BB68A;
+  --chart-4: #E0A05C;
+  --chart-5: #D88080;
+  --sidebar: #0A0A0A;
+  --sidebar-foreground: #F2F2F2;
+  --sidebar-primary: #C8C8C8;
+  --sidebar-primary-foreground: #0E0E0E;
+  --sidebar-accent: #1A1A1A;
+  --sidebar-accent-foreground: #F2F2F2;
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-ring: #C8C8C8;
+
+  --color-error: #D88080;
+  --color-error-bg: rgba(216, 128, 128, 0.14);
+  --color-error-border: rgba(216, 128, 128, 0.32);
+  --color-success: #6BB68A;
+  --color-success-bg: rgba(107, 182, 138, 0.14);
+  --color-success-border: rgba(107, 182, 138, 0.32);
+  --color-warning: #E0A05C;
+  --color-warning-bg: rgba(224, 160, 92, 0.14);
+  --color-warning-border: rgba(224, 160, 92, 0.32);
+  --color-primary-action: #C8C8C8;
+  --color-primary-action-hover: #E0E0E0;
+
+  --color-bg: #0E0E0E;
+  --color-bg-elevated: #1A1A1A;
+  --color-bg-sunken: #050505;
+  --color-sidebar-bg: #0A0A0A;
+  --color-fg: #F2F2F2;
+  --color-fg-muted: #9A9A9A;
+  --color-fg-subtle: #6B6B6B;
+  --color-border-thin: rgba(255, 255, 255, 0.06);
+  --color-accent: #C8C8C8;
+  --color-accent-strong: #E0E0E0;
+  --color-accent-fg: #0E0E0E;
+  --color-accent-soft: rgba(255, 255, 255, 0.08);
+  --color-card-bg: #1A1A1A;
+  --color-card-border: rgba(255, 255, 255, 0.05);
+  --color-banner-bg: #1A1A1A;
+  --color-banner-border: rgba(255, 255, 255, 0.06);
+  --color-hero-accent-bg: linear-gradient(135deg, #D8D8D8 0%, #B0B0B0 100%);
+  --color-hero-accent-fg: #0E0E0E;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  --glow-accent: 0 0 0 transparent;
+  --scanline: none;
+  --clip-corner: 0;
+  --font-display: var(--app-font-family, -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
+  --font-body: var(--app-font-family, -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
+  --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --color-scrollbar: rgba(255, 255, 255, 0.14);
+  --color-scrollbar-hover: rgba(255, 255, 255, 0.25);
+  --color-body-bg: #0E0E0E;
+  --radius: 0.5rem;
+}
+
+[data-theme-style="apple"][data-mode="dark"] .glass-content {
+  background: var(--color-bg-elevated, var(--color-card-bg));
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme-style="apple"][data-mode="dark"] .glass-sidebar {
+  background: var(--color-sidebar-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-right: 1px solid var(--color-border);
+}
+
+/* —— 形态 token：简约暗 · 大圆角 + pill 按钮 —— */
+[data-theme-style="apple"][data-mode="dark"] {
+  --radius-card: 1.5rem;
+  --radius-button: 9999px;
+  --border-w-card: 1px;
+  --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.5);
+}

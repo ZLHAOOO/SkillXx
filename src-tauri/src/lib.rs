@@ -5,7 +5,7 @@ mod services;
 mod test_support;
 
 use commands::{
-    batch_set_skill_tools, check_cli_installed, check_marketplace_updates_if_stale, check_sync_status,
+    ai_classify_skills, batch_set_skill_tools, check_cli_installed, check_marketplace_updates_if_stale, check_sync_status,
     check_update, apply_claude_provider, apply_codex_provider, clear_claude_provider, clear_codex_provider, clear_llm_provider, clear_translation_cache,
     create_custom_tool, create_skill, delete_custom_tool, delete_llm_provider, delete_skill,
     detect_available_editors, detect_tools, disable_skill, download_and_install, enable_skill,
@@ -142,6 +142,7 @@ pub fn run() {
             install_cli_tool,
             save_tools_order,
             translate_skill_name_desc_custom,
+            ai_classify_skills,
             get_llm_providers,
             fetch_models_for_config,
             save_llm_provider_multi,

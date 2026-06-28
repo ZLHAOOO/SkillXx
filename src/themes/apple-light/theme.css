@@ -1,0 +1,117 @@
+/* ============================================================================
+   简约 · 亮色
+   黑白灰中性色 + 大圆角 + 浅投影 + 灰按钮 + 绿/橙仅作 status 点缀
+   ============================================================================ */
+
+[data-theme-style="apple"][data-mode="light"] {
+  /* —— shadcn 桥接层 —— */
+  --background: #F5F5F5;
+  --foreground: #1A1A1A;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A1A;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A1A;
+  --primary: #3A3A3A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFFFFF;
+  --secondary-foreground: #1A1A1A;
+  --muted: #ECECEC;
+  --muted-foreground: #6B6B6B;
+  --accent: #ECECEC;
+  --accent-foreground: #1A1A1A;
+  --destructive: #C75C5C;
+  --border: rgba(0, 0, 0, 0.06);
+  --input: rgba(0, 0, 0, 0.12);
+  --ring: #3A3A3A;
+  --chart-1: #3A3A3A;
+  --chart-2: #6B7C8A;
+  --chart-3: #4F9E6E;
+  --chart-4: #D08A3E;
+  --chart-5: #C75C5C;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1A1A1A;
+  --sidebar-primary: #3A3A3A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #ECECEC;
+  --sidebar-accent-foreground: #1A1A1A;
+  --sidebar-border: rgba(0, 0, 0, 0.06);
+  --sidebar-ring: #3A3A3A;
+
+  /* —— 语义色（中性 + 状态点缀）—— */
+  --color-error: #C75C5C;
+  --color-error-bg: rgba(199, 92, 92, 0.1);
+  --color-error-border: rgba(199, 92, 92, 0.25);
+  --color-success: #4F9E6E;
+  --color-success-bg: rgba(79, 158, 110, 0.12);
+  --color-success-border: rgba(79, 158, 110, 0.28);
+  --color-warning: #D08A3E;
+  --color-warning-bg: rgba(208, 138, 62, 0.12);
+  --color-warning-border: rgba(208, 138, 62, 0.28);
+  --color-primary-action: #3A3A3A;
+  --color-primary-action-hover: #1F1F1F;
+
+  /* —— 原型自有 token —— */
+  --color-bg: #F5F5F5;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-sunken: #ECECEC;
+  --color-sidebar-bg: #FFFFFF;
+  --color-fg: #1A1A1A;
+  --color-fg-muted: #6B6B6B;
+  --color-fg-subtle: #9A9A9A;
+  --color-border-thin: rgba(0, 0, 0, 0.06);
+  --color-accent: #3A3A3A;
+  --color-accent-strong: #1F1F1F;
+  --color-accent-fg: #FFFFFF;
+  --color-accent-soft: rgba(0, 0, 0, 0.06);
+  --color-card-bg: #FFFFFF;
+  --color-card-border: rgba(0, 0, 0, 0.05);
+  --color-banner-bg: #ECECEC;
+  --color-banner-border: rgba(0, 0, 0, 0.05);
+  --color-hero-accent-bg: linear-gradient(135deg, #4A4A4A 0%, #2D2D2D 100%);
+  --color-hero-accent-fg: #FFFFFF;
+
+  /* —— 阴影 / 字体 —— */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  --glow-accent: 0 0 0 transparent;
+  --scanline: none;
+  --clip-corner: 0;
+  --font-display: var(--app-font-family, -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
+  --font-body: var(--app-font-family, -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
+  --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --color-scrollbar: rgba(0, 0, 0, 0.14);
+  --color-scrollbar-hover: rgba(0, 0, 0, 0.25);
+  --color-body-bg: #F5F5F5;
+  --radius: 0.5rem;
+}
+
+/* 简约风格：大圆角 */
+:root,
+[data-theme-style="apple"][data-mode="light"] {
+  --radius: 0.5rem;
+}
+
+/* 主内容画布（无卡片特征，仅背景色）*/
+[data-theme-style="apple"][data-mode="light"] .glass-content {
+  background: var(--color-bg-elevated, var(--color-card-bg));
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme-style="apple"][data-mode="light"] .glass-sidebar {
+  background: var(--color-sidebar-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-right: 1px solid var(--color-border);
+}
+
+/* —— 形态 token：简约 · 大圆角 + pill 按钮 —— */
+[data-theme-style="apple"][data-mode="light"] {
+  --radius-card: 1.5rem;        /* 24px 大圆角 */
+  --radius-button: 9999px;      /* pill 按钮 */
+  --border-w-card: 1px;
+  --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.08);
+}

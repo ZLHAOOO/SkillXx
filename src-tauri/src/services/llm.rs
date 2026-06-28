@@ -77,6 +77,18 @@ struct ChatRequestBody<'a> {
 }
 
 #[derive(Serialize)]
+struct ChatRequestBodyAnthropic<'a> {
+    model: &'a str,
+    messages: Vec<ChatMessageBody<'a>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    temperature: Option<f32>,
+    max_tokens: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system: Option<&'a str>,
+    stream: Option<bool>,
+}
+
+#[derive(Serialize)]
 struct ChatMessageBody<'a> {
     role: &'a str,
     content: &'a str,
@@ -107,7 +119,18 @@ struct StreamDelta {
 
 pub async fn chat(provider: &LlmProvider, req: ChatRequest) -> Result<String, LlmError> {
     let base = normalize_base_url(&provider.base_url)?;
-    let url = format!("{base}/chat/completions");
+
+    // Determine endpoint and auth header based on api_format
+    let url = if provider.api_format == "anthropic" {
+        format!("{base}/v1/messages")
+    } else {
+        format!("{base}/chat/completions")
+    };
+    let auth_header = if provider.api_format == "anthropic" {
+        format!("{}*x-api-key", provider.api_key)
+    } else {
+        format!("Bearer {}", provider.api_key)
+    };
 
     let mut builder = reqwest::Client::builder();
     let timeout_secs = provider.timeout_secs.unwrap_or(120);
@@ -118,29 +141,31 @@ pub async fn chat(provider: &LlmProvider, req: ChatRequest) -> Result<String, Ll
         .build()
         .map_err(|e| LlmError::NetworkError(e.to_string()))?;
 
-    let body = ChatRequestBody {
-        model: &provider.model,
-        messages: req
-            .messages
-            .iter()
-            .map(|m| ChatMessageBody {
-                role: m.role,
-                content: &m.content,
-            })
-            .collect(),
-        temperature: Some(provider.temperature.unwrap_or(DEFAULT_TEMPERATURE)),
-        max_tokens: provider.max_tokens,
-        response_format: req.json_mode.then(|| ResponseFormat {
-            fmt_type: "json_object",
-        }),
-        stream: true,
+    let body = if provider.api_format == "anthropic" {
+        serde_json::json!({
+            "model": provider.model,
+            "messages": req.messages,
+            "temperature": provider.temperature.unwrap_or(DEFAULT_TEMPERATURE),
+            "max_tokens": provider.max_tokens.unwrap_or(4096),
+            "stream": true,
+        })
+    } else {
+        serde_json::json!({
+            "model": provider.model,
+            "messages": req.messages,
+            "temperature": provider.temperature.unwrap_or(DEFAULT_TEMPERATURE),
+            "max_tokens": provider.max_tokens,
+            "stream": true,
+            "response_format": if req.json_mode { serde_json::json!({"type": "json_object"}) } else { serde_json::json!(null) },
+        })
     };
 
     let response = client
         .post(&url)
         .header(CONTENT_TYPE, "application/json")
-        .header(AUTHORIZATION, format!("Bearer {}", provider.api_key))
-        .json(&body)
+        .header("Authorization", &auth_header)
+        .header("anthropic-version", "2023-06-01")
+        .body(serde_json::to_vec(&body).unwrap())
         .send()
         .await
         .map_err(|e| {
@@ -277,7 +302,7 @@ pub async fn translate_text(
     Ok(parsed)
 }
 
-fn extract_json_block(text: &str) -> &str {
+pub(crate) fn extract_json_block(text: &str) -> &str {
     let trimmed = text.trim();
     if let Some(start) = trimmed.find('{') {
         if let Some(end) = trimmed.rfind('}') {
@@ -315,9 +340,10 @@ mod tests {
             base_url: base.to_string(),
             api_key: "k".to_string(),
             model: "m".to_string(),
-            temperature: None,
+            api_format: "openai".to_string(),
             max_tokens: None,
             timeout_secs: Some(1),
+            temperature: None,
         }
     }
 

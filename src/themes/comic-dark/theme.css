@@ -1,0 +1,104 @@
+/* ============================================================================
+   漫画 · 暗色
+   深夜墨色 + 白墨线 + 荧光品红/黄 + Bangers 字体
+   ============================================================================ */
+
+[data-theme-style="comic"][data-mode="dark"] {
+  --background: #0F0F1A;
+  --foreground: #FFFEF0;
+  --card: #1A1A2A;
+  --card-foreground: #FFFEF0;
+  --popover: #1A1A2A;
+  --popover-foreground: #FFFEF0;
+  --primary: #FF2E97;
+  --primary-foreground: #0F0F1A;
+  --secondary: #08080F;
+  --secondary-foreground: #FFFEF0;
+  --muted: #08080F;
+  --muted-foreground: #B5B5C0;
+  --accent: #FFE600;
+  --accent-foreground: #0F0F1A;
+  --destructive: #FF4D6D;
+  --border: #FFFEF0;
+  --input: #FFFEF0;
+  --ring: #FF2E97;
+  --chart-1: #FF2E97;
+  --chart-2: #4D8BFF;
+  --chart-3: #FFE600;
+  --chart-4: #4DFFA8;
+  --chart-5: #FF4D6D;
+  --sidebar: #1A1A2A;
+  --sidebar-foreground: #FFFEF0;
+  --sidebar-primary: #FF2E97;
+  --sidebar-primary-foreground: #0F0F1A;
+  --sidebar-accent: #08080F;
+  --sidebar-accent-foreground: #FFFEF0;
+  --sidebar-border: #FFFEF0;
+  --sidebar-ring: #FF2E97;
+
+  --color-error: #FF4D6D;
+  --color-error-bg: rgba(255, 77, 109, 0.18);
+  --color-error-border: rgba(255, 77, 109, 0.4);
+  --color-success: #4DFFA8;
+  --color-success-bg: rgba(77, 255, 168, 0.18);
+  --color-success-border: rgba(77, 255, 168, 0.4);
+  --color-warning: #FFC940;
+  --color-warning-bg: rgba(255, 201, 64, 0.18);
+  --color-warning-border: rgba(255, 201, 64, 0.4);
+  --color-primary-action: #FF2E97;
+  --color-primary-action-hover: #FF5BB0;
+
+  --color-bg: #0F0F1A;
+  --color-bg-elevated: #1A1A2A;
+  --color-bg-sunken: #08080F;
+  --color-sidebar-bg: #1A1A2A;
+  --color-fg: #FFFEF0;
+  --color-fg-muted: #B5B5C0;
+  --color-fg-subtle: #6B6B7A;
+  --color-border-thin: #FFFEF0;
+  --color-accent: #FF2E97;
+  --color-accent-strong: #FF5BB0;
+  --color-accent-fg: #0F0F1A;
+  --color-accent-soft: rgba(255, 46, 151, 0.18);
+  --color-card-bg: #1A1A2A;
+  --color-card-border: #FFFEF0;
+  --color-banner-bg: #FFE600;
+  --color-banner-border: #0F0F1A;
+  --color-hero-accent-bg: #FF2E97;
+  --color-hero-accent-fg: #0F0F1A;
+
+  --shadow-sm: 3px 3px 0 0 #FFFEF0;
+  --shadow-md: 5px 5px 0 0 #FFFEF0;
+  --shadow-lg: 8px 8px 0 0 #FFFEF0;
+  --shadow-inset: inset 0 0 0 2px #FFFEF0;
+  --glow-accent: 0 0 0 transparent;
+  --scanline: radial-gradient(circle at 50% 50%, rgba(255,254,240,0.16) 1px, transparent 1.5px) 0 0 / 8px 8px;
+  --clip-corner: 0;
+  --font-display: "Bangers", "Impact", "Arial Black", var(--app-font-family, sans-serif);
+  --font-body: var(--app-font-family, -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
+  --font-mono: "Space Mono", "JetBrains Mono", "SF Mono", Menlo, monospace;
+
+  --color-scrollbar: #FFFEF0;
+  --color-scrollbar-hover: #B5B5C0;
+  --color-body-bg: #0F0F1A;
+  --radius: 0.375rem;
+}
+
+[data-theme-style="comic"][data-mode="dark"] .glass-content {
+  background: var(--color-bg-elevated, #1A1A2A);
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme-style="comic"][data-mode="dark"] .glass-sidebar {
+  background: #1A1A2A;
+  border-right: 3px solid #FFFEF0;
+}
+
+/* —— 形态 token：漫画暗 · sharp + 3px 白墨边 + 硬偏移阴影 —— */
+[data-theme-style="comic"][data-mode="dark"] {
+  --radius-card: 6px;
+  --radius-button: 4px;
+  --border-w-card: 3px;
+  --shadow-toast: 5px 5px 0 0 #FFFEF0;
+}

@@ -346,10 +346,10 @@ function ErrorAlert({ message }: { message: string }) {
         gap: "10px",
         padding: "12px 14px",
         borderRadius: "14px",
-        backgroundColor: "#fef2f2",
-        border: "1px solid #fecaca",
+        backgroundColor: "var(--color-error-bg, #fef2f2)",
+        border: "1px solid var(--color-error-border, #fecaca)",
         fontSize: "12px",
-        color: "#991b1b",
+        color: "var(--color-error, #991b1b)",
         lineHeight: 1.5,
       }}
     >

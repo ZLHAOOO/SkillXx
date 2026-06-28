@@ -36,16 +36,16 @@ function getCardTone(summary: BatchToolStateSummary | undefined) {
 
   if (summary.state === "all") {
     return {
-      backgroundColor: "rgba(15, 118, 110, 0.06)",
-      border: "1px solid rgba(15, 118, 110, 0.22)",
-      boxShadow: "0 0 0 3px rgba(15, 118, 110, 0.08)",
+      backgroundColor: "var(--color-success-bg, rgba(15, 118, 110, 0.06))",
+      border: "1px solid var(--color-success-border, rgba(15, 118, 110, 0.22))",
+      boxShadow: "0 0 0 3px var(--color-success-bg, rgba(15, 118, 110, 0.08))",
     };
   }
 
   return {
-    backgroundColor: "rgba(9, 105, 218, 0.05)",
-    border: "1px solid rgba(9, 105, 218, 0.18)",
-    boxShadow: "0 0 0 3px rgba(9, 105, 218, 0.06)",
+    backgroundColor: "color-mix(in srgb, var(--primary) 5%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--primary) 18%, transparent)",
+    boxShadow: "0 0 0 3px color-mix(in srgb, var(--primary) 6%, transparent)",
   };
 }
 

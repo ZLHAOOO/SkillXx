@@ -129,14 +129,14 @@ export function ImportSkillsStep({ onNext, onBack }: ImportSkillsStepProps) {
                 width: '56px',
                 height: '56px',
                 borderRadius: '14px',
-                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                background: 'linear-gradient(135deg, var(--color-success, #22c55e) 0%, color-mix(in srgb, var(--color-success, #16a34a) 80%, #000) 100%)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: '16px',
               }}
             >
-              <CheckCircle2 style={{ width: '28px', height: '28px', color: '#fff' }} />
+              <CheckCircle2 style={{ width: '28px', height: '28px', color: 'var(--background, #fff)' }} />
             </div>
             <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--foreground)', marginBottom: '4px' }}>{t("welcome.importComplete")}</p>
             <p style={{ fontSize: '13px', color: 'var(--muted-foreground)' }}>
@@ -160,8 +160,8 @@ export function ImportSkillsStep({ onNext, onBack }: ImportSkillsStepProps) {
                       padding: '12px 14px',
                       marginBottom: '8px',
                       borderRadius: '10px',
-                      border: isSelected ? '1px solid rgba(9, 105, 218, 0.3)' : '1px solid transparent',
-                      backgroundColor: isSelected ? 'rgba(9, 105, 218, 0.08)' : 'var(--secondary)',
+                      border: isSelected ? '1px solid color-mix(in srgb, var(--primary) 30%, transparent)' : '1px solid transparent',
+                      backgroundColor: isSelected ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--secondary)',
                       cursor: 'pointer',
                       textAlign: 'left',
                     }}

@@ -1,0 +1,1051 @@
+/* ============================================================================
+   主题加强层 · 让风格特征穿透硬编码类
+   ============================================================================
+   问题：SkillX 现组件大量用 Tailwind 硬编码（rounded-xl border bg-white text-sm），
+   这些类的 specificity 高于主题里的 [data-theme-style] 选择器，导致主题视觉
+   特征（粗墨线/玻璃/切角/高光）被压在下面出不来。
+
+   解决：本文件用更高特异性的"主题+元素"组合选择器，覆盖组件硬编码类
+   的视觉部分。**不动功能逻辑**（onClick/state/data 全保留），只改
+   视觉外观（圆角/边框/阴影/字体/大小写/transform 动画/伪元素装饰）。
+   ============================================================================ */
+
+
+/* ============================================================================
+   通用：所有主题都加强的"主题属性"在 html 上，便于主题自身也能用属性选择
+   ============================================================================ */
+
+[data-theme-style] body {
+  background-color: var(--color-body-bg, #f0f0f3);
+  color: var(--color-fg, #1a1a1a);
+  transition: background-color 0.25s var(--ease), color 0.25s var(--ease);
+}
+
+
+/* ============================================================================
+   Sidebar 全面接管：胶囊 nav / 折叠 / 拖拽区 / logo / 品牌名 / 升级按钮
+   ============================================================================ */
+
+[data-theme-style] aside.glass-sidebar {
+  background: var(--color-sidebar-bg, transparent);
+  border-right: 1px solid var(--color-border, transparent);
+  transition: background 0.25s var(--ease);
+}
+
+[data-theme-style] aside.glass-sidebar img[alt="SkillX"] {
+  border-radius: var(--radius-md, 4px);
+  transition: transform 0.25s var(--ease);
+}
+
+[data-theme-style] aside.glass-sidebar span {
+  font-family: var(--font-display, inherit);
+  letter-spacing: 0.01em;
+  color: var(--color-fg, inherit);
+}
+
+/* nav 胶囊（用 NavLink 渲染的 a）*/
+[data-theme-style] aside.glass-sidebar a[href] {
+  border-radius: var(--radius-pill, 9999px) !important;
+  font-weight: 500;
+  transition: all 0.15s var(--ease);
+  color: var(--color-fg-muted, #737373) !important;
+}
+[data-theme-style] aside.glass-sidebar a[href]:hover {
+  background: var(--color-nav-hover, rgba(0,0,0,0.04)) !important;
+  color: var(--color-fg, #1a1a1a) !important;
+}
+[data-theme-style] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style] aside.glass-sidebar a[href].active {
+  background: var(--color-accent, #2563eb) !important;
+  color: var(--color-accent-fg, #fff) !important;
+  font-weight: 700 !important;
+  box-shadow: var(--shadow-sm, none);
+}
+
+/* 升级按钮 */
+[data-theme-style] aside.glass-sidebar button {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+
+/* ============================================================================
+   .glass-content 主内容区
+   ============================================================================ */
+
+[data-theme-style] .glass-content {
+  background: var(--color-bg-elevated, var(--background)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: var(--radius-lg, 1rem) !important;
+  transition: background 0.25s var(--ease);
+}
+
+
+/* ============================================================================
+   Card 组件 (shadcn) — 6 个子组件
+   ============================================================================ */
+
+[data-theme-style] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style] [class*="rounded-lg"][class*="bg-card"],
+[data-theme-style] [class*="rounded-md"][class*="bg-card"] {
+  background: var(--color-card-bg, var(--color-bg-elevated)) !important;
+  border: 1px solid var(--color-card-border, rgba(0,0,0,0.05)) !important;
+  box-shadow: var(--shadow-md) !important;
+  border-radius: var(--radius-lg, 1rem) !important;
+  transition: background 0.25s var(--ease), box-shadow 0.25s var(--ease), border-color 0.25s var(--ease);
+}
+
+
+/* ============================================================================
+   Button 组件 (cva variants)
+   ============================================================================ */
+
+[data-theme-style] button[class*="bg-primary"],
+[data-theme-style] a[class*="bg-primary"] {
+  background: var(--color-accent, #2563eb) !important;
+  color: var(--color-accent-fg, #fff) !important;
+  border: 1px solid var(--color-accent, transparent) !important;
+  font-weight: 600;
+  transition: all 0.2s var(--ease);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme-style] button[class*="bg-primary"]:hover,
+[data-theme-style] a[class*="bg-primary"]:hover {
+  background: var(--color-primary-action-hover, var(--color-accent)) !important;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+[data-theme-style] button[class*="bg-secondary"],
+[data-theme-style] a[class*="bg-secondary"] {
+  background: var(--color-bg-elevated, #f5f5f5) !important;
+  color: var(--color-fg, #1a1a1a) !important;
+  border: 1px solid var(--color-border, rgba(0,0,0,0.05)) !important;
+  transition: all 0.2s var(--ease);
+}
+[data-theme-style] button[class*="bg-secondary"]:hover {
+  background: var(--color-bg-sunken, #ececec) !important;
+}
+
+[data-theme-style] button[class*="bg-destructive"],
+[data-theme-style] a[class*="bg-destructive"] {
+  background: var(--color-destructive, var(--color-danger, #dc2626)) !important;
+  color: #fff !important;
+  border: 1px solid var(--color-destructive, transparent) !important;
+}
+
+[data-theme-style] button[class*="border-input"],
+[data-theme-style] a[class*="border-input"] {
+  background: var(--color-card-bg, transparent) !important;
+  border: 1px solid var(--color-border, var(--color-input, #e5e5e5)) !important;
+  color: var(--color-fg, inherit) !important;
+}
+
+[data-theme-style] button:hover[class*="bg-accent"],
+[data-theme-style] a:hover[class*="bg-accent"] {
+  background: var(--color-bg-sunken, rgba(0,0,0,0.04)) !important;
+  color: var(--color-fg, inherit) !important;
+}
+
+
+/* ============================================================================
+   Badge 组件
+   ============================================================================ */
+
+[data-theme-style] [class*="rounded-md"][class*="bg-primary"] {
+  background: var(--color-accent) !important;
+  color: var(--color-accent-fg) !important;
+  border: 1px solid var(--color-accent) !important;
+}
+[data-theme-style] [class*="rounded-md"][class*="bg-secondary"] {
+  background: var(--color-bg-elevated) !important;
+  color: var(--color-fg-muted) !important;
+}
+[data-theme-style] [class*="rounded-md"][class*="bg-destructive"] {
+  background: var(--color-destructive) !important;
+  color: #fff !important;
+}
+
+
+/* ============================================================================
+   Input 组件
+   ============================================================================ */
+
+[data-theme-style] input[class*="border-input"],
+[data-theme-style] textarea[class*="border-input"] {
+  background: var(--color-card-bg, transparent) !important;
+  border: 1px solid var(--color-border, var(--color-input)) !important;
+  color: var(--color-fg) !important;
+  border-radius: var(--radius-md, 6px) !important;
+  transition: all 0.2s var(--ease);
+}
+[data-theme-style] input[class*="border-input"]:focus,
+[data-theme-style] textarea[class*="border-input"]:focus {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px var(--color-accent-soft, rgba(37,99,235,0.1)) !important;
+  outline: none;
+}
+[data-theme-style] input::placeholder,
+[data-theme-style] textarea::placeholder {
+  color: var(--color-fg-subtle) !important;
+}
+
+
+/* ============================================================================
+   Alert 组件
+   ============================================================================ */
+
+[data-theme-style] [role="alert"] {
+  background: var(--color-card-bg, var(--color-bg-elevated)) !important;
+  border: 1px solid var(--color-border, rgba(0,0,0,0.05)) !important;
+  border-radius: var(--radius-md, 8px) !important;
+  color: var(--color-fg) !important;
+}
+[data-theme-style] [role="alert"][class*="border-destructive"] {
+  border-color: var(--color-destructive, var(--color-danger)) !important;
+  color: var(--color-destructive) !important;
+}
+
+
+/* ============================================================================
+   Switch / Toggle 组件
+   ============================================================================ */
+
+[data-theme-style] button[role="switch"] {
+  background: var(--color-bg-sunken) !important;
+  border: 1px solid var(--color-border) !important;
+  transition: all 0.2s var(--ease);
+}
+[data-theme-style] button[role="switch"][data-state="checked"] {
+  background: var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
+}
+
+
+/* ============================================================================
+   通用 Typography：所有主题增强文字响应主题字体
+   ============================================================================ */
+
+[data-theme-style] h1, [data-theme-style] h2, [data-theme-style] h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+}
+[data-theme-style] body, [data-theme-style] p, [data-theme-style] span, [data-theme-style] div {
+  font-family: var(--font-body);
+}
+
+
+/* ============================================================================
+   滚动条
+   ============================================================================ */
+
+[data-theme-style] *::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar, rgba(0,0,0,0.15));
+}
+[data-theme-style] *::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-hover, rgba(0,0,0,0.25));
+}
+
+
+/* ============================================================================
+   cyberpunk 专属加强：青色辉光/L 角/扫描线/雷达网格/HUD 字体
+   ============================================================================ */
+
+[data-theme-style="cyberpunk"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="cyberpunk"] aside.glass-sidebar a[href].active {
+  background: rgba(0, 224, 255, 0.15) !important;
+  color: #00E0FF !important;
+  border: 1px solid #00E0FF !important;
+  box-shadow: 0 0 12px rgba(0, 224, 255, 0.6), inset 0 0 8px rgba(0, 224, 255, 0.3) !important;
+  text-shadow: 0 0 8px rgba(0, 224, 255, 0.8) !important;
+  font-family: var(--font-display) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  font-size: 11px !important;
+}
+
+[data-theme-style="cyberpunk"] button[class*="bg-primary"],
+[data-theme-style="cyberpunk"] a[class*="bg-primary"] {
+  background: #00E0FF !important;
+  color: #050818 !important;
+  border: 1px solid #14FFEC !important;
+  box-shadow: 0 0 12px rgba(0, 224, 255, 0.6) !important;
+  font-family: var(--font-display) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.15em !important;
+  font-size: 12px !important;
+  border-radius: 2px !important;
+}
+[data-theme-style="cyberpunk"] button[class*="bg-primary"]:hover {
+  background: #14FFEC !important;
+  box-shadow: 0 0 20px rgba(0, 224, 255, 0.8) !important;
+}
+[data-theme-style="cyberpunk"] button[class*="bg-primary"]:active {
+  transform: scale(0.95) !important;
+  box-shadow: 0 0 8px rgba(0, 224, 255, 0.5) !important;
+}
+
+[data-theme-style="cyberpunk"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="cyberpunk"] [class*="rounded-lg"][class*="bg-card"] {
+  background: rgba(14, 20, 48, 0.6) !important;
+  backdrop-filter: blur(12px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+  border: 1px solid rgba(0, 224, 255, 0.35) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 0 10px rgba(0, 224, 255, 0.25) !important;
+  position: relative;
+}
+/* HUD L 角装饰 */
+[data-theme-style="cyberpunk"] [class*="rounded-xl"][class*="bg-card"]::before,
+[data-theme-style="cyberpunk"] [class*="rounded-lg"][class*="bg-card"]::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 10px; height: 10px;
+  border-top: 2px solid #00E0FF;
+  border-left: 2px solid #00E0FF;
+  pointer-events: none;
+}
+[data-theme-style="cyberpunk"] [class*="rounded-xl"][class*="bg-card"]::after,
+[data-theme-style="cyberpunk"] [class*="rounded-lg"][class*="bg-card"]::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 10px; height: 10px;
+  border-bottom: 2px solid #00E0FF;
+  border-right: 2px solid #00E0FF;
+  pointer-events: none;
+}
+
+[data-theme-style="cyberpunk"] input[class*="border-input"] {
+  background: rgba(2, 4, 12, 0.7) !important;
+  border: 1px solid #00E0FF !important;
+  color: #00E0FF !important;
+  font-family: var(--font-mono) !important;
+  caret-color: #14FFEC;
+  border-radius: 2px !important;
+  letter-spacing: 0.04em;
+}
+[data-theme-style="cyberpunk"] input[class*="border-input"]:focus {
+  box-shadow: 0 0 12px rgba(0, 224, 255, 0.6), inset 0 0 8px rgba(0, 224, 255, 0.2) !important;
+}
+
+[data-theme-style="cyberpunk"] body {
+  background-image:
+    var(--scanline),
+    linear-gradient(rgba(0, 224, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 224, 255, 0.05) 1px, transparent 1px) !important;
+  background-size: 100% 4px, 40px 40px, 40px 40px !important;
+  background-attachment: fixed !important;
+  background-color: #050818 !important;
+}
+
+[data-theme-style="cyberpunk"] aside.glass-sidebar {
+  background: rgba(10, 16, 36, 0.7) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  border-right: 1px solid rgba(0, 224, 255, 0.25) !important;
+}
+
+
+/* ============================================================================
+   comic 专属加强：粗墨线 / 硬偏移阴影 / 高饱和原色 / Bangers 字体
+   ============================================================================ */
+
+[data-theme-style="comic"][data-mode="light"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="comic"][data-mode="light"] aside.glass-sidebar a[href].active {
+  background: #FF006E !important;
+  color: #FFFEF0 !important;
+  border: 3px solid #1A1A1A !important;
+  box-shadow: 4px 4px 0 0 #1A1A1A !important;
+  font-weight: 900 !important;
+  font-family: var(--font-display) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+[data-theme-style="comic"][data-mode="dark"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="comic"][data-mode="dark"] aside.glass-sidebar a[href].active {
+  background: #FF2E97 !important;
+  color: #0F0F1A !important;
+  border: 3px solid #FFFEF0 !important;
+  box-shadow: 4px 4px 0 0 #FFFEF0 !important;
+  font-weight: 900 !important;
+  font-family: var(--font-display) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+
+[data-theme-style="comic"][data-mode="light"] button[class*="bg-primary"],
+[data-theme-style="comic"][data-mode="light"] a[class*="bg-primary"] {
+  background: #FF006E !important;
+  color: #FFFFFF !important;
+  border: 3px solid #1A1A1A !important;
+  box-shadow: 4px 4px 0 0 #1A1A1A !important;
+  font-family: var(--font-display) !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  border-radius: 4px !important;
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+}
+[data-theme-style="comic"][data-mode="dark"] button[class*="bg-primary"],
+[data-theme-style="comic"][data-mode="dark"] a[class*="bg-primary"] {
+  background: #FF2E97 !important;
+  color: #0F0F1A !important;
+  border: 3px solid #FFFEF0 !important;
+  box-shadow: 4px 4px 0 0 #FFFEF0 !important;
+  font-family: var(--font-display) !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  border-radius: 4px !important;
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+}
+[data-theme-style="comic"][data-mode="light"] button[class*="bg-primary"]:hover {
+  background: #D10058 !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 6px 6px 0 0 #1A1A1A !important;
+}
+[data-theme-style="comic"][data-mode="dark"] button[class*="bg-primary"]:hover {
+  background: #FF5BB0 !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 6px 6px 0 0 #FFFEF0 !important;
+}
+[data-theme-style="comic"] button[class*="bg-primary"]:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0 0 #1A1A1A !important;
+}
+
+[data-theme-style="comic"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="comic"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"] {
+  background: #FFFFFF !important;
+  border: 3px solid #1A1A1A !important;
+  box-shadow: 5px 5px 0 0 #1A1A1A !important;
+  border-radius: 6px !important;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+[data-theme-style="comic"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="comic"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"] {
+  background: #1A1A2A !important;
+  border: 3px solid #FFFEF0 !important;
+  box-shadow: 5px 5px 0 0 #FFFEF0 !important;
+  border-radius: 6px !important;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+[data-theme-style="comic"] [class*="rounded-xl"][class*="bg-card"]:hover,
+[data-theme-style="comic"] [class*="rounded-lg"][class*="bg-card"]:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 7px 7px 0 0 #FF006E !important;
+}
+
+[data-theme-style="comic"][data-mode="light"] input[class*="border-input"] {
+  background: #FFFFFF !important;
+  border: 3px solid #1A1A1A !important;
+  border-radius: 4px !important;
+  font-weight: 700;
+  color: #1A1A1A !important;
+  box-shadow: 3px 3px 0 0 #1A1A1A !important;
+}
+[data-theme-style="comic"][data-mode="dark"] input[class*="border-input"] {
+  background: #1A1A2A !important;
+  border: 3px solid #FFFEF0 !important;
+  border-radius: 4px !important;
+  font-weight: 700;
+  color: #FFFEF0 !important;
+  box-shadow: 3px 3px 0 0 #FFFEF0 !important;
+}
+[data-theme-style="comic"] input[class*="border-input"]:focus {
+  outline: none;
+  box-shadow: 5px 5px 0 0 #FF006E !important;
+  transform: translate(-1px, -1px);
+}
+
+[data-theme-style="comic"][data-mode="light"] body {
+  background-color: #FFFEF0 !important;
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(26,26,26,0.18) 1px, transparent 1.5px),
+    repeating-linear-gradient(45deg, transparent, transparent 60px, rgba(26,26,26,0.04) 60px, rgba(26,26,26,0.04) 61px) !important;
+  background-size: 8px 8px, auto !important;
+  background-attachment: fixed !important;
+}
+
+[data-theme-style="comic"][data-mode="dark"] body {
+  background-color: #0F0F1A !important;
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(255,254,240,0.16) 1px, transparent 1.5px),
+    repeating-linear-gradient(45deg, transparent, transparent 60px, rgba(255,254,240,0.04) 60px, rgba(255,254,240,0.04) 61px) !important;
+  background-size: 8px 8px, auto !important;
+  background-attachment: fixed !important;
+}
+
+[data-theme-style="comic"][data-mode="light"] aside.glass-sidebar {
+  background: #FFFFFF !important;
+  border-right: 3px solid #1A1A1A !important;
+}
+
+[data-theme-style="comic"][data-mode="dark"] aside.glass-sidebar {
+  background: #1A1A2A !important;
+  border-right: 3px solid #FFFEF0 !important;
+}
+[data-theme-style="comic"] aside.glass-sidebar a[href] {
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  font-size: 11px !important;
+  border-radius: 4px !important;
+}
+[data-theme-style="comic"][data-mode="light"] aside.glass-sidebar a[href]:hover {
+  background: #FFF4D6 !important;
+  border: 2px solid #1A1A1A !important;
+}
+[data-theme-style="comic"][data-mode="dark"] aside.glass-sidebar a[href]:hover {
+  background: #08080F !important;
+  border: 2px solid #FFFEF0 !important;
+}
+
+
+/* ============================================================================
+   apple 专属加强：白卡浮画布 / 浅边 / 灰按钮 / nav 用白卡圆角
+   ============================================================================ */
+
+[data-theme-style="apple"][data-mode="light"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="apple"][data-mode="light"] aside.glass-sidebar a[href].active {
+  background: #FFFFFF !important;
+  color: #1A1A1A !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  font-weight: 600 !important;
+}
+[data-theme-style="apple"][data-mode="dark"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="apple"][data-mode="dark"] aside.glass-sidebar a[href].active {
+  background: #1A1A1A !important;
+  color: #F2F2F2 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  font-weight: 600 !important;
+}
+[data-theme-style="apple"][data-mode="light"] aside.glass-sidebar a[href]:hover {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  color: #1A1A1A !important;
+}
+[data-theme-style="apple"][data-mode="dark"] aside.glass-sidebar a[href]:hover {
+  background: #1A1A1A !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  color: #F2F2F2 !important;
+}
+
+[data-theme-style="apple"][data-mode="light"] button[class*="bg-primary"],
+[data-theme-style="apple"][data-mode="light"] a[class*="bg-primary"] {
+  background: #3A3A3A !important;
+  color: #FFFFFF !important;
+  border: 1px solid transparent !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+[data-theme-style="apple"][data-mode="dark"] button[class*="bg-primary"],
+[data-theme-style="apple"][data-mode="dark"] a[class*="bg-primary"] {
+  background: #C8C8C8 !important;
+  color: #0E0E0E !important;
+  border: 1px solid transparent !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+[data-theme-style="apple"][data-mode="light"] button[class*="bg-primary"]:hover {
+  background: #1F1F1F !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15) !important;
+}
+[data-theme-style="apple"][data-mode="dark"] button[class*="bg-primary"]:hover {
+  background: #E0E0E0 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme-style="apple"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="apple"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"] {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.2s var(--ease);
+}
+[data-theme-style="apple"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="apple"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"] {
+  background: #1A1A1A !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.2s var(--ease);
+}
+[data-theme-style="apple"] [class*="rounded-xl"][class*="bg-card"]:hover,
+[data-theme-style="apple"] [class*="rounded-lg"][class*="bg-card"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme-style="apple"][data-mode="light"] input[class*="border-input"] {
+  background: #ECECEC !important;
+  border: 1px solid transparent !important;
+  border-radius: 9999px !important;
+  color: #1A1A1A !important;
+  box-shadow: none !important;
+}
+[data-theme-style="apple"][data-mode="dark"] input[class*="border-input"] {
+  background: #1A1A1A !important;
+  border: 1px solid transparent !important;
+  border-radius: 9999px !important;
+  color: #F2F2F2 !important;
+  box-shadow: none !important;
+}
+[data-theme-style="apple"][data-mode="light"] input[class*="border-input"]:focus {
+  background: #FFFFFF !important;
+  border: 1px solid #3A3A3A !important;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.06) !important;
+}
+[data-theme-style="apple"][data-mode="dark"] input[class*="border-input"]:focus {
+  background: #2A2A2A !important;
+  border: 1px solid #C8C8C8 !important;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme-style="apple"][data-mode="light"] body {
+  background-color: #F5F5F5 !important;
+}
+[data-theme-style="apple"][data-mode="dark"] body {
+  background-color: #0E0E0E !important;
+}
+
+
+/* ============================================================================
+   neumorphism 专属加强：Soft UI · 暖亚麻 + 大圆角 28px + 双向柔阴影 + 顶部高光
+   ============================================================================ */
+
+/* ── Nav 胶囊：暖色 sunken 背景 + 内阴影 ── */
+[data-theme-style="neumorphism"][data-mode="light"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="neumorphism"][data-mode="light"] aside.glass-sidebar a[href].active {
+  background: #EDE8DF !important;
+  color: #7A6B58 !important;
+  border: 1px solid rgba(74, 69, 60, 0.06) !important;
+  box-shadow: inset 0 2px 8px rgba(74, 69, 60, 0.08) !important;
+  font-weight: 600 !important;
+}
+[data-theme-style="neumorphism"][data-mode="dark"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="neumorphism"][data-mode="dark"] aside.glass-sidebar a[href].active {
+  background: #252220 !important;
+  color: #D4B896 !important;
+  border: 1px solid rgba(212, 184, 150, 0.12) !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+  font-weight: 600 !important;
+}
+
+/* ── Primary 按钮：pill + 暖柔阴影 + hover lift ── */
+[data-theme-style="neumorphism"][data-mode="light"] button[class*="bg-primary"],
+[data-theme-style="neumorphism"][data-mode="light"] a[class*="bg-primary"] {
+  background: #7A6B58 !important;
+  color: #F7F4EE !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 16px rgba(122, 107, 88, 0.2), 0 1px 3px rgba(122, 107, 88, 0.12) !important;
+  transition: all 0.25s var(--ease);
+}
+[data-theme-style="neumorphism"][data-mode="dark"] button[class*="bg-primary"],
+[data-theme-style="neumorphism"][data-mode="dark"] a[class*="bg-primary"] {
+  background: #D4B896 !important;
+  color: #1C1A16 !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.25s var(--ease);
+}
+[data-theme-style="neumorphism"][data-mode="light"] button[class*="bg-primary"]:hover {
+  background: #5C4F40 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(122, 107, 88, 0.28), 0 2px 6px rgba(122, 107, 88, 0.15) !important;
+}
+[data-theme-style="neumorphism"][data-mode="dark"] button[class*="bg-primary"]:hover {
+  background: #E5C9A7 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ── Card：大圆角 28px + 双向柔阴影 + 顶部 1px 高光 + hover lift ── */
+[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"] {
+  background: #F7F4EE !important;
+  border: 1px solid rgba(74, 69, 60, 0.04) !important;
+  border-radius: 1.75rem !important;
+  box-shadow:
+    0 8px 24px rgba(74, 69, 60, 0.08),
+    0 2px 4px rgba(74, 69, 60, 0.04),
+    -2px -2px 8px rgba(255, 255, 255, 0.6) !important;
+  position: relative;
+  transition: all 0.25s var(--ease);
+}
+[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"] {
+  background: #1C1A16 !important;
+  border: 1px solid rgba(212, 184, 150, 0.06) !important;
+  border-radius: 1.75rem !important;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.25),
+    -2px -2px 8px rgba(212, 184, 150, 0.04) !important;
+  position: relative;
+  transition: all 0.25s var(--ease);
+}
+/* 顶部 1px 柔光高光 */
+[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"]::before,
+[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"]::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 12px; right: 12px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
+  pointer-events: none;
+  border-radius: 9999px;
+}
+[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"]::before,
+[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"]::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 12px; right: 12px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,184,150,0.18), transparent);
+  pointer-events: none;
+  border-radius: 9999px;
+}
+/* Hover：lift + 阴影扩散 */
+[data-theme-style="neumorphism"] [class*="rounded-xl"][class*="bg-card"]:hover,
+[data-theme-style="neumorphism"] [class*="rounded-lg"][class*="bg-card"]:hover {
+  transform: translateY(-4px);
+}
+[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"]:hover,
+[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"]:hover {
+  box-shadow:
+    0 16px 40px rgba(74, 69, 60, 0.12),
+    0 4px 8px rgba(74, 69, 60, 0.06),
+    -3px -3px 12px rgba(255, 255, 255, 0.7) !important;
+}
+[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"]:hover,
+[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"]:hover {
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    -3px -3px 12px rgba(212, 184, 150, 0.06) !important;
+}
+
+/* ── Input：sunken 内阴影 + pill + focus ring ── */
+[data-theme-style="neumorphism"][data-mode="light"] input[class*="border-input"] {
+  background: #EDE8DF !important;
+  border: 1px solid transparent !important;
+  color: #4A453C !important;
+  border-radius: 9999px !important;
+  box-shadow: inset 0 2px 8px rgba(74, 69, 60, 0.08) !important;
+}
+[data-theme-style="neumorphism"][data-mode="dark"] input[class*="border-input"] {
+  background: #252220 !important;
+  border: 1px solid transparent !important;
+  color: #E8E2D6 !important;
+  border-radius: 9999px !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme-style="neumorphism"][data-mode="light"] input[class*="border-input"]:focus {
+  background: #F7F4EE !important;
+  box-shadow: inset 0 2px 8px rgba(74, 69, 60, 0.06), 0 0 0 3px rgba(122, 107, 88, 0.15) !important;
+  outline: none;
+}
+[data-theme-style="neumorphism"][data-mode="dark"] input[class*="border-input"]:focus {
+  background: #1C1A16 !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(212, 184, 150, 0.12) !important;
+  outline: none;
+}
+
+/* ── Body 背景 ── */
+[data-theme-style="neumorphism"][data-mode="light"] body {
+  background-color: #F7F4EE !important;
+}
+[data-theme-style="neumorphism"][data-mode="dark"] body {
+  background-color: #1C1A16 !important;
+}
+
+/* ── Typography ── */
+[data-theme-style="neumorphism"] h1,
+[data-theme-style="neumorphism"] h2,
+[data-theme-style="neumorphism"] aside.glass-sidebar a[href] {
+  font-family: var(--font-display) !important;
+}
+
+/* ============================================================================
+   5 主题 · 页面内联卡片视觉强化（v3.1 修复 · 2026-06-26）
+   Skills/Tools/Settings/Marketplace/LlmModel 共 90+ 处内联 8/12/6/999px 圆角
+   用属性选择器直接覆盖，按主题分配形态
+   ============================================================================ */
+
+/* 通用：所有页面内联 border-radius: 8（最常见）/12（次常见）都接 --radius-button */
+[data-theme-style] [style*="border-radius: 12"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: var(--radius-button) !important;
+}
+[data-theme-style] [style*="border-radius: 8"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: var(--radius-button) !important;
+}
+[data-theme-style] [style*="border-radius: 6"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: calc(var(--radius-button) - 0.125rem) !important;
+}
+
+/* ============================================================================
+   默认 macOS 主题：保持中等圆角，衬线 display 接管大标题
+   ============================================================================ */
+[data-theme-style="default"] h1,
+[data-theme-style="default"] h2 {
+  font-family: var(--font-display) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* ============================================================================
+   简约（Apple）主题：所有内联 8/12px 圆角 → 大圆角（24px 卡片 / 9999px 按钮）
+   ============================================================================ */
+[data-theme-style="apple"] [style*="border-radius: 8"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 1.25rem !important;  /* 20px */
+}
+[data-theme-style="apple"] [style*="border-radius: 12"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: var(--radius-card) !important;  /* 24px */
+}
+[data-theme-style="apple"] button {
+  border-radius: 9999px !important;  /* 所有按钮 pill */
+}
+[data-theme-style="apple"] button[style*="border-radius: 6"] {
+  border-radius: 9999px !important;
+}
+
+/* ============================================================================
+   科幻（Cyberpunk）主题：所有圆角 → 锐角（4px 卡片 / 2px 按钮）+ 青色辉光
+   ============================================================================ */
+[data-theme-style="cyberpunk"] [style*="border-radius: 8"]:not([class*="rounded-"]):not([data-sonner-toast]),
+[data-theme-style="cyberpunk"] [style*="border-radius: 12"]:not([class*="rounded-"]):not([data-sonner-toast]),
+[data-theme-style="cyberpunk"] [style*="border-radius: 6"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 4px !important;
+}
+[data-theme-style="cyberpunk"] button {
+  border-radius: 2px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  font-family: var(--font-mono) !important;
+  font-weight: 600 !important;
+}
+/* 卡片青色辉光 */
+[data-theme-style="cyberpunk"] [style*="border: \"1px solid var(--border)\""] {
+  border-color: rgba(0, 224, 255, 0.3) !important;
+  box-shadow: 0 0 12px rgba(0, 224, 255, 0.15) !important;
+}
+[data-theme-style="cyberpunk"] [style*="border: active ?"] {
+  border-color: rgba(0, 224, 255, 0.6) !important;
+  box-shadow: 0 0 16px rgba(0, 224, 255, 0.4) !important;
+}
+
+/* ============================================================================
+   轻拟（Neumorphism）主题：所有圆角 → 软圆角（28px / pill）+ 双向柔阴影
+   Soft UI：暖亚麻调 + 大圆角 + 双向阴影 + hover lift
+   ============================================================================ */
+[data-theme-style="neumorphism"] [style*="border-radius: 8"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 1.5rem !important;  /* 24px */
+}
+[data-theme-style="neumorphism"] [style*="border-radius: 10"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 1.5rem !important;  /* 24px */
+}
+[data-theme-style="neumorphism"] [style*="border-radius: 12"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: var(--radius-card) !important;  /* 28px */
+}
+[data-theme-style="neumorphism"] [style*="border-radius: 14"]:not([class*="rounded-"]):not([data-sonner-toast]),
+[data-theme-style="neumorphism"] [style*="border-radius: 16"]:not([class*="rounded-"]):not([data-sonner-toast]),
+[data-theme-style="neumorphism"] [style*="border-radius: 18"]:not([class*="rounded-"]):not([data-sonner-toast]),
+[data-theme-style="neumorphism"] [style*="border-radius: 20"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: var(--radius-card) !important;  /* 28px */
+}
+[data-theme-style="neumorphism"] button {
+  border-radius: 9999px !important;
+}
+/* 内联 border 卡片 → Soft UI 双向柔阴影 */
+[data-theme-style="neumorphism"][data-mode="light"] [style*="border: \"1px solid var(--border)\""] {
+  border: 1px solid transparent !important;
+  box-shadow:
+    6px 6px 16px rgba(74, 69, 60, 0.10),
+    -6px -6px 16px rgba(255, 255, 255, 0.65) !important;
+  transition: all 0.25s var(--ease) !important;
+}
+[data-theme-style="neumorphism"][data-mode="dark"] [style*="border: \"1px solid var(--border)\""] {
+  border: 1px solid transparent !important;
+  box-shadow:
+    6px 6px 16px rgba(0, 0, 0, 0.35),
+    -6px -6px 16px rgba(212, 184, 150, 0.05) !important;
+  transition: all 0.25s var(--ease) !important;
+}
+/* Hover lift for inline cards */
+[data-theme-style="neumorphism"] [style*="border: \"1px solid var(--border)\""]:hover {
+  transform: translateY(-3px);
+}
+[data-theme-style="neumorphism"][data-mode="light"] [style*="border: \"1px solid var(--border)\""]:hover {
+  box-shadow:
+    10px 10px 24px rgba(74, 69, 60, 0.14),
+    -10px -10px 24px rgba(255, 255, 255, 0.75) !important;
+}
+[data-theme-style="neumorphism"][data-mode="dark"] [style*="border: \"1px solid var(--border)\""]:hover {
+  box-shadow:
+    10px 10px 24px rgba(0, 0, 0, 0.45),
+    -10px -10px 24px rgba(212, 184, 150, 0.08) !important;
+}
+
+/* ============================================================================
+   漫画（Comic）主题：所有圆角 → sharp（6px / 4px）+ 3px 粗墨边 + 硬偏移阴影
+   ============================================================================ */
+[data-theme-style="comic"] [style*="border-radius: 8"]:not([class*="rounded-"]):not([data-sonner-toast]),
+[data-theme-style="comic"] [style*="border-radius: 12"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 6px !important;
+}
+[data-theme-style="comic"] [style*="border-radius: 6"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 4px !important;
+}
+[data-theme-style="comic"] button {
+  border-radius: 4px !important;
+  font-family: var(--font-display) !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+[data-theme-style="comic"] [style*="border: \"1px solid var(--border)\""] {
+  border-width: 3px !important;
+  border-color: var(--color-card-border) !important;
+  box-shadow: 5px 5px 0 0 var(--color-card-border) !important;
+}
+/* 漫画亮色用黑墨线，暗色用白墨线 */
+[data-theme-style="comic"][data-mode="light"] [style*="border: \"1px solid var(--border)\""] {
+  border-color: #1A1A1A !important;
+  box-shadow: 5px 5px 0 0 #1A1A1A !important;
+}
+[data-theme-style="comic"][data-mode="dark"] [style*="border: \"1px solid var(--border)\""] {
+  border-color: #FFFEF0 !important;
+  box-shadow: 5px 5px 0 0 #FFFEF0 !important;
+}
+
+/* ============================================================================
+   通用形态 token 桥（v3 重构 · 2026-06-26）
+   把 shadcn cva 硬编码的 rounded-xl/rounded-md/shadow-sm/border/shadow
+   接到主题的 --radius-card/--radius-button/--shadow-toast/--border-w-card
+   ============================================================================ */
+
+/* Card 圆角 + 边框宽度接到新 token */
+[data-theme-style] [class*="bg-card"]:not([class*="bg-card-"]) {
+  border-radius: var(--radius-card) !important;
+  border-width: var(--border-w-card) !important;
+}
+[data-theme-style] div[class*="rounded-xl"]:not([class*="bg-card-"]) {
+  border-radius: var(--radius-card) !important;
+}
+[data-theme-style] button[class*="rounded-md"],
+[data-theme-style] a[class*="rounded-md"] {
+  border-radius: var(--radius-button) !important;
+}
+[data-theme-style] input[class*="rounded-md"],
+[data-theme-style] textarea[class*="rounded-md"],
+[data-theme-style] select[class*="rounded-md"] {
+  border-radius: var(--radius-button) !important;
+}
+
+/* Badge 圆角 */
+[data-theme-style] span[class*="rounded-md"][class*="border"] {
+  border-radius: var(--radius-button) !important;
+}
+
+/* Shadow 类接到 token（让主题控制阴影强度） */
+[data-theme-style] [class*="shadow"]:not([class*="shadow-none"]) {
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* ============================================================================
+   Toast 主题化（toast.tsx 内联 hex 色 + 14px 圆角 + 黑阴影）
+   用属性选择器 + style*= 匹配，特异性 (0,1,1,0) > inline (0,1,0,0)
+   ============================================================================ */
+[data-theme-style] [data-sonner-toast],
+[data-theme-style] [data-toast] {
+  background: var(--color-card-bg) !important;
+  border: 1px solid var(--color-card-border) !important;
+  border-radius: var(--radius-lg, 0.5rem) !important;
+  box-shadow: var(--shadow-toast) !important;
+  color: var(--color-fg) !important;
+  backdrop-filter: none !important;
+}
+[data-theme-style] [data-sonner-toast][data-type="error"],
+[data-theme-style] [data-sonner-toast][data-type="destructive"] {
+  background: var(--color-error-bg) !important;
+  border-color: var(--color-error-border) !important;
+  color: var(--color-error) !important;
+}
+[data-theme-style] [data-sonner-toast][data-type="success"] {
+  background: var(--color-success-bg) !important;
+  border-color: var(--color-success-border) !important;
+  color: var(--color-success) !important;
+}
+[data-theme-style] [data-sonner-toast][data-type="info"],
+[data-theme-style] [data-sonner-toast][data-type="warning"] {
+  background: var(--color-warning-bg) !important;
+  border-color: var(--color-warning-border) !important;
+  color: var(--color-warning) !important;
+}
+/* sonner toast 默认结构 */
+[data-theme-style] [data-sonner-toast] [data-description],
+[data-theme-style] [data-sonner-toast] [data-title] {
+  color: inherit !important;
+}
+
+/* ============================================================================
+   Loading Skeleton + 页面内联 border-radius 桥（5 页面共 90+ 处内联 8/12/6/999px）
+   实际页面用的是 8/12/6/999 而非 16/14/4，所以这里把常用值都接上 token
+   ============================================================================ */
+[data-theme-style] [style*="border-radius: 16"]:not([class*="rounded-"]) {
+  border-radius: var(--radius-card) !important;
+}
+[data-theme-style] [style*="border-radius: 14"]:not([class*="rounded-"]) {
+  border-radius: calc(var(--radius) + 0.25rem) !important;
+}
+[data-theme-style] [style*="border-radius: 12"]:not([class*="rounded-"]) {
+  border-radius: var(--radius-button) !important;
+}
+[data-theme-style] [style*="border-radius: 8"]:not([class*="rounded-"]) {
+  border-radius: var(--radius-button) !important;
+}
+[data-theme-style] [style*="border-radius: 6"]:not([class*="rounded-"]) {
+  border-radius: calc(var(--radius) - 2px) !important;
+}
+[data-theme-style] [style*="border-radius: 4"]:not([class*="rounded-"]) {
+  border-radius: calc(var(--radius) - 4px) !important;
+}
+/* 999px 是 chip/pill 形状，应当保持 pill 形态 */
+[data-theme-style] [style*="border-radius: 999"]:not([class*="rounded-"]) {
+  border-radius: 9999px !important;
+}
+
+/* ============================================================================
+   Layout 同步 banner 文字色修复（Layout.tsx:109 唯一 text-white 硬编码）
+   原色在黄底 banner 上不可见，改为 banner fg token
+   ============================================================================ */
+[data-theme-style] [class*="bg-yellow"] button[class*="text-white"],
+[data-theme-style] [style*="--color-warning-bg"] button {
+  color: var(--color-banner-fg, #1C1C1E) !important;
+}
+
+/* ============================================================================
+   输入框焦点环统一接 ring token（让主题控制 focus 色）
+   ============================================================================ */
+[data-theme-style] *:focus-visible {
+  outline-color: var(--ring) !important;
+}
+

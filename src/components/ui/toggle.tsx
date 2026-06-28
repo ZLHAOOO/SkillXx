@@ -21,7 +21,7 @@ export function Toggle({ checked, onChange, disabled = false }: ToggleProps) {
         width: 44,
         height: 24,
         borderRadius: 12,
-        backgroundColor: checked ? "#3b82f6" : isDark ? "#4b5563" : "#d1d5db",
+        backgroundColor: checked ? "var(--primary)" : isDark ? "var(--muted-foreground)" : "var(--border)",
         border: "none",
         cursor: disabled ? "not-allowed" : "pointer",
         position: "relative",
@@ -37,9 +37,9 @@ export function Toggle({ checked, onChange, disabled = false }: ToggleProps) {
           width: 20,
           height: 20,
           borderRadius: "50%",
-          backgroundColor: "white",
+          backgroundColor: "var(--primary-foreground, #ffffff)",
           transition: "left 0.2s",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+          boxShadow: "0 1px 3px var(--shadow-color, rgba(0,0,0,0.2))",
         }}
       />
     </button>

@@ -561,7 +561,7 @@ export function EditorPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#dc2626",
+              color: "var(--destructive)",
             }}>
               {error}
             </div>

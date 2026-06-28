@@ -51,7 +51,7 @@ const formStyle: React.CSSProperties = {
   backgroundColor: "var(--background)",
   borderRadius: "22px",
   border: "1px solid var(--border)",
-  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+  boxShadow: "0 2px 8px color-mix(in srgb, var(--foreground) 6%, transparent)",
   padding: "3px",
   minWidth: 0,
 };
@@ -163,7 +163,7 @@ export function SearchBar({ onSearch, onInstallByUrl, loading, enabledPlatforms 
                   <div style={{
                     position: "absolute", top: "calc(100% + 6px)", left: 0, minWidth: "150px",
                     backgroundColor: "var(--popover)", border: "1px solid var(--border)",
-                    borderRadius: "10px", boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)", padding: "4px", zIndex: 101,
+                    borderRadius: "10px", boxShadow: "0 8px 24px color-mix(in srgb, var(--foreground) 12%, transparent)", padding: "4px", zIndex: 101,
                   }}>
                     {availablePlatforms.map((p) => (
                       <button key={p} type="button" onClick={() => handlePlatformSelect(p)} style={{
@@ -177,11 +177,11 @@ export function SearchBar({ onSearch, onInstallByUrl, loading, enabledPlatforms 
                           "redskill": "#e53935",
                         }[p] : "var(--foreground)",
                         backgroundColor: platform === p ? {
-                          "skills.sh": "rgba(99, 102, 241, 0.1)",
-                          "awesome-claude-skills": "rgba(245, 158, 11, 0.1)",
-                          "skillhub": "rgba(59, 130, 246, 0.1)",
-                          "clawhub": "rgba(139, 92, 246, 0.1)",
-                          "redskill": "rgba(229, 57, 53, 0.1)",
+                          "skills.sh": "color-mix(in srgb, #6366f1 10%, transparent)",
+                          "awesome-claude-skills": "color-mix(in srgb, #f59e0b 10%, transparent)",
+                          "skillhub": "color-mix(in srgb, var(--primary) 10%, transparent)",
+                          "clawhub": "color-mix(in srgb, #8b5cf6 10%, transparent)",
+                          "redskill": "color-mix(in srgb, #e53935 10%, transparent)",
                         }[p] : "transparent",
                         border: "none", borderRadius: "6px", cursor: "pointer", textAlign: "left",
                       }}>
@@ -226,7 +226,7 @@ export function SearchBar({ onSearch, onInstallByUrl, loading, enabledPlatforms 
             borderRadius: "50%",
             backgroundColor: "var(--background)",
             border: "1px solid var(--border)",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+            boxShadow: "0 2px 8px color-mix(in srgb, var(--foreground) 6%, transparent)",
             cursor: "pointer",
             flexShrink: 0,
           }}>
@@ -287,7 +287,7 @@ export function SearchBar({ onSearch, onInstallByUrl, loading, enabledPlatforms 
             borderRadius: "50%",
             backgroundColor: "var(--background)",
             border: "1px solid var(--border)",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+            boxShadow: "0 2px 8px color-mix(in srgb, var(--foreground) 6%, transparent)",
             cursor: "pointer",
             flexShrink: 0,
           }}>

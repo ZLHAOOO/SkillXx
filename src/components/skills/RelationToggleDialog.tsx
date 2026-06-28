@@ -234,7 +234,7 @@ export function RelationToggleDialog({
                       padding: "10px 12px",
                       borderRadius: "8px",
                       border: "1px solid var(--border)",
-                      backgroundColor: item.enabled ? "rgba(9, 105, 218, 0.08)" : "var(--background)",
+                      backgroundColor: item.enabled ? "color-mix(in srgb, var(--primary) 8%, transparent)" : "var(--background)",
                       opacity: item.dimmed ? 0.6 : 1,
                     }}
                     title={item.tooltip}

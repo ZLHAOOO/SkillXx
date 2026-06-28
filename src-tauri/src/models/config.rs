@@ -8,6 +8,8 @@ use std::path::PathBuf;
 pub struct UserPreferences {
     #[serde(default = "default_theme")]
     pub theme: String,
+    #[serde(default = "default_theme_style")]
+    pub theme_style: String,
     #[serde(default = "default_font_family")]
     pub font_family: String,
     #[serde(default = "default_language")]
@@ -59,6 +61,13 @@ pub struct LlmProvider {
     pub max_tokens: Option<u32>,
     #[serde(default)]
     pub timeout_secs: Option<u32>,
+    /// API format: "openai" (default) or "anthropic" (Messages API)
+    #[serde(default = "default_api_format")]
+    pub api_format: String,
+}
+
+fn default_api_format() -> String {
+    "openai".to_string()
 }
 
 /// Multi-provider config entry (new with ClaudeCode refactor)
@@ -113,6 +122,9 @@ pub struct SkillMetadata {
 
 fn default_theme() -> String {
     "system".to_string()
+}
+fn default_theme_style() -> String {
+    "default".to_string()
 }
 fn default_language() -> String {
     "en".to_string()
@@ -186,6 +198,7 @@ impl Default for UserPreferences {
     fn default() -> Self {
         Self {
             theme: default_theme(),
+            theme_style: default_theme_style(),
             font_family: default_font_family(),
             language: default_language(),
             auto_sync: true,
@@ -299,6 +312,28 @@ pub struct AppConfig {
     /// Order of tool IDs for drag-and-drop sorting
     #[serde(default)]
     pub tools_order: Vec<String>,
+    /// Skill category assignments (key = instance_id or "group:{package_id}")
+    #[serde(default)]
+    pub skill_categories: HashMap<String, SkillCategoryAssignment>,
+    /// User-defined category dimensions (e.g. "scene", "difficulty")
+    #[serde(default)]
+    pub skill_category_dimensions: Vec<SkillCategoryDimension>,
+    /// Ordered list of level-1 category IDs
+    #[serde(default)]
+    pub skill_level1_categories: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillCategoryAssignment {
+    pub level1: String,
+    pub level2: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillCategoryDimension {
+    pub id: String,
+    pub label: String,
+    pub values: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -323,7 +358,7 @@ pub struct ToolConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            version: "3.2.1".to_string(),
+            version: "3.3.0".to_string(),
             skills_dir: Self::default_skills_dir(),
             tools: HashMap::new(),
             custom_tools: HashMap::new(),
@@ -339,6 +374,9 @@ impl Default for AppConfig {
             auth_session: None,
             initialized: false,
             tools_order: Vec::new(),
+            skill_categories: HashMap::new(),
+            skill_category_dimensions: Vec::new(),
+            skill_level1_categories: Vec::new(),
         }
     }
 }
@@ -534,6 +572,8 @@ mod tests {
             temperature: Some(0.3),
             max_tokens: Some(4096),
             timeout_secs: Some(60),
+            api_format: "openai".to_string(),
+            ..Default::default()
         });
 
         let json = serde_json::to_string(&config).expect("serialize config");

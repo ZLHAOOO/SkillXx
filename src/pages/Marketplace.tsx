@@ -703,9 +703,9 @@ export function Marketplace() {
                   borderRadius: '8px',
                   fontSize: '12px',
                   fontWeight: 600,
-                  border: '1px solid rgba(9, 105, 218, 0.35)',
+                  border: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
                   color: 'var(--primary)',
-                  backgroundColor: 'rgba(9, 105, 218, 0.10)',
+                  backgroundColor: 'color-mix(in srgb, var(--primary) 10%, transparent)',
                   cursor: updatingAll || refreshing || installingSkill !== null ? 'not-allowed' : 'pointer',
                   opacity: updatingAll || refreshing || installingSkill !== null ? 0.7 : 1,
                 }}
@@ -727,7 +727,7 @@ export function Marketplace() {
                 borderRadius: '8px',
                 fontSize: '12px',
                 fontWeight: 600,
-                border: '1px solid rgba(9, 105, 218, 0.28)',
+                border: '1px solid color-mix(in srgb, var(--primary) 28%, transparent)',
                 color: 'var(--foreground)',
                 backgroundColor: 'var(--background)',
                 cursor: installingSkill !== null || updatingAll ? 'not-allowed' : 'pointer',
@@ -829,8 +829,8 @@ export function Marketplace() {
                         padding: '4px 10px',
                         fontSize: '11px',
                         fontWeight: 500,
-                        border: isSelected ? '1px solid rgba(9, 105, 218, 0.4)' : '1px solid var(--border)',
-                        backgroundColor: isSelected ? 'rgba(9, 105, 218, 0.12)' : 'var(--secondary)',
+                        border: isSelected ? '1px solid color-mix(in srgb, var(--primary) 40%, transparent)' : '1px solid var(--border)',
+                        backgroundColor: isSelected ? 'color-mix(in srgb, var(--primary) 12%, transparent)' : 'var(--secondary)',
                         color: isSelected ? 'var(--primary)' : 'var(--muted-foreground)',
                         cursor: 'pointer',
                       }}
@@ -1098,10 +1098,10 @@ export function Marketplace() {
                                   fontSize: '10px',
                                   fontWeight: 500,
                                   color: 'var(--primary)',
-                                  backgroundColor: 'rgba(9, 105, 218, 0.12)',
+                                  backgroundColor: 'color-mix(in srgb, var(--primary) 12%, transparent)',
                                   padding: '2px 6px',
                                   borderRadius: '999px',
-                                  border: '1px solid rgba(9, 105, 218, 0.35)',
+                                  border: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
                                 }}
                               >
                                 {tag}
@@ -1244,7 +1244,7 @@ function GithubInstallDialog({
                 width: "28px",
                 height: "28px",
                 borderRadius: "10px",
-                background: "rgba(9, 105, 218, 0.1)",
+                background: "color-mix(in srgb, var(--primary) 10%, transparent)",
                 color: "var(--primary)",
               }}
             >
@@ -1268,9 +1268,9 @@ function GithubInstallDialog({
           style={{
             padding: "12px 14px",
             borderRadius: "14px",
-            border: "1px solid rgba(9, 105, 218, 0.14)",
+            border: "1px solid color-mix(in srgb, var(--primary) 14%, transparent)",
             background:
-              "linear-gradient(135deg, rgba(9, 105, 218, 0.08), rgba(9, 105, 218, 0.03))",
+              "linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, transparent), color-mix(in srgb, var(--primary) 3%, transparent))",
             fontSize: "12px",
             color: "var(--muted-foreground)",
             lineHeight: 1.6,

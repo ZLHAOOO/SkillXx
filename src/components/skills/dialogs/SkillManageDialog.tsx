@@ -5,7 +5,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { normalizeSkillTags } from "@/pages/skills/skillTags";
 import { Pencil, X, Check, Sparkles, Loader2 } from "lucide-react";
 
-type SkillEditorTab = "tools" | "tags";
+type SkillEditorTab = "tools" | "tags" | "category";
 
 export function SkillManageDialog({
   skillName,
@@ -386,13 +386,58 @@ export function SkillManageDialog({
                   cursor: "pointer",
                 }}
               >
-                {tab === "tools" ? t("skills.manageToolsTab") : t("skills.manageTagsTab")}
+                {tab === "tools" ? t("skills.manageToolsTab") : tab === "tags" ? t("skills.manageTagsTab") : t("skills.manageCategoryTab")}
               </button>
             );
           })}
         </div>
 
-        {activeTab === "tools" ? (
+        {activeTab === "category" ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              border: "1px solid var(--border)",
+              borderRadius: "12px",
+              backgroundColor: "var(--secondary)",
+              padding: "16px",
+              maxHeight: "360px",
+              overflow: "auto",
+            }}
+          >
+            <div style={{ fontSize: "12px", color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+              {t("skills.categoryEditDesc")}
+            </div>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--foreground)" }}>
+              {t("skills.categoryPrompt")}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {["prompt", "tool", "knowledge", "skillflow"].map((catId) => (
+                <span
+                  key={catId}
+                  style={{
+                    padding: "6px 14px",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "var(--background)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "999px",
+                  }}
+                >
+                  {catId === "prompt" ? t("skills.categoryPrompt") :
+                    catId === "tool" ? t("skills.categoryTool") :
+                    catId === "knowledge" ? t("skills.categoryKnowledge") :
+                    t("skills.categorySkillflow")}
+                </span>
+              ))}
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--muted-foreground)", fontStyle: "italic" }}>
+              {t("skills.categoryEditHint")}
+            </div>
+          </div>
+        ) : activeTab === "tools" ? (
           <>
             <div style={{ fontSize: "12px", color: "var(--muted-foreground)", lineHeight: 1.5 }}>
               <strong style={{ color: "var(--foreground)" }}>{toolsTitle}</strong>
@@ -523,7 +568,7 @@ export function SkillManageDialog({
                           padding: "10px 12px",
                           borderRadius: "8px",
                           border: "1px solid var(--border)",
-                          backgroundColor: item.enabled ? "rgba(9, 105, 218, 0.08)" : "var(--background)",
+                          backgroundColor: item.enabled ? "color-mix(in srgb, var(--primary) 8%, transparent)" : "var(--background)",
                           opacity: item.dimmed ? 0.6 : 1,
                         }}
                         title={item.tooltip}
@@ -585,9 +630,9 @@ export function SkillManageDialog({
                       gap: "4px",
                       fontSize: "11px",
                       fontWeight: 500,
-                      color: "rgba(17, 24, 39, 0.72)",
-                      backgroundColor: "rgba(9, 105, 218, 0.04)",
-                      border: "1px solid rgba(9, 105, 218, 0.14)",
+                      color: "var(--foreground)",
+                      backgroundColor: "color-mix(in srgb, var(--primary) 4%, transparent)",
+                      border: "1px solid color-mix(in srgb, var(--primary) 14%, transparent)",
                       borderRadius: "999px",
                       padding: "3px 5px 3px 8px",
                     }}

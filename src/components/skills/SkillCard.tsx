@@ -15,6 +15,7 @@ interface SkillCardProps {
   cardTitle: string;
   description: string;
   previewChips: string[];
+  categoryChips: string[];
   tools: Tool[];
   deletingSkill: string | null;
   deletingGroupId: string | null;
@@ -35,6 +36,7 @@ function SkillCardComponent({
   cardTitle,
   description,
   previewChips,
+  categoryChips,
   tools,
   deletingSkill,
   deletingGroupId,
@@ -252,33 +254,42 @@ function SkillCardComponent({
         </div>
       )}
 
-      {/* Scope Label - between description and footer divider */}
-      {item.scopeLabel && (
-        <span style={{
+      {/* Category chips - between description and footer divider */}
+      {categoryChips.length > 0 && (
+        <div style={{
           display: "inline-flex",
-          alignSelf: "flex-start",
-          alignItems: "center",
-          height: "18px",
-          padding: "0 5px",
-          fontSize: "10px",
-          fontWeight: 600,
-          letterSpacing: "0.04em",
-          color: item.scopeLabel === "project"
-            ? "var(--primary-foreground, #fff)"
-            : "var(--muted-foreground)",
-          backgroundColor: item.scopeLabel === "project"
-            ? "var(--primary, #6366f1)"
-            : "var(--background)",
-          border: item.scopeLabel === "project"
-            ? "none"
-            : "1px solid var(--border)",
-          borderRadius: "3px",
+          flexWrap: "wrap",
+          gap: "4px",
           marginBottom: "10px",
         }}>
-          {item.scopeLabel === "project"
-            ? t("skills.scopeProject")
-            : t("skills.scopeGlobal")}
-        </span>
+          {categoryChips.map((chip, idx) => (
+            <span
+              key={chip}
+              style={{
+                display: "inline-flex",
+                alignSelf: "flex-start",
+                alignItems: "center",
+                height: "18px",
+                padding: "0 6px",
+                fontSize: "10px",
+                fontWeight: 600,
+                letterSpacing: "0.03em",
+                color: idx === 0
+                  ? "var(--primary-foreground, #fff)"
+                  : "var(--muted-foreground)",
+                backgroundColor: idx === 0
+                  ? "var(--primary, #6366f1)"
+                  : "color-mix(in srgb, var(--foreground) 4%, transparent)",
+                border: idx === 0
+                  ? "none"
+                  : "1px solid color-mix(in srgb, var(--foreground) 10%, transparent)",
+                borderRadius: "4px",
+              }}
+            >
+              {chip}
+            </span>
+          ))}
+        </div>
       )}
 
       {/* Footer - only tool logos below divider */}
@@ -518,7 +529,7 @@ function SkillCardActionMenu({
                 padding: "10px 12px",
                 fontSize: "13px",
                 fontWeight: 500,
-                color: "#dc2626",
+                color: "var(--destructive)",
                 backgroundColor: "transparent",
                 border: "none",
                 borderRadius: "6px",
@@ -528,12 +539,12 @@ function SkillCardActionMenu({
                 transition: "background-color 0.15s ease, color 0.15s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(220, 38, 38, 0.08)";
-                e.currentTarget.style.color = "#b91c1c";
+                e.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--destructive) 8%, transparent)";
+                e.currentTarget.style.color = "var(--destructive)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.color = "#dc2626";
+                e.currentTarget.style.color = "var(--destructive)";
               }}
             >
               {deleteLabel}

@@ -85,6 +85,7 @@ export type TelemetryConsent = "unknown" | "granted" | "denied";
 export interface UserPreferences {
   // Appearance
   theme: "light" | "dark" | "system";
+  theme_style?: "default" | "apple" | "cyberpunk" | "neumorphism" | "comic";
   font_family: "system" | "rounded" | "serif";
   language: "zh" | "en";
 
@@ -224,6 +225,17 @@ export type CloudSyncPushResult =
       local_payload: CloudSyncPayload;
     };
 
+export interface SkillCategoryAssignment {
+  level1: string;
+  level2?: string | null;
+}
+
+export interface SkillCategoryDimension {
+  id: string;
+  label: string;
+  values: string[];
+}
+
 export interface AppConfig {
   version: string;
   skills_dir: string;
@@ -238,6 +250,9 @@ export interface AppConfig {
   projects?: ProjectBinding[];
   active_project_id?: string | null;
   llm_provider?: LlmProvider | null;
+  skill_categories?: Record<string, SkillCategoryAssignment>;
+  skill_category_dimensions?: SkillCategoryDimension[];
+  skill_level1_categories?: string[];
 }
 
 export interface LlmProvider {

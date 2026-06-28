@@ -25,9 +25,9 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
     return () => clearTimeout(timer);
   }, [toast.id, toast.persistent, onRemove]);
 
-  const bgColor = toast.type === "error" ? "#fef2f2" : toast.type === "success" ? "#f0fdf4" : "#eff6ff";
-  const borderColor = toast.type === "error" ? "#fecaca" : toast.type === "success" ? "#bbf7d0" : "#bfdbfe";
-  const textColor = toast.type === "error" ? "#dc2626" : toast.type === "success" ? "#16a34a" : "#2563eb";
+  const bgColor = toast.type === "error" ? "var(--color-error-bg)" : toast.type === "success" ? "var(--color-success-bg)" : "var(--color-primary-subtle)";
+  const borderColor = toast.type === "error" ? "var(--color-error-border)" : toast.type === "success" ? "var(--color-success-border)" : "var(--primary)";
+  const textColor = toast.type === "error" ? "var(--color-error)" : toast.type === "success" ? "var(--color-success)" : "var(--color-primary-action, var(--primary))";
 
   return (
     <div
@@ -38,7 +38,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
         borderRadius: "14px",
         color: textColor,
         fontSize: "14px",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        boxShadow: "var(--shadow-toast, 0 4px 12px rgba(0,0,0,0.15))",
         opacity: isExiting ? 0 : 1,
         transform: isExiting ? "translateX(100%)" : "translateX(0)",
         transition: "opacity 0.3s, transform 0.3s",

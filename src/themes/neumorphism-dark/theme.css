@@ -1,0 +1,117 @@
+/* ============================================================================
+   轻拟 · 暗色（暖炭灰 · 软陶）
+   #1C1A16 暖炭底 + 大圆角 28px + 柔阴影 + 顶部暖光
+   ============================================================================ */
+
+[data-theme-style="neumorphism"][data-mode="dark"] {
+  /* ── 基础色板（暖炭调）── */
+  --background: #1C1A16;
+  --foreground: #E8E2D6;
+  --card: #1C1A16;
+  --card-foreground: #E8E2D6;
+  --popover: #1C1A16;
+  --popover-foreground: #E8E2D6;
+  --primary: #D4B896;
+  --primary-foreground: #1C1A16;
+  --secondary: #252220;
+  --secondary-foreground: #E8E2D6;
+  --muted: #252220;
+  --muted-foreground: #B0A99C;
+  --accent: #D4B896;
+  --accent-foreground: #1C1A16;
+  --destructive: #D08575;
+  --border: rgba(255, 255, 255, 0.05);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #D4B896;
+
+  /* ── Chart（低饱和暖色）── */
+  --chart-1: #D4B896;
+  --chart-2: #94B4C4;
+  --chart-3: #8FB370;
+  --chart-4: #D4A569;
+  --chart-5: #D08575;
+
+  /* ── Sidebar ── */
+  --sidebar: #1C1A16;
+  --sidebar-foreground: #E8E2D6;
+  --sidebar-primary: #D4B896;
+  --sidebar-primary-foreground: #1C1A16;
+  --sidebar-accent: #252220;
+  --sidebar-accent-foreground: #E8E2D6;
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-ring: #D4B896;
+
+  /* ── 语义色 ── */
+  --color-error: #D08575;
+  --color-error-bg: rgba(208, 133, 117, 0.15);
+  --color-error-border: rgba(208, 133, 117, 0.35);
+  --color-success: #8FB370;
+  --color-success-bg: rgba(143, 179, 112, 0.15);
+  --color-success-border: rgba(143, 179, 112, 0.35);
+  --color-warning: #D4A569;
+  --color-warning-bg: rgba(212, 165, 105, 0.15);
+  --color-warning-border: rgba(212, 165, 105, 0.35);
+  --color-primary-action: #D4B896;
+  --color-primary-action-hover: #E5C9A7;
+
+  /* ── 表面层级 ── */
+  --color-bg: #1C1A16;
+  --color-bg-elevated: #1C1A16;
+  --color-bg-sunken: #252220;
+  --color-sidebar-bg: #1C1A16;
+  --color-fg: #E8E2D6;
+  --color-fg-muted: #B0A99C;
+  --color-fg-subtle: #8A8478;
+  --color-border-thin: rgba(255, 255, 255, 0.05);
+  --color-accent: #D4B896;
+  --color-accent-strong: #E5C9A7;
+  --color-accent-fg: #1C1A16;
+  --color-accent-soft: rgba(212, 184, 150, 0.12);
+  --color-card-bg: #1C1A16;
+  --color-card-border: rgba(255, 255, 255, 0.04);
+  --color-banner-bg: #252220;
+  --color-banner-border: rgba(255, 255, 255, 0.06);
+  --color-hero-accent-bg: linear-gradient(135deg, #252220 0%, #1C1A16 100%);
+  --color-hero-accent-fg: #E8E2D6;
+
+  /* ── 阴影（暗色双向柔阴影）── */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.35);
+  --shadow-inset: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  --glow-accent: 0 0 0 transparent;
+  --scanline: none;
+  --clip-corner: 0;
+
+  /* ── 字体 ── */
+  --font-display: "Cormorant Garamond", "Source Han Serif SC", "Songti SC", "STSong", var(--app-font-family, serif);
+  --font-body: var(--app-font-family, -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+
+  /* ── 滚动条 ── */
+  --color-scrollbar: rgba(255, 255, 255, 0.08);
+  --color-scrollbar-hover: rgba(255, 255, 255, 0.16);
+  --color-body-bg: #1C1A16;
+  --radius: 0.875rem;
+}
+
+[data-theme-style="neumorphism"][data-mode="dark"] .glass-content {
+  background: var(--color-bg-elevated, var(--color-card-bg));
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme-style="neumorphism"][data-mode="dark"] .glass-sidebar {
+  background: var(--color-sidebar-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-right: 1px solid var(--color-border);
+}
+
+/* —— 形态 token：轻拟暗 · 大软圆角 28px + pill + 暖柔双向阴影 —— */
+[data-theme-style="neumorphism"][data-mode="dark"] {
+  --radius-card: 1.75rem;
+  --radius-button: 9999px;
+  --border-w-card: 1px;
+  --shadow-toast: 0 12px 32px rgba(0, 0, 0, 0.45);
+}

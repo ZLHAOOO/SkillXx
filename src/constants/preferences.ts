@@ -2,6 +2,7 @@ import { UserPreferences } from "@/types";
 
 export const defaultPreferences: UserPreferences = {
   theme: "system",
+  theme_style: "default",
   font_family: "system",
   language: "en",
   auto_sync: true,

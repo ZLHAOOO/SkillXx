@@ -1,0 +1,104 @@
+/* ============================================================================
+   科幻 · 暗色（Sci-Fi HUD 经典深空）
+   深空蓝黑 + 青色发光 + 玻璃面板 + L 角装饰 + 雷达网格
+   ============================================================================ */
+
+[data-theme-style="cyberpunk"][data-mode="dark"] {
+  --background: #050818;
+  --foreground: #DCEFFF;
+  --card: rgba(14, 20, 48, 0.6);
+  --card-foreground: #DCEFFF;
+  --popover: rgba(14, 20, 48, 0.85);
+  --popover-foreground: #DCEFFF;
+  --primary: #00E0FF;
+  --primary-foreground: #050818;
+  --secondary: #0E1430;
+  --secondary-foreground: #DCEFFF;
+  --muted: #02040C;
+  --muted-foreground: #6B89B5;
+  --accent: #14FFEC;
+  --accent-foreground: #050818;
+  --destructive: #FF3D6E;
+  --border: rgba(0, 224, 255, 0.25);
+  --input: rgba(0, 224, 255, 0.35);
+  --ring: #00E0FF;
+  --chart-1: #00E0FF;
+  --chart-2: #14FFEC;
+  --chart-3: #00FFB0;
+  --chart-4: #FFD600;
+  --chart-5: #FF3D6E;
+  --sidebar: #0A1024;
+  --sidebar-foreground: #DCEFFF;
+  --sidebar-primary: #00E0FF;
+  --sidebar-primary-foreground: #050818;
+  --sidebar-accent: #0E1430;
+  --sidebar-accent-foreground: #DCEFFF;
+  --sidebar-border: rgba(0, 224, 255, 0.25);
+  --sidebar-ring: #00E0FF;
+
+  --color-error: #FF3D6E;
+  --color-error-bg: rgba(255, 61, 110, 0.18);
+  --color-error-border: rgba(255, 61, 110, 0.4);
+  --color-success: #00FFB0;
+  --color-success-bg: rgba(0, 255, 176, 0.18);
+  --color-success-border: rgba(0, 255, 176, 0.4);
+  --color-warning: #FFD600;
+  --color-warning-bg: rgba(255, 214, 0, 0.18);
+  --color-warning-border: rgba(255, 214, 0, 0.4);
+  --color-primary-action: #00E0FF;
+  --color-primary-action-hover: #14FFEC;
+
+  --color-bg: #050818;
+  --color-bg-elevated: #0E1430;
+  --color-bg-sunken: #02040C;
+  --color-sidebar-bg: #0A1024;
+  --color-fg: #DCEFFF;
+  --color-fg-muted: #6B89B5;
+  --color-fg-subtle: #4A6080;
+  --color-border-thin: rgba(0, 224, 255, 0.25);
+  --color-accent: #00E0FF;
+  --color-accent-strong: #14FFEC;
+  --color-accent-fg: #050818;
+  --color-accent-soft: rgba(0, 224, 255, 0.15);
+  --color-card-bg: rgba(14, 20, 48, 0.6);
+  --color-card-border: rgba(0, 224, 255, 0.35);
+  --color-banner-bg: rgba(255, 214, 0, 0.1);
+  --color-banner-border: rgba(255, 214, 0, 0.45);
+  --color-hero-accent-bg: linear-gradient(135deg, #0A1230 0%, #142048 100%);
+  --color-hero-accent-fg: #DCEFFF;
+
+  --shadow-sm: 0 0 10px rgba(0, 224, 255, 0.25);
+  --shadow-md: 0 0 15px rgba(0, 224, 255, 0.4), 0 0 2px rgba(0, 224, 255, 0.6);
+  --shadow-lg: 0 0 25px rgba(0, 224, 255, 0.55), 0 0 4px rgba(0, 224, 255, 0.8);
+  --shadow-inset: inset 0 0 10px rgba(0, 224, 255, 0.18);
+  --glow-accent: 0 0 12px rgba(0, 224, 255, 0.6);
+  --scanline: repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0, 224, 255, 0.04) 2px, rgba(0, 224, 255, 0.04) 3px);
+  --clip-corner: 4px;
+  --font-display: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
+  --font-body: "JetBrains Mono", "Inter", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+
+  --color-scrollbar: rgba(0, 224, 255, 0.4);
+  --color-scrollbar-hover: rgba(0, 224, 255, 0.6);
+  --color-body-bg: #050818;
+  --radius: 0.25rem;
+}
+
+[data-theme-style="cyberpunk"][data-mode="dark"] .glass-content {
+  background: var(--color-bg-elevated, rgba(14, 20, 48, 0.6));
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme-style="cyberpunk"][data-mode="dark"] .glass-sidebar {
+  background: var(--color-sidebar-bg);
+  border-right: 1px solid rgba(0, 224, 255, 0.25);
+}
+
+/* —— 形态 token：科幻暗 · sharp 锐角 + 青色辉光 —— */
+[data-theme-style="cyberpunk"][data-mode="dark"] {
+  --radius-card: 4px;
+  --radius-button: 2px;
+  --border-w-card: 1px;
+  --shadow-toast: 0 0 20px rgba(0, 224, 255, 0.8);
+}

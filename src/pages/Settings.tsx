@@ -26,7 +26,7 @@ import { resolveActiveProjectId } from "./projectBindings";
 
 export function Settings() {
   const { t, language, setLanguage } = useTranslation();
-  const { setTheme, setFontFamily } = useTheme();
+  const { setTheme, setThemeStyle, setFontFamily } = useTheme();
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -133,13 +133,17 @@ export function Settings() {
       setTheme(value as "light" | "dark" | "system");
     }
 
+    if (key === "theme_style") {
+      setThemeStyle(value as "default" | "apple" | "cyberpunk" | "neumorphism" | "comic");
+    }
+
     if (key === "font_family") {
       setFontFamily(value as FontFamilyPreset);
     }
 
     // Auto-save to disk (debounced)
     void autoSaveConfig(newConfig);
-  }, [config, setLanguage, setTheme, setFontFamily]);
+  }, [config, setLanguage, setTheme, setThemeStyle, setFontFamily]);
 
   const updateMarketplaceSource = useCallback((
     sourceId: string,
@@ -676,6 +680,24 @@ export function Settings() {
             </SettingsRow>
 
             <SettingsRow
+              label="主题风格"
+              description="选择一套视觉主题（5 套可选）"
+              isLast={false}
+            >
+              <SegmentedControl
+                value={prefs.theme_style || "default"}
+                onChange={(v) => updatePreference("theme_style", v as "default" | "apple" | "cyberpunk" | "neumorphism" | "comic")}
+                options={[
+                  { value: "default", label: "默认" },
+                  { value: "apple", label: "简约" },
+                  { value: "cyberpunk", label: "科幻" },
+                  { value: "neumorphism", label: "轻拟" },
+                  { value: "comic", label: "漫画" },
+                ]}
+              />
+            </SettingsRow>
+
+            <SettingsRow
               label={t("settings.fontFamily")}
               description={t("settings.fontFamilyDesc")}
               isLast={false}
@@ -847,8 +869,8 @@ export function Settings() {
                       fontSize: '11px',
                       fontWeight: 500,
                       color: updateInfo ? 'var(--primary-foreground)' : 'var(--primary)',
-                      backgroundColor: updateInfo ? 'var(--primary)' : 'rgba(9, 105, 218, 0.1)',
-                      border: updateInfo ? 'none' : '1px solid rgba(9, 105, 218, 0.2)',
+                      backgroundColor: updateInfo ? 'var(--primary)' : 'color-mix(in srgb, var(--primary) 10%, transparent)',
+                      border: updateInfo ? 'none' : '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
                       borderRadius: '4px',
                       cursor: checkingUpdate ? 'wait' : 'pointer',
                       opacity: checkingUpdate ? 0.7 : 1,

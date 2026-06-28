@@ -12,7 +12,7 @@ import { LlmModel } from "@/pages/LlmModel";
 import { Welcome } from "@/pages/Welcome";
 import { useInitialization } from "@/hooks/useInitialization";
 import { useScrollIndicator } from "@/hooks/useScrollIndicator";
-import { ThemeProvider } from "@/hooks/useTheme";
+import { ThemeProvider, ThemeStyle } from "@/hooks/useTheme";
 import { SkillTranslationProvider } from "@/hooks/useSkillTranslation";
 import { I18nProvider, Language } from "@/i18n";
 import { FontFamilyPreset, normalizeFontFamilyPreset } from "@/lib/fontFamily";
@@ -26,6 +26,7 @@ function App() {
   useScrollIndicator();
   const [language, setLanguage] = useState<Language>("en");
   const [theme, setTheme] = useState<Theme>("system");
+  const [themeStyle, setThemeStyle] = useState<ThemeStyle>("default");
   const [fontFamily, setFontFamily] = useState<FontFamilyPreset>("system");
   const [configLoaded, setConfigLoaded] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -42,6 +43,9 @@ function App() {
         if (config.preferences?.theme) {
           setTheme(config.preferences.theme as Theme);
         }
+        if (config.preferences?.theme_style) {
+          setThemeStyle(config.preferences.theme_style as ThemeStyle);
+        }
         setFontFamily(normalizeFontFamilyPreset(config.preferences?.font_family));
         } catch {
         // Use defaults on error
@@ -57,6 +61,10 @@ function App() {
 
   const handleThemeChange = useCallback((newTheme: Theme) => {
     setTheme(newTheme);
+  }, []);
+
+  const handleThemeStyleChange = useCallback((newStyle: ThemeStyle) => {
+    setThemeStyle(newStyle);
   }, []);
 
   const handleFontFamilyChange = useCallback((newFontFamily: FontFamilyPreset) => {
@@ -95,8 +103,10 @@ function App() {
     return (
       <ThemeProvider
         theme={theme}
+        themeStyle={themeStyle}
         fontFamily={fontFamily}
         onThemeChange={handleThemeChange}
+        onThemeStyleChange={handleThemeStyleChange}
         onFontFamilyChange={handleFontFamilyChange}
       >
         <I18nProvider language={language} onLanguageChange={handleLanguageChange}>
@@ -109,8 +119,10 @@ function App() {
   return (
     <ThemeProvider
       theme={theme}
+      themeStyle={themeStyle}
       fontFamily={fontFamily}
       onThemeChange={handleThemeChange}
+      onThemeStyleChange={handleThemeStyleChange}
       onFontFamilyChange={handleFontFamilyChange}
     >
       <I18nProvider language={language} onLanguageChange={handleLanguageChange}>

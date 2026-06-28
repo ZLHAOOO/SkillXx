@@ -7,7 +7,7 @@
 > **一款统一的 AI 编码助手技能管理桌面应用。**
 > 无缝管理、同步和分享 **Claude Code、Codex、Opencode** 等 AI 工具的技能。
 
-![Version](https://img.shields.io/badge/version-3.2.2-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.3.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
 [English](./README.md)
 
@@ -75,6 +75,27 @@ WEBKIT_DISABLE_COMPOSITING_MODE=1 ./SkillX_1.0.1_amd64.AppImage
 - **🔒 安全加固**：文件路径验证、CSP 策略、URL 校验
 - **⚡ 性能优化**：配置缓存机制，提升响应速度
 - **🎨 UI 优化**：简约化设计，改进侧边栏、卡片和设置页面
+
+## 📅 v3.3.0 更新内容
+
+### AI 技能管家
+- **AI 技能管家入口**：工具栏新增 AI 技能管家按钮（图标样式，悬停显示文字），整合 AI 批量翻译与 AI 分类管理两大功能
+- **AI 批量翻译**：调用 LLM 批量翻译技能名称和描述，支持进度显示和错误重试
+- **AI 分类管理**：基于两级分类体系，使用 AI 自动为技能归类（一级分类 4 选 1，二级分类支持多选）
+- **分类体系**：提示增强 / 工具调用 / 知识蒸馏 / Skillflow 四大类，支持二级维度自定义
+
+### 批量管理增强
+- **批量设置分类**：多选技能后一键设置一级+二级分类
+- **批量设置标签**：多选技能后批量追加或覆盖标签
+- **批量删除**：多选技能/技能组后一键删除
+- **绑定智能体**：原"批量设置工具"更名为"绑定智能体"
+
+### UI 优化
+- **LLM 页面 Tab 重设计**：图标 + 文字风格，全宽分割线，与技能库页面视觉统一
+- **搜索框折叠**：点击搜索框外区域自动折叠为图标
+- **图标尺寸优化**：搜索图标和 AI 技能管家图标放大，视觉更清晰
+
+---
 
 ## 📅 v3.2.1 更新内容
 

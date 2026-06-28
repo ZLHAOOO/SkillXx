@@ -17,9 +17,12 @@ import {
   InstalledSkillPackage,
   ProjectBinding,
   Skill,
+  SkillCategoryDimension,
   Tool,
   UserPreferences,
 } from "@/types";
+import { DEFAULT_LEVEL1_CATEGORIES, DEFAULT_DIMENSIONS } from "@/constants/categories";
+import { AllIcon, PromptIcon, ToolIcon, KnowledgeIcon, SkillflowIcon } from "@/components/skills/CategoryIcons";
 import { defaultPreferences } from "@/constants/preferences";
 import { useTranslation, TranslationPath } from "@/i18n";
 import {
@@ -91,6 +94,11 @@ const ProjectBindingsDialog = lazy(() => import("./ProjectBindingsDialog").then(
 const SkillManageDialog = lazy(() => import("@/components/skills/dialogs/SkillManageDialog").then(mod => ({ default: mod.SkillManageDialog })));
 const CreateSkillDialog = lazy(() => import("@/components/skills/dialogs/CreateSkillDialog").then(mod => ({ default: mod.CreateSkillDialog })));
 const BatchManageToolsDialog = lazy(() => import("./skills/BatchManageToolsDialog").then(mod => ({ default: mod.BatchManageToolsDialog })));
+const CategoryEditDialog = lazy(() => import("@/components/skills/dialogs/CategoryEditDialog").then(mod => ({ default: mod.CategoryEditDialog })));
+const BatchCategoryDialog = lazy(() => import("@/components/skills/dialogs/BatchCategoryDialog").then(mod => ({ default: mod.BatchCategoryDialog })));
+const BatchTagDialog = lazy(() => import("@/components/skills/dialogs/BatchTagDialog").then(mod => ({ default: mod.BatchTagDialog })));
+const AiAssistantDialog = lazy(() => import("@/components/skills/dialogs/AiAssistantDialog").then(mod => ({ default: mod.AiAssistantDialog })));
+const AiClassifyDialog = lazy(() => import("@/components/skills/dialogs/AiClassifyDialog").then(mod => ({ default: mod.AiClassifyDialog })));
 import { SkillCard } from "@/components/skills/SkillCard";
 import { useSkillsData } from "@/hooks/skills/useSkillsData";
 import { useSkillFilter } from "@/hooks/skills/useSkillFilter";
@@ -113,15 +121,15 @@ function buildTagFilterMenuItemStyle(active: boolean): CSSProperties {
     fontSize: "12px",
     fontWeight: 500,
     color: active ? "var(--primary)" : "var(--foreground)",
-    backgroundColor: active ? "rgba(9, 105, 218, 0.08)" : "var(--background)",
-    border: active ? "1px solid rgba(9, 105, 218, 0.28)" : "1px solid var(--border)",
+    backgroundColor: active ? "color-mix(in srgb, var(--primary) 8%, transparent)" : "var(--background)",
+    border: active ? "1px solid color-mix(in srgb, var(--primary) 28%, transparent)" : "1px solid var(--border)",
     borderRadius: "8px",
     cursor: "pointer",
     textAlign: "left",
   };
 }
 
-type SkillEditorTab = "tools" | "tags";
+type SkillEditorTab = "tools" | "tags" | "category";
 
 function getUnifiedItemMetaLabel(item: UnifiedSkillListItem, t: (key: TranslationPath) => string) {
   if (item.kind === "group") {
@@ -162,6 +170,13 @@ export function Skills() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [untaggedOnly, setUntaggedOnly] = useState(false);
   const [scopeFilter, setScopeFilter] = useState<"all" | "global" | "project">("all");
+  // 分类系统状态
+  const [activeLevel1Category, setActiveLevel1Category] = useState<string>("all");
+  const [activeLevel2Category, setActiveLevel2Category] = useState<string | null>(null);
+  const [activeDimensionId, setActiveDimensionId] = useState<string | null>(null);
+  const [showCategoryEditDialog, setShowCategoryEditDialog] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const [toolEditorSkillId, setToolEditorSkillId] = useState<string | null>(null);
   const [toolEditorQuery, setToolEditorQuery] = useState("");
   const [toolEditorEnabledOnly, setToolEditorEnabledOnly] = useState(false);
@@ -186,7 +201,15 @@ export function Skills() {
   const [isBatchToolDialogOpen, setIsBatchToolDialogOpen] = useState(false);
   const [batchToolQuery, setBatchToolQuery] = useState("");
   const [batchSubmitting, setBatchSubmitting] = useState(false);
+  const [showBatchCategoryDialog, setShowBatchCategoryDialog] = useState(false);
+  const [showBatchTagDialog, setShowBatchTagDialog] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+  const [showAiAssistantDialog, setShowAiAssistantDialog] = useState(false);
+  const [aiClassifying, setAiClassifying] = useState(false);
+  const [aiClassifyProgress, setAiClassifyProgress] = useState({ total: 0, processed: 0, currentName: "" });
+  const [aiClassifyError, setAiClassifyError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [aiAssistantHovered, setAiAssistantHovered] = useState(false);
   const { toasts, addToast, updateToast, removeToast } = useToast();
 
   // Custom hook for data management
@@ -217,6 +240,18 @@ export function Skills() {
       setConfig(dataConfig);
     }
   }, [dataConfig]);
+
+  // Collapse search bar when clicking outside
+  useEffect(() => {
+    if (!searchExpanded) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setSearchExpanded(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [searchExpanded]);
 
   // Custom hook for filtering and search (kept for side effects; local useMemo handles filtering)
   useSkillFilter({
@@ -376,6 +411,8 @@ export function Skills() {
     setSelectedTags(next.selectedTags);
     setUntaggedOnly(next.untaggedOnly);
     setScopeFilter("all");
+    setActiveLevel1Category("all");
+    setActiveLevel2Category(null);
     setShowTagFilterMenu(false);
   }, [selectedTags, untaggedOnly]);
 
@@ -553,7 +590,8 @@ export function Skills() {
         targetDescLang: shouldTranslateDesc ? descLang : "original",
       };
     } catch (err) {
-      addToast(t("skills.aiTranslateFailed"), "error");
+      const detail = formatTranslationError(err, t);
+      addToast(`${t("skills.aiTranslateFailed")}: ${detail}`, "error");
       return {
         name: skill.name,
         description: skill.description || "",
@@ -640,11 +678,14 @@ export function Skills() {
       const confirmed = await confirm(confirmMessage, { title: t("skills.batchTranslate") });
       if (!confirmed) return;
 
+      // Determine target language for batch translate (use display preference, fallback to UI language)
+      const translateTargetLang = nameLang !== "original" ? nameLang : language;
+
       setBatchTranslating(true);
       let progressToastId: string | undefined;
       try {
         const ids = pending.map((s) => s.instance_id);
-        const result = await translation.translateBatch(ids, language, (p) => {
+        const result = await translation.translateBatch(ids, translateTargetLang, (p) => {
           const progressMsg = t("skills.batchTranslateProgress")
             .replace("{current}", String(p.current))
             .replace("{total}", String(p.total))
@@ -670,11 +711,19 @@ export function Skills() {
             .replace("{fail}", String(fail)),
           fail > 0 ? "error" : "success",
         );
+
+        // Refresh config so UI reflects new translations
+        const latestConfig = await invoke<AppConfig>("get_config");
+        setConfig(latestConfig);
       } catch (err) {
         if (progressToastId) {
           removeToast(progressToastId);
         }
-        addToast(formatTranslationError(err, t), "error");
+        const detail = err instanceof Error ? err.message : String(err);
+        addToast(
+          t("skills.batchTranslateFailed").replace("{error}", detail),
+          "error",
+        );
       } finally {
         setBatchTranslating(false);
       }
@@ -759,7 +808,7 @@ export function Skills() {
     }
   }, [scopeFilter, tagFilterSelection, t]);
 
-  const hasActiveSkillFilters = Boolean(searchQuery.trim()) || selectedTags.length > 0 || untaggedOnly || scopeFilter !== "all";
+  const hasActiveSkillFilters = Boolean(searchQuery.trim()) || selectedTags.length > 0 || untaggedOnly || scopeFilter !== "all" || activeLevel1Category !== "all" || activeLevel2Category !== null;
 
   const scopeFilterCounts = useMemo(() => {
     const globalCount = unifiedItems.filter((item) => item.scopeLabel === "global").length;
@@ -767,25 +816,79 @@ export function Skills() {
     return { global: globalCount, project: projectCount };
   }, [unifiedItems]);
 
-  const scopeTabs = useMemo(() => {
-    const tabs: Array<{ value: "all" | "global" | "project"; label: string; count: number }> = [
-      { value: "all", label: t("skills.scopeFilterAll"), count: unifiedItems.length },
-    ];
-    if (scopeFilterCounts.global > 0) {
-      tabs.push({ value: "global", label: t("skills.scopeGlobal"), count: scopeFilterCounts.global });
-    }
-    if (scopeFilterCounts.project > 0) {
-      tabs.push({ value: "project", label: t("skills.scopeProject"), count: scopeFilterCounts.project });
-    }
-    return tabs;
-  }, [scopeFilterCounts, t, unifiedItems.length]);
+  // scopeTabs removed — scope filter is now a dropdown in the category bar
 
-  const filteredUnifiedItems = useMemo(() => filterUnifiedSkillItems(unifiedItems, {
-    searchQuery,
-    selectedTags,
-    untaggedOnly,
-    scopeFilter,
-  }), [searchQuery, selectedTags, unifiedItems, untaggedOnly, scopeFilter]);
+  // ── 分类系统数据 ──
+  const skillCategories = config?.skill_categories;
+  const categoryDimensions = useMemo<SkillCategoryDimension[]>(() => {
+    return config?.skill_category_dimensions?.length
+      ? config.skill_category_dimensions
+      : DEFAULT_DIMENSIONS;
+  }, [config?.skill_category_dimensions]);
+  const level1CategoryIds = useMemo(() => {
+    return config?.skill_level1_categories?.length
+      ? config.skill_level1_categories
+      : DEFAULT_LEVEL1_CATEGORIES.map((c) => c.id);
+  }, [config?.skill_level1_categories]);
+
+  // 当前选中的维度
+  const currentDimension = useMemo(() => {
+    if (!activeDimensionId) return categoryDimensions[0] ?? null;
+    return categoryDimensions.find((d) => d.id === activeDimensionId) ?? categoryDimensions[0] ?? null;
+  }, [activeDimensionId, categoryDimensions]);
+
+  // 一级分类计数
+  const level1Counts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const id of level1CategoryIds) {
+      if (id === "all") {
+        counts[id] = unifiedItems.length;
+        continue;
+      }
+      counts[id] = unifiedItems.filter((item) => {
+        const key = item.kind === "skill" && item.skill
+          ? item.skill.instance_id
+          : `group:${item.id}`;
+        return skillCategories?.[key]?.level1 === id;
+      }).length;
+    }
+    return counts;
+  }, [unifiedItems, skillCategories, level1CategoryIds]);
+
+  // 二级分类过滤
+  const filteredUnifiedItems = useMemo(() => {
+    // 先执行原有的筛选
+    const base = filterUnifiedSkillItems(unifiedItems, {
+      searchQuery,
+      selectedTags,
+      untaggedOnly,
+      scopeFilter,
+    });
+
+    // 一级分类过滤
+    let afterLevel1 = base;
+    if (activeLevel1Category !== "all") {
+      afterLevel1 = base.filter((item) => {
+        const key = item.kind === "skill" && item.skill
+          ? item.skill.instance_id
+          : `group:${item.id}`;
+        return skillCategories?.[key]?.level1 === activeLevel1Category;
+      });
+    }
+
+    // 二级分类过滤
+    let afterLevel2 = afterLevel1;
+    if (activeLevel2Category && currentDimension) {
+      afterLevel2 = afterLevel1.filter((item) => {
+        const key = item.kind === "skill" && item.skill
+          ? item.skill.instance_id
+          : `group:${item.id}`;
+        return skillCategories?.[key]?.level2 === activeLevel2Category;
+      });
+    }
+
+    return afterLevel2;
+  }, [unifiedItems, searchQuery, selectedTags, untaggedOnly, scopeFilter, activeLevel1Category, activeLevel2Category, currentDimension, skillCategories]);
 
   const sortedUnifiedItems = useMemo(
     () => sortUnifiedSkillItems(filteredUnifiedItems, searchQuery),
@@ -830,6 +933,18 @@ export function Skills() {
     () => getSelectedBatchItems(unifiedItems, selectedBatchItemKeys),
     [selectedBatchItemKeys, unifiedItems],
   );
+
+  const allExistingTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const item of selectedBatchItems) {
+      if (item.kind !== "skill" || !item.skill) continue;
+      const meta = config?.skill_metadata?.[item.skill.instance_id];
+      if (meta?.tags) {
+        meta.tags.forEach((tag) => tagSet.add(tag));
+      }
+    }
+    return Array.from(tagSet).sort();
+  }, [config?.skill_metadata, selectedBatchItems]);
 
   const batchSelectionSummary = useMemo(
     () => summarizeBatchSelection(selectedBatchItems, skills),
@@ -926,6 +1041,81 @@ export function Skills() {
             }}
           >
             {t("skills.batchConfigureTools")}
+          </button>
+        );
+      case "batch-category":
+        return (
+          <button
+            key={actionId}
+            type="button"
+            onClick={() => setShowBatchCategoryDialog(true)}
+            disabled={selectedBatchItems.length === 0}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 14px",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "var(--foreground)",
+              backgroundColor: "var(--secondary)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              cursor: selectedBatchItems.length === 0 ? "not-allowed" : "pointer",
+              opacity: selectedBatchItems.length === 0 ? 0.6 : 1,
+            }}
+          >
+            {t("skills.batchCategory")}
+          </button>
+        );
+      case "batch-tag":
+        return (
+          <button
+            key={actionId}
+            type="button"
+            onClick={() => setShowBatchTagDialog(true)}
+            disabled={selectedBatchItems.length === 0}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 14px",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "var(--foreground)",
+              backgroundColor: "var(--secondary)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              cursor: selectedBatchItems.length === 0 ? "not-allowed" : "pointer",
+              opacity: selectedBatchItems.length === 0 ? 0.6 : 1,
+            }}
+          >
+            {t("skills.batchTag")}
+          </button>
+        );
+      case "batch-delete":
+        return (
+          <button
+            key={actionId}
+            type="button"
+            onClick={handleBatchDelete}
+            disabled={selectedBatchItems.length === 0 || batchDeleting}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 14px",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "var(--destructive, #ef4444)",
+              backgroundColor: "var(--secondary)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              cursor: selectedBatchItems.length === 0 || batchDeleting ? "not-allowed" : "pointer",
+              opacity: selectedBatchItems.length === 0 ? 0.6 : 1,
+            }}
+          >
+            {batchDeleting ? "..." : t("skills.batchDelete")}
           </button>
         );
       case "project-bindings":
@@ -1181,6 +1371,179 @@ export function Skills() {
       closeOnSuccess: false,
     });
   }, [batchSelectionSummary.totalCount, handleSubmitBatchToolAction, t]);
+
+  // ── 批量分类 handler ──
+  const handleBatchCategoryAssign = useCallback(async (level1: string, level2: string | null) => {
+    if (!config || selectedBatchItems.length === 0) return;
+    const nextCategories = { ...config.skill_categories };
+    for (const item of selectedBatchItems) {
+      const key = item.kind === "skill" && item.skill
+        ? item.skill.instance_id
+        : `group:${item.id}`;
+      nextCategories[key] = { level1, level2 };
+    }
+    const nextConfig: AppConfig = { ...config, skill_categories: nextCategories };
+    try {
+      await invoke("save_config", { config: nextConfig });
+      setConfig(nextConfig);
+      addToast(
+        t("skills.batchCategorySuccess").replace("{count}", String(selectedBatchItems.length)),
+        "success",
+      );
+      exitBatchManageMode();
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : String(err), "error");
+    }
+  }, [addToast, config, exitBatchManageMode, selectedBatchItems, t]);
+
+  // ── 批量删除 handler ──
+  const handleBatchDelete = useCallback(async () => {
+    if (!config || selectedBatchItems.length === 0) return;
+    setBatchDeleting(true);
+    try {
+      let deletedCount = 0;
+      for (const item of selectedBatchItems) {
+        if (item.kind === "skill" && item.skill) {
+          await invoke("delete_skill", { instanceId: item.skill.instance_id });
+          deletedCount++;
+        } else if (item.kind === "group" && item.skillPackage) {
+          await invoke("remove_skill_package", { packageId: item.skillPackage.package_id });
+          deletedCount++;
+        }
+      }
+      // Clean up categories metadata
+      const nextCategories = { ...config.skill_categories };
+      for (const item of selectedBatchItems) {
+        const key = item.kind === "skill" && item.skill
+          ? item.skill.instance_id
+          : `group:${item.id}`;
+        delete nextCategories[key];
+      }
+      const nextConfig: AppConfig = { ...config, skill_categories: nextCategories };
+      await invoke("save_config", { config: nextConfig });
+      setConfig(nextConfig);
+      addToast(
+        t("skills.batchDeleteSuccess").replace("{count}", String(deletedCount)),
+        "success",
+      );
+      await dataReloadData();
+      exitBatchManageMode();
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : String(err), "error");
+    } finally {
+      setBatchDeleting(false);
+    }
+  }, [addToast, config, dataReloadData, exitBatchManageMode, selectedBatchItems, t]);
+
+  // ── 批量标签 handler ──
+  const handleBatchTag = useCallback(async (action: "append" | "override", tags: string[]) => {
+    if (!config || selectedBatchItems.length === 0 || tags.length === 0) return;
+    const nextMetadata = { ...config.skill_metadata };
+    let changedCount = 0;
+    for (const item of selectedBatchItems) {
+      if (item.kind !== "skill" || !item.skill) continue;
+      const meta = nextMetadata[item.skill.instance_id];
+      if (!meta) continue;
+      const currentTags: string[] = meta.tags ?? [];
+      const newTags = action === "override"
+        ? tags
+        : [...new Set([...currentTags, ...tags])];
+      nextMetadata[item.skill.instance_id] = { ...meta, tags: newTags };
+      changedCount++;
+    }
+    const nextConfig: AppConfig = { ...config, skill_metadata: nextMetadata };
+    try {
+      await invoke("save_config", { config: nextConfig });
+      setConfig(nextConfig);
+      addToast(
+        t("skills.batchTagSuccess").replace("{count}", String(changedCount)),
+        "success",
+      );
+      exitBatchManageMode();
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : String(err), "error");
+    }
+  }, [addToast, config, exitBatchManageMode, selectedBatchItems, t]);
+
+  // ── AI 分类 handler ──
+  const handleAiClassify = useCallback(async (skillsToClassify: Skill[]) => {
+    if (!config || skillsToClassify.length === 0) return;
+
+    let configured = translation.isConfigured;
+    if (!configured) {
+      configured = await translation.refreshConfigured();
+    }
+    if (!configured) {
+      addToast(t("skills.llmNotConfigured"), "error");
+      return;
+    }
+
+    const level1Cats = [
+      { id: "prompt", name: "提示增强", description: "用于增强提示词效果的技能，如提示词模板、提示词优化、提示词生成等" },
+      { id: "tool", name: "工具调用", description: "用于调用外部工具/API的技能，如文件操作、命令行调用、API集成等" },
+      { id: "knowledge", name: "知识蒸馏", description: "用于知识管理和蒸馏的技能，如文档处理、知识提取、数据总结等" },
+      { id: "skillflow", name: "Skillflow", description: "用于编排多步骤工作流的技能，如流程自动化、多技能串联等" },
+    ];
+    const level2Values = categoryDimensions.length > 0
+      ? categoryDimensions[0].values
+      : [];
+
+    setAiClassifying(true);
+    setAiClassifyError(null);
+    setAiClassifyProgress({ total: skillsToClassify.length, processed: 0, currentName: "" });
+
+    try {
+      const nextCategories = { ...config.skill_categories };
+      let processed = 0;
+      let classified = 0;
+
+      for (const skill of skillsToClassify) {
+        setAiClassifyProgress({
+          total: skillsToClassify.length,
+          processed,
+          currentName: skill.name,
+        });
+
+        try {
+          const result = await invoke<{ classifications: Array<{ instance_id: string; level1: string; level2: string[] }> }>(
+            "ai_classify_skills",
+            { skillIds: [skill.instance_id], level1Categories: level1Cats, level2Values: level2Values },
+          );
+          if (result.classifications.length > 0) {
+            const c = result.classifications[0];
+            nextCategories[skill.instance_id] = {
+              level1: c.level1,
+              level2: c.level2.length > 0 ? c.level2[0] : undefined,
+            };
+            classified++;
+          }
+        } catch {
+          // Skip individual failures
+        }
+
+        processed++;
+      }
+
+      setAiClassifyProgress({ total: skillsToClassify.length, processed, currentName: "" });
+
+      if (classified > 0) {
+        const nextConfig: AppConfig = { ...config, skill_categories: nextCategories };
+        await invoke("save_config", { config: nextConfig });
+        setConfig(nextConfig);
+        addToast(
+          t("skills.aiClassifySuccess").replace("{count}", String(classified)),
+          "success",
+        );
+      } else {
+        addToast(t("skills.aiClassifyNone"), "info");
+      }
+      setAiClassifying(false);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setAiClassifyError(errorMsg);
+      setAiClassifying(false);
+    }
+  }, [addToast, config, categoryDimensions, translation]);
 
   useEffect(() => {
     if (!isBatchManageMode) {
@@ -1713,12 +2076,12 @@ export function Skills() {
                     fontWeight: 500,
                     color: selectedTags.length > 0 || untaggedOnly || scopeFilter !== "all" ? "var(--primary)" : "var(--foreground)",
                     backgroundColor: "var(--background)",
-                    border: selectedTags.length > 0 || untaggedOnly || scopeFilter !== "all" ? "1px solid rgba(9, 105, 218, 0.4)" : "1px solid var(--border)",
+                    border: selectedTags.length > 0 || untaggedOnly || scopeFilter !== "all" ? "1px solid color-mix(in srgb, var(--primary) 40%, transparent)" : "1px solid var(--border)",
                     borderRadius: "8px",
                     cursor: "pointer",
                     minWidth: "124px",
                     justifyContent: "space-between",
-                    boxShadow: selectedTags.length > 0 || untaggedOnly || scopeFilter !== "all" ? "0 0 0 3px rgba(9, 105, 218, 0.08)" : "none",
+                    boxShadow: selectedTags.length > 0 || untaggedOnly || scopeFilter !== "all" ? "0 0 0 3px color-mix(in srgb, var(--primary) 8%, transparent)" : "none",
                   }}
                 >
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
@@ -1872,18 +2235,42 @@ export function Skills() {
               </div>
             )}
 
-            <div style={{ position: "relative" }}>
+            <div
+              ref={searchContainerRef}
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                width: searchExpanded ? "210px" : "32px",
+                height: "32px",
+                borderRadius: "8px",
+                backgroundColor: searchExpanded ? "var(--background)" : "transparent",
+                border: searchExpanded ? "1px solid var(--ring)" : "1px solid transparent",
+                boxShadow: searchExpanded ? "0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent)" : "none",
+                transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, border-color 0.2s, box-shadow 0.2s",
+                overflow: "hidden",
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                if (!searchExpanded) {
+                  setSearchExpanded(true);
+                }
+              }}
+            >
+              {/* Search icon — always visible */}
               <svg
                 style={{
                   position: "absolute",
-                  left: "12px",
+                  left: "8px",
                   top: "50%",
                   transform: "translateY(-50%)",
                   color: "var(--muted-foreground)",
                   pointerEvents: "none",
+                  flexShrink: 0,
+                  transition: "color 0.15s",
                 }}
-                width="14"
-                height="14"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -1892,6 +2279,7 @@ export function Skills() {
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.3-4.3" />
               </svg>
+              {/* Input — slides in with opacity */}
               <input
                 type="text"
                 placeholder={t("skills.searchPlaceholder")}
@@ -1901,55 +2289,92 @@ export function Skills() {
                   debouncedSearch(e.target.value);
                 }}
                 style={{
-                  width: "200px",
-                  padding: "8px 12px 8px 36px",
+                  width: "100%",
+                  height: "100%",
+                  padding: "0 12px 0 34px",
                   fontSize: "13px",
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--background)",
+                  border: "none",
+                  borderRadius: "0",
+                  backgroundColor: "transparent",
                   color: "var(--foreground)",
                   outline: "none",
-                  transition: "border-color 0.15s, box-shadow 0.15s",
+                  opacity: searchExpanded ? 1 : 0,
+                  pointerEvents: searchExpanded ? "auto" : "none",
+                  transition: "opacity 0.18s ease",
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "var(--ring)";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(9, 105, 218, 0.1)";
+                  e.currentTarget.style.color = "var(--foreground)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border)";
-                  e.currentTarget.style.boxShadow = "none";
+                  if (!e.currentTarget.value) {
+                    setSearchExpanded(false);
+                  }
                 }}
               />
             </div>
 
             {!isBatchManageMode && (
-              <button
-                type="button"
-                onClick={() => {
-                  const targets = sortedUnifiedItems
-                    .filter((it) => it.kind === "skill" && it.skill)
-                    .map((it) => it.skill!) as Skill[];
-                  void handleBatchTranslate(targets);
-                }}
-                disabled={batchTranslating || sortedUnifiedItems.length === 0}
-                title={t("skills.batchTranslate")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 12px",
-                  fontSize: "13px",
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--background)",
-                  color: "var(--foreground)",
-                  cursor: batchTranslating ? "wait" : "pointer",
-                  opacity: batchTranslating ? 0.6 : 1,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {t("skills.batchTranslate")}
-              </button>
+              <div style={{ position: "relative", display: "inline-flex" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAiAssistantDialog(true)}
+                  disabled={batchTranslating || aiClassifying || sortedUnifiedItems.length === 0}
+                  onMouseEnter={(e) => {
+                    setAiAssistantHovered(true);
+                    if (!batchTranslating && !aiClassifying) {
+                      e.currentTarget.style.color = "var(--foreground)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    setAiAssistantHovered(false);
+                    e.currentTarget.style.color = "var(--muted-foreground)";
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "32px",
+                    height: "32px",
+                    color: "var(--muted-foreground)",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: (batchTranslating || aiClassifying) ? "not-allowed" : "pointer",
+                    transition: "color 0.15s, background-color 0.15s",
+                    opacity: (batchTranslating || aiClassifying) ? 0.6 : 1,
+                  }}
+                >
+                  <img
+                    src="/icons/ai.svg"
+                    alt={t("skills.aiAssistant")}
+                    width="17"
+                    height="17"
+                    style={{ display: "block" }}
+                  />
+                </button>
+                {/* Tooltip */}
+                {aiAssistantHovered && !batchTranslating && !aiClassifying && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "-28px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      padding: "3px 8px",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      color: "var(--background)",
+                      backgroundColor: "var(--foreground)",
+                      borderRadius: "4px",
+                      whiteSpace: "nowrap",
+                      pointerEvents: "none",
+                      zIndex: 100,
+                    }}
+                  >
+                    {t("skills.aiAssistant")}
+                  </div>
+                )}
+              </div>
             )}
 
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -1967,8 +2392,9 @@ export function Skills() {
         }
       />
 
+      {/* ── 一级分类栏 ── */}
       <nav
-        aria-label={t("skills.scopeFilterAll")}
+        aria-label={t("skills.categoryAll")}
         style={{
           display: "flex",
           alignItems: "center",
@@ -1977,28 +2403,42 @@ export function Skills() {
           borderBottom: "1px solid var(--border)",
           backgroundColor: "var(--background)",
           flexShrink: 0,
+          flexWrap: "wrap",
         }}
       >
-        {scopeTabs.map((tab) => {
-          const active = scopeFilter === tab.value;
+        {level1CategoryIds.map((catId) => {
+          const catDef = DEFAULT_LEVEL1_CATEGORIES.find((c) => c.id === catId);
+          const label = catDef ? t(catDef.labelKey as TranslationPath) : catId;
+          const count = level1Counts[catId] ?? 0;
+          const active = activeLevel1Category === catId;
+          const iconMap: Record<string, React.ReactNode> = {
+            all: <AllIcon size={15} />,
+            prompt: <PromptIcon size={15} />,
+            tool: <ToolIcon size={15} />,
+            knowledge: <KnowledgeIcon size={15} />,
+            skillflow: <SkillflowIcon size={15} />,
+          };
           return (
             <button
-              key={tab.value}
+              key={catId}
               type="button"
-              onClick={() => setScopeFilter(tab.value)}
+              onClick={() => {
+                setActiveLevel1Category(catId);
+                setActiveLevel2Category(null);
+              }}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "8px",
-                padding: "6px 14px",
+                gap: "6px",
+                padding: "6px 10px",
                 fontSize: "13px",
                 fontWeight: active ? 600 : 500,
-                color: active ? "var(--primary-foreground)" : "var(--muted-foreground)",
-                backgroundColor: active ? "var(--foreground)" : "transparent",
-                border: active ? "none" : "1px solid var(--border)",
-                borderRadius: "999px",
+                color: active ? "var(--foreground)" : "var(--muted-foreground)",
+                backgroundColor: "transparent",
+                border: "none",
+                borderRadius: "8px",
                 cursor: "pointer",
-                transition: "background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease",
+                transition: "color 0.15s ease, background-color 0.15s ease",
                 whiteSpace: "nowrap",
               }}
               onMouseEnter={(e) => {
@@ -2015,28 +2455,143 @@ export function Skills() {
                 }
               }}
             >
-              <span>{tab.label}</span>
+              <span style={{ opacity: active ? 1 : 0.5, display: "inline-flex", transition: "opacity 0.15s" }}>
+                {iconMap[catId] ?? <AllIcon size={15} />}
+              </span>
+              <span>{label}</span>
               <span
                 style={{
                   fontSize: "11px",
                   fontWeight: 500,
-                  opacity: active ? 0.85 : 0.7,
-                  padding: "1px 7px",
-                  borderRadius: "999px",
-                  backgroundColor: active
-                    ? "rgba(255, 255, 255, 0.15)"
-                    : "color-mix(in srgb, var(--foreground) 6%, transparent)",
-                  minWidth: "20px",
-                  textAlign: "center",
-                  lineHeight: 1.4,
+                  opacity: active ? 0.9 : 0.45,
+                  color: active ? "var(--foreground)" : "var(--muted-foreground)",
                 }}
               >
-                {tab.count}
+                {count}
               </span>
             </button>
           );
         })}
+
       </nav>
+
+      {/* ── 二级分类栏 ── */}
+      {currentDimension && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "8px 32px",
+            flexShrink: 0,
+            flexWrap: "wrap",
+          }}
+        >
+          {/* 维度选择下拉 */}
+          {categoryDimensions.length > 1 && (
+            <select
+              value={currentDimension.id}
+              onChange={(e) => {
+                setActiveDimensionId(e.target.value);
+                setActiveLevel2Category(null);
+              }}
+              style={{
+                padding: "4px 10px",
+                fontSize: "12px",
+                border: "1px solid var(--border)",
+                borderRadius: "8px",
+                backgroundColor: "var(--background)",
+                color: "var(--foreground)",
+                cursor: "pointer",
+                outline: "none",
+                fontWeight: 500,
+              }}
+            >
+              {categoryDimensions.map((dim) => (
+                <option key={dim.id} value={dim.id}>{dim.label}</option>
+              ))}
+            </select>
+          )}
+
+          {/* 维度标签（只有一个维度时） */}
+          {categoryDimensions.length === 1 && (
+            <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--muted-foreground)" }}>
+              {currentDimension.label}
+            </span>
+          )}
+
+          {/* 二级分类值 pills */}
+          {currentDimension.values.map((val) => {
+            const active = activeLevel2Category === val;
+            return (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setActiveLevel2Category(active ? null : val)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "12px",
+                  fontWeight: active ? 600 : 400,
+                  color: active ? "var(--primary-foreground)" : "var(--muted-foreground)",
+                  backgroundColor: active ? "var(--foreground)" : "var(--background)",
+                  border: active ? "none" : "1px solid var(--border)",
+                  borderRadius: "999px",
+                  cursor: "pointer",
+                  transition: "background-color 0.15s ease, color 0.15s ease",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.backgroundColor =
+                      "color-mix(in srgb, var(--foreground) 6%, transparent)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.backgroundColor = "var(--background)";
+                  }
+                }}
+              >
+                {val}
+              </button>
+            );
+          })}
+
+          {/* 编辑按钮 */}
+          <button
+            type="button"
+            onClick={() => setShowCategoryEditDialog(true)}
+            style={{
+              padding: "4px 10px",
+              fontSize: "12px",
+              fontWeight: 500,
+              color: "var(--muted-foreground)",
+              backgroundColor: "transparent",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              cursor: "pointer",
+              transition: "background-color 0.15s ease, color 0.15s ease",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--foreground)";
+              e.currentTarget.style.backgroundColor =
+                "color-mix(in srgb, var(--foreground) 6%, transparent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--muted-foreground)";
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            </svg>
+            {t("skills.categoryEdit")}
+          </button>
+        </div>
+      )}
 
       <main
         ref={listContainerRef}
@@ -2154,6 +2709,26 @@ export function Skills() {
 
                 const previewChips = item.previewChips.map((chip) => `#${chip}`);
 
+                // 计算该技能在当前分类系统中的标签
+                const categoryChips = (() => {
+                  const key = item.kind === "skill" && item.skill
+                    ? item.skill.instance_id
+                    : `group:${item.id}`;
+                  const assignment = skillCategories?.[key];
+                  if (!assignment) return [];
+                  const chips: string[] = [];
+                  // 一级分类名称
+                  const l1Def = DEFAULT_LEVEL1_CATEGORIES.find((c) => c.id === assignment.level1);
+                  if (l1Def && assignment.level1 !== "all") {
+                    chips.push(t(l1Def.labelKey as TranslationPath));
+                  }
+                  // 二级分类名称
+                  if (assignment.level2) {
+                    chips.push(assignment.level2);
+                  }
+                  return chips;
+                })();
+
                 return (
                   <SkillCard
                     key={item.key}
@@ -2164,6 +2739,7 @@ export function Skills() {
                     cardTitle={cardTitle}
                     description={description}
                     previewChips={previewChips}
+                    categoryChips={categoryChips}
                     tools={tools}
                     deletingSkill={deletingSkill}
                     deletingGroupId={deletingGroupId}
@@ -2201,7 +2777,8 @@ export function Skills() {
           skillName={toolEditorSkill.name}
           skillDescription={toolEditorSkill.description || t("skills.noDescription")}
           activeTab={skillEditorTab}
-          onTabChange={setSkillEditorTab}
+          availableTabs={["tools", "tags", "category"]}
+          onTabChange={(tab) => setSkillEditorTab(tab)}
           onClose={closeSkillEditor}
           doneLabel={t("common.done")}
           toolsTitle={t("skills.configureToolsTitle")}
@@ -2245,7 +2822,8 @@ export function Skills() {
           skillName={groupEditorItem.title}
           skillDescription={groupEditorItem.skillPackage.package_id}
           activeTab={skillEditorTab}
-          onTabChange={setSkillEditorTab}
+          availableTabs={["tools", "tags", "category"]}
+          onTabChange={(tab) => setSkillEditorTab(tab)}
           onClose={closeSkillEditor}
           doneLabel={t("common.done")}
           toolsTitle={t("skills.groupConfigureToolsTitle")}
@@ -2359,6 +2937,87 @@ export function Skills() {
           t={t}
         />
       )}
+
+      {showCategoryEditDialog && config && (
+        <CategoryEditDialog
+          open={showCategoryEditDialog}
+          config={config}
+          onClose={() => setShowCategoryEditDialog(false)}
+          onSave={async (nextConfig) => {
+            try {
+              await invoke("save_config", { config: nextConfig });
+              setConfig(nextConfig);
+            } catch (err) {
+              addToast(err instanceof Error ? err.message : String(err), "error");
+            }
+          }}
+          t={t}
+        />
+      )}
+
+      {showBatchCategoryDialog && (
+        <BatchCategoryDialog
+          open={showBatchCategoryDialog}
+          count={selectedBatchItems.length}
+          dimensions={categoryDimensions}
+          onClose={() => setShowBatchCategoryDialog(false)}
+          onConfirm={handleBatchCategoryAssign}
+          t={t}
+        />
+      )}
+
+      {showBatchTagDialog && (
+        <BatchTagDialog
+          open={showBatchTagDialog}
+          count={selectedBatchItems.length}
+          existingTags={allExistingTags}
+          onClose={() => setShowBatchTagDialog(false)}
+          onConfirm={handleBatchTag}
+          t={t}
+        />
+      )}
+
+      {showAiAssistantDialog && (
+        <AiAssistantDialog
+          open={showAiAssistantDialog}
+          onClose={() => setShowAiAssistantDialog(false)}
+          onBatchTranslate={() => {
+            const targets = sortedUnifiedItems
+              .filter((it) => it.kind === "skill" && it.skill)
+              .map((it) => it.skill!) as Skill[];
+            void handleBatchTranslate(targets);
+          }}
+          onAiClassify={() => {
+            const targets = sortedUnifiedItems
+              .filter((it) => it.kind === "skill" && it.skill)
+              .map((it) => it.skill!) as Skill[];
+            void handleAiClassify(targets);
+          }}
+          t={t}
+        />
+      )}
+
+      <AiClassifyDialog
+        open={aiClassifying || (!aiClassifying && aiClassifyProgress.processed > 0)}
+        totalCount={aiClassifyProgress.total}
+        processedCount={aiClassifyProgress.processed}
+        currentName={aiClassifyProgress.currentName}
+        classifying={aiClassifying}
+        done={!aiClassifying && aiClassifyProgress.processed > 0 && !aiClassifyError}
+        error={aiClassifyError}
+        onClose={() => {
+          setAiClassifyProgress({ total: 0, processed: 0, currentName: "" });
+          setAiClassifyError(null);
+        }}
+        onRetry={() => {
+          setAiClassifyError(null);
+          const targets = sortedUnifiedItems
+            .filter((it) => it.kind === "skill" && it.skill)
+            .map((it) => it.skill!) as Skill[];
+          void handleAiClassify(targets);
+        }}
+        t={t}
+      />
       </Suspense>
     </div>
   );

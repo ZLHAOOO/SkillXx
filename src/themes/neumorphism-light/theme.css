@@ -1,0 +1,118 @@
+/* ============================================================================
+   轻拟 · 亮色（暖亚麻 · Soft UI）
+   #F7F4EE 暖亚麻白 + 大圆角 28px + 柔阴影 + 顶部 1px 高光
+   ============================================================================ */
+
+[data-theme-style="neumorphism"][data-mode="light"] {
+  /* ── 基础色板（暖亚麻调）── */
+  --background: #F7F4EE;
+  --foreground: #4A453C;
+  --card: #F7F4EE;
+  --card-foreground: #4A453C;
+  --popover: #F7F4EE;
+  --popover-foreground: #4A453C;
+  --primary: #7A6B58;
+  --primary-foreground: #F7F4EE;
+  --secondary: #EDE8DF;
+  --secondary-foreground: #4A453C;
+  --muted: #EDE8DF;
+  --muted-foreground: #8A8378;
+  --accent: #7A6B58;
+  --accent-foreground: #F7F4EE;
+  --destructive: #C4705A;
+  --border: rgba(74, 69, 60, 0.06);
+  --input: rgba(74, 69, 60, 0.10);
+  --ring: #7A6B58;
+
+  /* ── Chart（低饱和暖色）── */
+  --chart-1: #7A6B58;
+  --chart-2: #8A9B8A;
+  --chart-3: #6B8E4E;
+  --chart-4: #C68A3E;
+  --chart-5: #C4705A;
+
+  /* ── Sidebar ── */
+  --sidebar: #F7F4EE;
+  --sidebar-foreground: #4A453C;
+  --sidebar-primary: #7A6B58;
+  --sidebar-primary-foreground: #F7F4EE;
+  --sidebar-accent: #EDE8DF;
+  --sidebar-accent-foreground: #4A453C;
+  --sidebar-border: rgba(74, 69, 60, 0.06);
+  --sidebar-ring: #7A6B58;
+
+  /* ── 语义色 ── */
+  --color-error: #C4705A;
+  --color-error-bg: rgba(196, 112, 90, 0.12);
+  --color-error-border: rgba(196, 112, 90, 0.3);
+  --color-success: #6B8E4E;
+  --color-success-bg: rgba(107, 142, 78, 0.12);
+  --color-success-border: rgba(107, 142, 78, 0.3);
+  --color-warning: #C68A3E;
+  --color-warning-bg: rgba(198, 138, 62, 0.12);
+  --color-warning-border: rgba(198, 138, 62, 0.3);
+  --color-primary-action: #7A6B58;
+  --color-primary-action-hover: #5C4F40;
+
+  /* ── 表面层级 ── */
+  --color-bg: #F7F4EE;
+  --color-bg-elevated: #F7F4EE;
+  --color-bg-sunken: #EDE8DF;
+  --color-sidebar-bg: #F7F4EE;
+  --color-fg: #4A453C;
+  --color-fg-muted: #8A8378;
+  --color-fg-subtle: #A9A296;
+  --color-border-thin: rgba(74, 69, 60, 0.06);
+  --color-accent: #7A6B58;
+  --color-accent-strong: #5C4F40;
+  --color-accent-fg: #F7F4EE;
+  --color-accent-soft: rgba(122, 107, 88, 0.12);
+  --color-card-bg: #F7F4EE;
+  --color-card-border: rgba(74, 69, 60, 0.04);
+  --color-banner-bg: #EDE8DF;
+  --color-banner-border: rgba(74, 69, 60, 0.08);
+  --color-hero-accent-bg: linear-gradient(135deg, #F0EDE7 0%, #EDE8DF 100%);
+  --color-hero-accent-fg: #4A453C;
+
+  /* ── 阴影（暖色底 + 双向柔阴影）── */
+  --shadow-sm: 0 2px 8px rgba(74, 69, 60, 0.06), 0 1px 2px rgba(74, 69, 60, 0.04);
+  --shadow-md: 0 8px 24px rgba(74, 69, 60, 0.08), 0 2px 4px rgba(74, 69, 60, 0.04);
+  --shadow-lg: 0 16px 40px rgba(74, 69, 60, 0.10), 0 4px 8px rgba(74, 69, 60, 0.05);
+  --shadow-inset: inset 0 2px 8px rgba(74, 69, 60, 0.08);
+  --glow-accent: 0 0 0 transparent;
+  --scanline: none;
+  --clip-corner: 0;
+
+  /* ── 字体 ── */
+  --font-display: "Cormorant Garamond", "Source Han Serif SC", "Songti SC", "STSong", var(--app-font-family, serif);
+  --font-body: var(--app-font-family, -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+
+  /* ── 滚动条 ── */
+  --color-scrollbar: rgba(74, 69, 60, 0.15);
+  --color-scrollbar-hover: rgba(74, 69, 60, 0.28);
+  --color-body-bg: #F7F4EE;
+  --radius: 0.875rem;
+}
+
+/* 主内容画布（无卡片特征，仅背景色）*/
+[data-theme-style="neumorphism"][data-mode="light"] .glass-content {
+  background: var(--color-bg-elevated, var(--color-card-bg));
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme-style="neumorphism"][data-mode="light"] .glass-sidebar {
+  background: var(--color-sidebar-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-right: 1px solid var(--color-border);
+}
+
+/* —— 形态 token：轻拟亮 · 大软圆角 28px + pill 按钮 + 暖柔双向阴影 —— */
+[data-theme-style="neumorphism"][data-mode="light"] {
+  --radius-card: 1.75rem;        /* 28px Soft UI 大圆角 */
+  --radius-button: 9999px;       /* pill */
+  --border-w-card: 1px;
+  --shadow-toast: 0 12px 32px rgba(74, 69, 60, 0.12);
+}

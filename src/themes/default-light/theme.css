@@ -1,0 +1,124 @@
+/* ============================================================================
+   Default · Light（macOS Vibrancy 风格 · 浅色）
+   macOS Sonoma 系统设置风格：浅灰画布 + 白底内容卡 + 1px 半透边 + 微阴影
+   参考：system preferences, Things 3, Bear
+   ============================================================================ */
+
+[data-theme-style="default"][data-mode="light"] {
+  /* —— Canvas: 浅灰底（比 #ffffff 暗一档） —— */
+  --background: #ECECEE;
+  --foreground: #1C1C1E;
+  --card: #FFFFFF;
+  --card-foreground: #1C1C1E;
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1C1E;
+
+  /* —— Primary: macOS 蓝（保留，仅作强调） —— */
+  --primary: #007AFF;
+  --primary-foreground: #FFFFFF;
+
+  /* —— Secondary: 浅灰（hover/secondary btn） —— */
+  --secondary: #F2F2F7;
+  --secondary-foreground: #1C1C1E;
+
+  /* —— Muted: 更浅灰（描述文字、placeholder） —— */
+  --muted: #F2F2F7;
+  --muted-foreground: #8E8E93;
+
+  /* —— Accent: 蓝灰 hover 态 —— */
+  --accent: #E5E5EA;
+  --accent-foreground: #1C1C1E;
+
+  /* —— Destructive: macOS 红 —— */
+  --destructive: #FF3B30;
+
+  /* —— Border: 1px 半透（关键 token）—— */
+  --border: rgba(0, 0, 0, 0.08);
+  --input: rgba(0, 0, 0, 0.1);
+  --ring: #007AFF;
+
+  /* —— Chart —— */
+  --chart-1: #007AFF;
+  --chart-2: #34C759;
+  --chart-3: #FF9500;
+  --chart-4: #AF52DE;
+  --chart-5: #FF3B30;
+
+  /* —— Sidebar: 1px 边，无背景（融入画布） —— */
+  --sidebar: transparent;
+  --sidebar-foreground: #1C1C1E;
+  --sidebar-primary: #007AFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(0, 0, 0, 0.04);
+  --sidebar-accent-foreground: #1C1C1E;
+  --sidebar-border: rgba(0, 0, 0, 0.08);
+  --sidebar-ring: #007AFF;
+
+  /* —— Semantic: macOS 语义色 —— */
+  --color-error: #FF3B30;
+  --color-error-bg: rgba(255, 59, 48, 0.08);
+  --color-error-border: rgba(255, 59, 48, 0.3);
+  --color-success: #34C759;
+  --color-success-bg: rgba(52, 199, 89, 0.08);
+  --color-success-border: rgba(52, 199, 89, 0.3);
+  --color-warning: #FF9500;
+  --color-warning-bg: rgba(255, 149, 0, 0.08);
+  --color-warning-border: rgba(255, 149, 0, 0.3);
+  --color-primary-action: #007AFF;
+  --color-primary-action-hover: #0064D2;
+
+  /* —— 原型自有 token —— */
+  --color-bg: #ECECEE;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-sunken: #F2F2F7;
+  --color-sidebar-bg: transparent;
+  --color-fg: #1C1C1E;
+  --color-fg-muted: #8E8E93;
+  --color-fg-subtle: #AEAEB2;
+  --color-border-thin: rgba(0, 0, 0, 0.08);
+  --color-accent: #007AFF;
+  --color-accent-fg: #FFFFFF;
+  --color-accent-soft: rgba(0, 122, 255, 0.08);
+  --color-card-bg: #FFFFFF;
+  --color-card-border: rgba(0, 0, 0, 0.08);
+  --color-banner-bg: rgba(255, 149, 0, 0.1);
+  --color-banner-border: rgba(255, 149, 0, 0.3);
+  --color-banner-fg: #1C1C1E;
+  --color-hero-accent-bg: #007AFF;
+  --color-hero-accent-fg: #FFFFFF;
+
+  /* —— 阴影：极克制（depth 来自背景层）—— */
+  --shadow-sm: 0 0 0 transparent;
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-inset: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --glow-accent: 0 0 0 transparent;
+  --scanline: none;
+  --clip-corner: 0;
+
+  /* —— 字体：衬线 display + 无衬线 body —— */
+  --font-display: "Charter", "Iowan Old Style", "Source Serif Pro", ui-serif, Georgia, "Times New Roman", "Songti SC", serif;
+  --font-body: var(--app-font-family, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif);
+  --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --color-scrollbar: rgba(0, 0, 0, 0.15);
+  --color-scrollbar-hover: rgba(0, 0, 0, 0.3);
+  --color-body-bg: #ECECEE;
+
+  /* —— 主题形态 token（macOS 形态）—— */
+  --radius-card: 0.75rem;       /* Card 12px 圆角，macOS 标准 */
+  --radius-button: 0.5rem;     /* Button 8px 圆角（与 Skills 等页面内联值兼容）*/
+  --border-w-card: 1px;         /* 1px 半透边 */
+  --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 主内容画布（无卡片特征，仅背景色）*/
+[data-theme-style="default"][data-mode="light"] .glass-content {
+  background: var(--color-bg-elevated, #FFFFFF);
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme-style="default"][data-mode="light"] body {
+  background: #ECECEE;
+}

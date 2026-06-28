@@ -3,13 +3,37 @@ import { type TranslationPath } from "@/i18n";
 type TFunction = (key: TranslationPath) => string;
 
 /**
+ * Parse a Tauri 2 invoke error (which may be an Error object with JSON message)
+ * into a structured { kind, info } representation.
+ */
+function parseTauriError(err: unknown): { kind?: string; info?: unknown } | null {
+  let message = "";
+  if (err instanceof Error) {
+    message = err.message;
+  } else if (typeof err === "string") {
+    message = err;
+  } else {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(message);
+    if (typeof parsed === "object" && parsed !== null && "kind" in parsed) {
+      return parsed as { kind?: string; info?: unknown };
+    }
+  } catch {
+    // Not JSON — fall through
+  }
+  return null;
+}
+
+/**
  * Formats LLM/translation errors into user-friendly messages.
  * This function is shared across Skills, Marketplace, Editor, and SkillDetailModal.
  */
 export function formatTranslationError(err: unknown, t: TFunction): string {
-  if (typeof err === "object" && err !== null && "kind" in err) {
-    const e = err as { kind?: string; info?: unknown };
-    switch (e.kind) {
+  const parsed = parseTauriError(err);
+  if (parsed && parsed.kind) {
+    switch (parsed.kind) {
       case "not_configured":
         return t("settings.llmErrorNotConfigured");
       case "bad_base_url":
@@ -21,7 +45,7 @@ export function formatTranslationError(err: unknown, t: TFunction): string {
       case "rate_limited":
         return t("settings.llmErrorRateLimited");
       case "server_error": {
-        const info = e.info as { status?: number } | undefined;
+        const info = parsed.info as { status?: number } | undefined;
         return t("settings.llmErrorServer").replace(
           "{code}",
           String(info?.status ?? 0)
