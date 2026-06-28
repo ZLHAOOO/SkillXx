@@ -150,14 +150,19 @@ pub async fn chat(provider: &LlmProvider, req: ChatRequest) -> Result<String, Ll
             "stream": true,
         })
     } else {
-        serde_json::json!({
+        let mut openai_body = serde_json::json!({
             "model": provider.model,
             "messages": req.messages,
             "temperature": provider.temperature.unwrap_or(DEFAULT_TEMPERATURE),
-            "max_tokens": provider.max_tokens,
+            "max_tokens": provider.max_tokens.unwrap_or(4096),
             "stream": true,
-            "response_format": if req.json_mode { serde_json::json!({"type": "json_object"}) } else { serde_json::json!(null) },
-        })
+        });
+        // Only add response_format for providers that support it;
+        // many OpenAI-compatible providers reject or ignore this field.
+        if req.json_mode {
+            openai_body["response_format"] = serde_json::json!({"type": "json_object"});
+        }
+        openai_body
     };
 
     let response = client
