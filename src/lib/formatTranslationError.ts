@@ -7,6 +7,10 @@ type TFunction = (key: TranslationPath) => string;
  * into a structured { kind, info } representation.
  */
 function parseTauriError(err: unknown): { kind?: string; info?: unknown } | null {
+  // Tauri 2 throws the serialized error object directly (not wrapped in Error)
+  if (typeof err === "object" && err !== null && "kind" in err) {
+    return err as { kind?: string; info?: unknown };
+  }
   let message = "";
   if (err instanceof Error) {
     message = err.message;
