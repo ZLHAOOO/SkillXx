@@ -126,10 +126,16 @@ pub async fn chat(provider: &LlmProvider, req: ChatRequest) -> Result<String, Ll
     } else {
         format!("{base}/chat/completions")
     };
+    // Anthropic uses x-api-key header; OpenAI-compatible providers use Authorization: Bearer
     let auth_header = if provider.api_format == "anthropic" {
-        format!("{}*x-api-key", provider.api_key)
+        None
     } else {
-        format!("Bearer {}", provider.api_key)
+        Some(format!("Bearer {}", provider.api_key))
+    };
+    let anthropic_header = if provider.api_format == "anthropic" {
+        Some(format!("{}", provider.api_key))
+    } else {
+        None
     };
 
     let mut builder = reqwest::Client::builder();
@@ -165,11 +171,19 @@ pub async fn chat(provider: &LlmProvider, req: ChatRequest) -> Result<String, Ll
         openai_body
     };
 
-    let response = client
+    let mut request_builder = client
         .post(&url)
         .header(CONTENT_TYPE, "application/json")
-        .header("Authorization", &auth_header)
-        .header("anthropic-version", "2023-06-01")
+        .header("anthropic-version", "2023-06-01");
+
+    if let Some(auth) = &auth_header {
+        request_builder = request_builder.header("Authorization", auth);
+    }
+    if let Some(anthropic) = &anthropic_header {
+        request_builder = request_builder.header("x-api-key", anthropic);
+    }
+
+    let response = request_builder
         .body(serde_json::to_vec(&body).unwrap())
         .send()
         .await
