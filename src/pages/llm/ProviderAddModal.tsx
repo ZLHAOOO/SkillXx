@@ -118,7 +118,8 @@ export function ProviderAddModal({
       if (entry.id === "__custom__") {
         setForm({ ...emptyForm, api_format: "openai" });
       } else {
-        const apiFormat = entry.base_url_openai ? "openai" : "anthropic";
+        // Auto-detect: prefer anthropic if its URL is set, otherwise openai
+        const apiFormat = entry.base_url_anthropic ? "anthropic" : "openai";
         const url = entry.base_url_openai || entry.base_url_anthropic;
         setForm({
           name: entry.name,

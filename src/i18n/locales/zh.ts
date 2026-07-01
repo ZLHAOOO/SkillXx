@@ -245,6 +245,8 @@ export const zh = {
     aiClassifyProgress: "{processed}/{total}",
     aiClassifySuccess: "AI 分类完成：已分类 {count} 个技能",
     aiClassifyNone: "AI 分类完成：没有技能被分类，请检查分类定义或技能信息",
+    aiClassifyTooltip: "AI 分类中 {current}/{total}",
+    aiClassifyPartial: "{fail} 个技能分类失败，已跳过",
     // 分类系统
     categoryAll: "全部",
     categoryPrompt: "提示增强",

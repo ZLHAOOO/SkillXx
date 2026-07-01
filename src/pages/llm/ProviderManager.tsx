@@ -553,9 +553,22 @@ export function ProviderManager() {
                 <div style={{ display: "flex", gap: "14px", marginBottom: "8px", alignItems: "flex-start" }}>
                   <ProviderLogo name={provider.name} id={provider.id} size={40} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px", flexWrap: "wrap" }}>
                       <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {provider.model}
+                        {provider.model || provider.name}
+                      </span>
+                      <span style={{
+                        fontSize: "10px",
+                        fontWeight: 500,
+                        padding: "1px 6px",
+                        borderRadius: "9999px",
+                        lineHeight: "16px",
+                        flexShrink: 0,
+                        ...(provider.api_format === "anthropic"
+                          ? { backgroundColor: "color-mix(in srgb, #d97757 15%, transparent)", color: "#d97757", border: "1px solid color-mix(in srgb, #d97757 30%, transparent)" }
+                          : { backgroundColor: "color-mix(in srgb, #10a37f 15%, transparent)", color: "#10a37f", border: "1px solid color-mix(in srgb, #10a37f 30%, transparent)" }),
+                      }}>
+                        {provider.api_format === "anthropic" ? "Anthropic" : "OpenAI"}
                       </span>
                     </div>
                     <div style={{ fontSize: "13px", color: "var(--muted-foreground)", lineHeight: 1.8 }}>

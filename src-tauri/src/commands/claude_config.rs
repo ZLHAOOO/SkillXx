@@ -10,20 +10,24 @@ pub fn read_claude_env() -> Result<std::collections::HashMap<String, String>, St
 
 /// Write a provider's config into Claude Code's settings.json env section
 /// Automatically creates a backup before writing.
+/// Claude Code always uses Anthropic protocol, so we always write the
+/// Anthropic URL regardless of the provider's api_format setting.
 #[tauri::command]
 pub fn apply_claude_provider(provider: LlmProviderConfig) -> Result<String, String> {
     use crate::services::claude_config::{ClaudeConfig, ProviderEnvConfig};
-    let config = ClaudeConfig::read()?;
-    let base_url_anthropic = provider.base_url_anthropic.clone();
-    let base_url = if !base_url_anthropic.is_empty() {
-        base_url_anthropic.clone()
+
+    // Claude Code is an Anthropic product — always use Anthropic URL
+    let base_url = if !provider.base_url_anthropic.is_empty() {
+        provider.base_url_anthropic.clone()
     } else {
-        provider.base_url
+        provider.base_url.clone()
     };
+
+    let config = ClaudeConfig::read()?;
     let env_config = ProviderEnvConfig {
         api_key: provider.api_key,
-        base_url,
-        base_url_anthropic,
+        base_url: base_url.clone(),
+        base_url_anthropic: base_url,
         model: provider.model,
     };
     config.apply_provider(&env_config)

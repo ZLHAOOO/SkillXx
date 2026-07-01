@@ -41,7 +41,7 @@ export function AiClassifyDialog({
         backgroundColor: MODAL_OVERLAY_COLOR,
         zIndex: MODAL_LAYER_Z_INDEX,
       }}
-      onClick={classifying ? undefined : onClose}
+      onClick={onClose}
     >
       <div
         style={{
@@ -113,7 +113,7 @@ export function AiClassifyDialog({
               marginBottom: "16px",
             }}
           >
-            正在处理：<span style={{ color: "var(--foreground)", fontWeight: 500 }}>{currentName}</span>
+              正在处理：<span style={{ color: "var(--foreground)", fontWeight: 500 }}>{currentName}</span>
           </div>
         )}
 
@@ -156,21 +156,19 @@ export function AiClassifyDialog({
           <button
             type="button"
             onClick={onClose}
-            disabled={classifying}
             style={{
               padding: "8px 16px",
               fontSize: "13px",
               fontWeight: 500,
               color: "var(--background)",
-              backgroundColor: classifying ? "var(--muted-foreground)" : "var(--foreground)",
+              backgroundColor: "var(--foreground)",
               border: "none",
               borderRadius: "8px",
-              cursor: classifying ? "not-allowed" : "pointer",
-              opacity: classifying ? 0.5 : 1,
+              cursor: "pointer",
               transition: "all 0.15s ease",
             }}
           >
-            {classifying ? "处理中..." : t("common.done")}
+            {classifying ? "后台运行中" : t("common.done")}
           </button>
         </div>
       </div>

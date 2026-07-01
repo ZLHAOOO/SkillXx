@@ -1,6 +1,6 @@
 [package]
 name = "SkillX"
-version = "3.3.0"
+version = "3.3.1"
 description = "A unified desktop application for managing AI coding assistant skills"
 authors = ["ZLHAOOO"]
 edition = "2021"

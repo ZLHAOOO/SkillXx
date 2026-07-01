@@ -254,8 +254,55 @@ impl DetectorService {
         }
 
         saved_config
+            .as_ref()
             .and_then(|config| config.custom_tools.get(tool_id).cloned())
             .map(|custom| Self::detect_custom_tool(tool_id, &custom))
+            .or_else(|| Self::detect_hermes_tool(tool_id, &saved_config))
+    }
+
+    /// Look up a Hermes profile tool by ID (e.g. "hermes-yibao").
+    /// The ID format is "hermes-<profile_dir_name>".
+    fn detect_hermes_tool(tool_id: &str, saved_config: &Option<crate::models::AppConfig>) -> Option<Tool> {
+        let prefix = "hermes-";
+        if !tool_id.starts_with(prefix) {
+            return None;
+        }
+        let profile_name = &tool_id[prefix.len()..];
+        if profile_name.is_empty() {
+            return None;
+        }
+
+        let home_dir = dirs::home_dir()?;
+        let profile_dir = home_dir.join(".hermes").join("profiles").join(profile_name);
+        if !profile_dir.is_dir() {
+            return None;
+        }
+
+        let skills_path = profile_dir.join("skills");
+        let config_path = profile_dir.clone();
+
+        let enabled = saved_config
+            .as_ref()
+            .and_then(|c| c.tools.get(tool_id))
+            .map(|tc| tc.enabled)
+            .unwrap_or(false);
+
+        let tool_config = ToolConfig {
+            enabled,
+            detected: true,
+            skills_path,
+            config_path,
+        };
+
+        Some(Tool {
+            id: tool_id.to_string(),
+            name: format!("Hermes / {}", profile_name),
+            detected: true,
+            cli_available: false,
+            config: tool_config,
+            source: ToolSource::Builtin,
+            icon_path: None,
+        })
     }
 
     fn detect_custom_tool(id: &str, custom: &CustomToolConfig) -> Tool {

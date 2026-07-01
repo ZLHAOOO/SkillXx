@@ -8,26 +8,25 @@ pub fn read_codex_env() -> Result<std::collections::HashMap<String, String>, Str
 
 /// Write a provider's config into Codex's auth.json and config.toml.
 ///
-/// For providers with api_format="openai" (which don't natively speak the
-/// Responses API), a local protocol proxy translates Responses ↔ Chat
-/// Completions. The config.toml base_url points to localhost instead of
-/// the real upstream.
+/// Codex uses the Responses API (OpenAI-compatible). Providers that speak
+/// OpenAI format connect directly; providers that only have an Anthropic URL
+/// are bridged through the local protocol proxy.
 #[tauri::command]
 pub async fn apply_codex_provider(provider: LlmProviderConfig) -> Result<String, String> {
-    // Determine whether we need the protocol proxy.
-    // Providers with api_format="openai" speak Chat Completions, but Codex
-    // only speaks Responses API. The local proxy bridges this gap.
-    let needs_proxy = provider.api_format == "openai"
-        || (provider.api_format.is_empty() && !provider.base_url_openai.is_empty());
+    // Determine the OpenAI-compatible URL
+    let upstream_url = if !provider.base_url_openai.is_empty() {
+        provider.base_url_openai.clone()
+    } else {
+        provider.base_url.clone()
+    };
+
+    // If the provider only has an Anthropic URL, we need the protocol proxy
+    let needs_proxy = upstream_url == provider.base_url
+        && !provider.base_url_anthropic.is_empty()
+        && provider.base_url_openai.is_empty();
 
     if needs_proxy {
-        let upstream_url = if !provider.base_url_openai.is_empty() {
-            provider.base_url_openai.clone()
-        } else {
-            provider.base_url.clone()
-        };
-
-        // Start or update the local proxy
+        // Start the local proxy to bridge Anthropic → Responses API
         let port = crate::services::codex_proxy::ensure_proxy_running(
             upstream_url,
             provider.api_key.clone(),
@@ -35,7 +34,6 @@ pub async fn apply_codex_provider(provider: LlmProviderConfig) -> Result<String,
         )
         .await?;
 
-        // Write config pointing to local proxy
         let proxy_url = crate::services::codex_proxy::proxy_base_url(port);
         crate::services::codex_config::apply_codex_provider(
             &provider.api_key,
@@ -44,16 +42,10 @@ pub async fn apply_codex_provider(provider: LlmProviderConfig) -> Result<String,
             &provider.name,
         )
     } else {
-        // Direct mode: provider speaks Responses API natively
-        let base_url = if !provider.base_url_openai.is_empty() {
-            provider.base_url_openai
-        } else {
-            provider.base_url
-        };
-
+        // Direct connection — OpenAI-compatible provider
         crate::services::codex_config::apply_codex_provider(
             &provider.api_key,
-            &base_url,
+            &upstream_url,
             &provider.model,
             &provider.name,
         )

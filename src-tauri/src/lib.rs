@@ -20,6 +20,7 @@ use commands::{
  refresh_skills, refresh_tools, remove_skill_package, restart_claude_code_cmd, restart_codex_cmd,
  list_claude_backups, restore_claude_backup,
  list_codex_backups, restore_codex_backup, restore_codex_original,
+    list_hermes_backups, read_hermes_env, apply_hermes_provider, clear_hermes_provider, restart_hermes_cmd,
  save_config,
  save_llm_provider, save_llm_provider_multi, save_tool_bindings, save_tools_order,
     scan_existing_skills, search_marketplace, set_tool_enabled, submit_feedback,
@@ -165,6 +166,11 @@ pub fn run() {
             list_codex_backups,
             restore_codex_backup,
             restore_codex_original,
+            read_hermes_env,
+            apply_hermes_provider,
+            clear_hermes_provider,
+            list_hermes_backups,
+            restart_hermes_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

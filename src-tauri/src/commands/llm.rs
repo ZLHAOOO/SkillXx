@@ -100,30 +100,6 @@ pub struct MarketplaceTranslationInput {
     pub content_md: Option<String>,
 }
 
-/// Resolve the effective base URL for a provider config.
-/// Uses the platform-specific URL that matches api_format when available.
-fn resolve_base_url(p: &crate::models::LlmProviderConfig) -> String {
-    match p.api_format.as_str() {
-        "anthropic" => {
-            if !p.base_url_anthropic.trim().is_empty() {
-                p.base_url_anthropic.clone()
-            } else if !p.base_url.trim().is_empty() {
-                p.base_url.clone()
-            } else {
-                p.base_url_anthropic.clone()
-            }
-        }
-        "openai" | _ => {
-            if !p.base_url_openai.trim().is_empty() {
-                p.base_url_openai.clone()
-            } else if !p.base_url.trim().is_empty() {
-                p.base_url.clone()
-            } else {
-                p.base_url_openai.clone()
-            }
-        }
-    }
-}
 
 fn load_provider_or_error() -> Result<LlmProvider, LlmError> {
     let manager = ConfigManager::new();
@@ -132,35 +108,40 @@ fn load_provider_or_error() -> Result<LlmProvider, LlmError> {
     // First, try the dedicated translation_provider_id preference
     if let Some(ref pref_id) = config.preferences.as_ref().and_then(|p| p.translation_provider_id.as_ref()) {
         if let Some(p) = config.llm_providers.iter().find(|p| p.id == **pref_id) {
-            return Ok(LlmProvider {
-                base_url: resolve_base_url(p),
-                api_key: p.api_key.clone(),
-                model: p.model.clone(),
-                temperature: p.temperature,
-                max_tokens: p.max_tokens,
-                timeout_secs: p.timeout_secs,
-                api_format: p.api_format.clone(),
-            });
+            return Ok(resolve_to_openai_provider(p));
         }
     }
 
     // Fallback to active_provider_id (the provider currently selected in the LLM page)
     if let Some(ref active_id) = config.active_provider_id {
         if let Some(p) = config.llm_providers.iter().find(|p| p.id == **active_id) {
-            return Ok(LlmProvider {
-                base_url: resolve_base_url(p),
-                api_key: p.api_key.clone(),
-                model: p.model.clone(),
-                temperature: p.temperature,
-                max_tokens: p.max_tokens,
-                timeout_secs: p.timeout_secs,
-                api_format: p.api_format.clone(),
-            });
+            return Ok(resolve_to_openai_provider(p));
         }
     }
 
     // Fallback to legacy llm_provider
     config.llm_provider.ok_or(LlmError::NotConfigured)
+}
+
+/// Resolve a multi-provider config into a LlmProvider suitable for SkillX's
+/// own AI features (translation, classification, etc.).
+/// SkillX always uses the OpenAI-compatible endpoint regardless of the
+/// provider's api_format setting.
+fn resolve_to_openai_provider(p: &crate::models::LlmProviderConfig) -> LlmProvider {
+    let base_url = if !p.base_url_openai.trim().is_empty() {
+        p.base_url_openai.clone()
+    } else {
+        p.base_url.clone()
+    };
+    LlmProvider {
+        base_url,
+        api_key: p.api_key.clone(),
+        model: p.model.clone(),
+        temperature: p.temperature,
+        max_tokens: p.max_tokens,
+        timeout_secs: p.timeout_secs,
+        api_format: "openai".to_string(),
+    }
 }
 
 fn find_skill_by_instance(skills: &[Skill], instance_id: &str) -> Option<Skill> {
@@ -573,6 +554,10 @@ pub struct BatchTranslationResult {
 }
 
 const BATCH_PROGRESS_EVENT: &str = "llm:batch-progress";
+const BATCH_COMPLETE_EVENT: &str = "llm:batch-complete";
+const CLASSIFY_PROGRESS_EVENT: &str = "llm:classify-progress";
+const CLASSIFY_ITEM_PROGRESS_EVENT: &str = "llm:classify-item-progress";
+const CLASSIFY_COMPLETE_EVENT: &str = "llm:classify-complete";
 
 /// 根据 provider 类型确定并发数
 fn determine_concurrency(provider: &LlmProvider) -> usize {
@@ -697,7 +682,18 @@ pub async fn translate_skills_batch(
         }
     }
 
-    Ok(BatchTranslationResult { succeeded, failed, results })
+    let result = BatchTranslationResult { succeeded, failed, results };
+
+    let _ = app.emit(
+        BATCH_COMPLETE_EVENT,
+        serde_json::json!({
+            "succeeded": result.succeeded.len(),
+            "failed": result.failed.len(),
+            "error": result.failed.iter().map(|f| f.reason.clone()).collect::<Vec<_>>().join("; "),
+        }),
+    );
+
+    Ok(result)
 }
 
 #[tauri::command]
@@ -736,24 +732,13 @@ fn lookup_skill_cache(
 }
 
 #[tauri::command]
-pub fn get_cached_skill_translations(
+pub async fn get_cached_skill_translations(
     instance_ids: Vec<String>,
     target_lang: String,
 ) -> Result<Vec<CachedTranslationEntry>, String> {
+    let provider = load_provider_or_error().map_err(|e| e.to_string())?;
     let manager = ConfigManager::new();
     let config = manager.load()?;
-    let provider = match config.llm_provider.clone() {
-        Some(p) => p,
-        None => {
-            return Ok(instance_ids
-                .into_iter()
-                .map(|id| CachedTranslationEntry {
-                    key: id,
-                    translation: None,
-                })
-                .collect());
-        }
-    };
     let skills = ScannerService::scan_scoped_skills(&config)?;
     let cache = TranslationCache::new();
     let entries = instance_ids
@@ -773,24 +758,13 @@ pub fn get_cached_skill_translations(
 }
 
 #[tauri::command]
-pub fn get_cached_marketplace_translations(
+pub async fn get_cached_marketplace_translations(
     inputs: Vec<MarketplaceTranslationInput>,
     target_lang: String,
 ) -> Result<Vec<CachedTranslationEntry>, String> {
+    let provider = load_provider_or_error().map_err(|e| e.to_string())?;
     let manager = ConfigManager::new();
     let config = manager.load()?;
-    let provider = match config.llm_provider.clone() {
-        Some(p) => p,
-        None => {
-            return Ok(inputs
-                .into_iter()
-                .map(|input| CachedTranslationEntry {
-                    key: input.id,
-                    translation: None,
-                })
-                .collect());
-        }
-    };
     let installed_skills = ScannerService::scan_scoped_skills(&config).unwrap_or_default();
     let cache = TranslationCache::new();
     let entries = inputs
@@ -842,17 +816,12 @@ pub async fn translate_text_content(
 }
 
 #[tauri::command]
-pub fn get_cached_text_translation(
+pub async fn get_cached_text_translation(
     label: String,
     content: String,
     target_lang: String,
 ) -> Result<Option<SkillTranslationOutput>, String> {
-    let manager = ConfigManager::new();
-    let config = manager.load()?;
-    let provider = match config.llm_provider {
-        Some(p) => p,
-        None => return Ok(None),
-    };
+    let provider = load_provider_or_error().map_err(|e| e.to_string())?;
     let cache = TranslationCache::new();
     let key = CacheKey {
         base_url: &provider.base_url,
@@ -1169,7 +1138,18 @@ pub async fn translate_skill_names_batch(
         return Err(format!("Failed to save config: {}", e));
     }
 
-    Ok(BatchTranslationResult { succeeded, failed, results })
+    let result = BatchTranslationResult { succeeded, failed, results };
+
+    let _ = app.emit(
+        BATCH_COMPLETE_EVENT,
+        serde_json::json!({
+            "succeeded": result.succeeded.len(),
+            "failed": result.failed.len(),
+            "error": result.failed.iter().map(|f| f.reason.clone()).collect::<Vec<_>>().join("; "),
+        }),
+    );
+
+    Ok(result)
 }
 
 /// AI classification result for a single skill
@@ -1194,6 +1174,17 @@ struct ClassifyItem {
     pub description: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ClassifyItemProgress {
+    pub current: usize,
+    pub total: usize,
+    pub instance_id: String,
+    pub skill_name: String,
+    pub status: String, // "classified" | "failed"
+    pub level1: Option<String>,
+    pub level2: Option<Vec<String>>,
+}
+
 /// Category definition sent to LLM
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CategoryDef {
@@ -1202,12 +1193,15 @@ pub struct CategoryDef {
     pub description: String,
 }
 
-/// Batch classify skills using LLM based on category definitions
+/// Batch classify skills using LLM based on category definitions.
+/// Processes items one at a time, emitting progress events per item.
+/// Failed items do not block subsequent items.
 #[tauri::command]
 pub async fn ai_classify_skills(
     skill_ids: Vec<String>,
     level1_categories: Vec<CategoryDef>,
     level2_values: Vec<String>,
+    app: AppHandle,
 ) -> Result<BatchClassificationResult, String> {
     let provider = load_provider_or_error().map_err(|e| e.to_string())?;
     let manager = ConfigManager::new();
@@ -1229,97 +1223,137 @@ pub async fn ai_classify_skills(
         .collect();
 
     if items.is_empty() {
+        let _ = app.emit(
+            CLASSIFY_COMPLETE_EVENT,
+            serde_json::json!({ "total": 0, "classified": 0, "classifications": [] }),
+        );
         return Ok(BatchClassificationResult { classifications: vec![] });
     }
 
-    // Build prompt
+    let total = items.len();
+    let _ = app.emit(
+        CLASSIFY_PROGRESS_EVENT,
+        serde_json::json!({ "current": 0, "total": total, "status": "started" }),
+    );
+
+    // Build shared prompt parts (categories don't change between items)
     let level1_json = serde_json::to_string(&level1_categories)
         .map_err(|e| format!("Failed to serialize categories: {e}"))?;
     let level2_json = serde_json::to_string(&level2_values)
         .map_err(|e| format!("Failed to serialize level2 values: {e}"))?;
-    let items_json = serde_json::to_string(&items)
-        .map_err(|e| format!("Failed to serialize items: {e}"))?;
 
-    let format_hint = r#"{
-  "classifications": [
-    {
-      "instance_id": "the skill's instance_id",
-      "level1": "one of the level1 category ids",
-      "level2": ["array of level2 value names that apply, can be multiple"]
-    }
-  ]
-}"#;
+    let format_hint = r#"{"instance_id":"the skill's instance_id","level1":"one of the level1 category ids","level2":["array of level2 value names"]}"#;
 
-    let prompt = format!(
-        r#"You are a skill classification expert. Your task is to classify each skill into categories based on its name and description.
+    let mut classifications: Vec<SkillClassificationResult> = Vec::new();
 
-## Level 1 Categories (choose exactly one per skill):
+    for (idx, item) in items.iter().enumerate() {
+        let current = idx + 1;
+
+        // Build single-item prompt
+        let item_json = serde_json::to_string(&std::slice::from_ref(item))
+            .map_err(|e| format!("Failed to serialize item: {e}"))?;
+
+        let prompt = format!(
+            r#"Classify this skill into categories.
+
+## Level 1 Categories (choose exactly one):
 {}
 
-## Level 2 Values (choose one or more per skill, a skill can belong to multiple categories):
+## Level 2 Values (choose one or more, can be multiple):
 {}
 
-## Skills to classify:
+## Skill to classify:
 {}
 
 ## Instructions:
-1. For each skill, select the most appropriate Level 1 category based on the skill's primary purpose.
-2. For Level 2, select ALL applicable categories. A skill can belong to multiple Level 2 categories.
-   - Example: A "PPT generation" skill might belong to both "商业运营" and "教育学习" and "办公协作"
-   - Example: A "document writing" skill might belong to both "内容创意" and "办公协作"
-3. Use the exact category names/IDs provided above. Do not invent new categories.
-4. Respond ONLY with valid JSON in the following format:
-{}"#,
-        level1_json, level2_json, items_json, format_hint
+1. Select the most appropriate Level 1 category.
+2. For Level 2, select ALL applicable values.
+3. Respond ONLY with valid JSON: {}"#,
+            level1_json, level2_json, item_json, format_hint
+        );
+
+        let messages = vec![
+            ChatMessage {
+                role: "system",
+                content: "You are a professional skill classification system. Always respond with valid JSON only.".to_string(),
+            },
+            ChatMessage {
+                role: "user",
+                content: prompt,
+            },
+        ];
+
+        let req = ChatRequest {
+            messages,
+            json_mode: true,
+        };
+
+        let mut level1_result: Option<String> = None;
+        let mut level2_result: Option<Vec<String>> = None;
+
+        match chat(&provider, req).await {
+            Ok(response) => {
+                let json_str = extract_json_block(&response);
+                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(json_str) {
+                    level1_result = parsed.get("level1").and_then(|v| v.as_str()).map(String::from);
+                    level2_result = parsed.get("level2").and_then(|v| v.as_array()).map(|arr| {
+                        arr.iter().filter_map(|v| v.as_str().map(String::from)).collect()
+                    });
+                }
+            }
+            Err(_) => {
+                // Individual failure - continue with next item
+            }
+        }
+
+        let classified = level1_result.is_some() && !level1_result.as_ref().unwrap().is_empty();
+
+        if classified {
+            let result = SkillClassificationResult {
+                instance_id: item.instance_id.clone(),
+                level1: level1_result.unwrap(),
+                level2: level2_result.unwrap_or_default(),
+            };
+            classifications.push(result.clone());
+
+            let _ = app.emit(
+                CLASSIFY_ITEM_PROGRESS_EVENT,
+                ClassifyItemProgress {
+                    current,
+                    total,
+                    instance_id: item.instance_id.clone(),
+                    skill_name: item.name.clone(),
+                    status: "classified".to_string(),
+                    level1: Some(result.level1),
+                    level2: Some(result.level2),
+                },
+            );
+        } else {
+            let _ = app.emit(
+                CLASSIFY_ITEM_PROGRESS_EVENT,
+                ClassifyItemProgress {
+                    current,
+                    total,
+                    instance_id: item.instance_id.clone(),
+                    skill_name: item.name.clone(),
+                    status: "failed".to_string(),
+                    level1: None,
+                    level2: None,
+                },
+            );
+        }
+    }
+
+    let result = BatchClassificationResult { classifications };
+
+    let _ = app.emit(
+        CLASSIFY_COMPLETE_EVENT,
+        serde_json::json!({
+            "total": total,
+            "classified": result.classifications.len(),
+            "classifications": result.classifications,
+        }),
     );
 
-    let messages = vec![
-        ChatMessage {
-            role: "system",
-            content: "You are a professional skill classification system. Always respond with valid JSON only.".to_string(),
-        },
-        ChatMessage {
-            role: "user",
-            content: prompt,
-        },
-    ];
-
-    let req = ChatRequest {
-        messages,
-        json_mode: true,
-    };
-
-    let response = chat(&provider, req).await.map_err(|e| format!("LLM request failed: {e}"))?;
-
-    let json_str = extract_json_block(&response);
-    let parsed: serde_json::Value = serde_json::from_str(json_str)
-        .map_err(|e| format!("Failed to parse LLM response: {e}"))?;
-
-    let classifications: Vec<SkillClassificationResult> = parsed
-        .get("classifications")
-        .and_then(|arr| arr.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|item| {
-                    let instance_id = item.get("instance_id")?.as_str()?.to_string();
-                    let level1 = item.get("level1")?.as_str()?.to_string();
-                    let level2: Vec<String> = item
-                        .get("level2")
-                        .and_then(|v| v.as_array())
-                        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
-                        .unwrap_or_default();
-                    if instance_id.is_empty() || level1.is_empty() {
-                        return None;
-                    }
-                    Some(SkillClassificationResult {
-                        instance_id,
-                        level1,
-                        level2,
-                    })
-                })
-                .collect()
-        })
-        .unwrap_or_default();
-
-    Ok(BatchClassificationResult { classifications })
+    Ok(result)
 }

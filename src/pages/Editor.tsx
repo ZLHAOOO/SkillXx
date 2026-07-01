@@ -39,6 +39,9 @@ export function EditorPage() {
   const [fileTranslation, setFileTranslation] = useState<SkillTranslationOutput | null>(null);
   const [fileViewMode, setFileViewMode] = useState<"original" | "translated">("original");
   const [viewMode, setViewMode] = useState<"original" | "translated">("original");
+  const userToggledViewMode = useRef(false);
+  const prevTranslatedResultRef = useRef<SkillTranslationOutput | null>(null);
+  const prevTranslationKeyRef = useRef<string | null>(null);
   const [skillFileProgress, setSkillFileProgress] = useState<SkillFileTranslationProgress | null>(null);
   const [translationNotice, setTranslationNotice] = useState<string | null>(null);
 
@@ -244,6 +247,7 @@ export function EditorPage() {
   ]);
 
   const toggleView = useCallback(() => {
+    userToggledViewMode.current = true;
     if (isSkillMdFile && translationKey) {
       setViewMode(viewMode === "translated" ? "original" : "translated");
       return;
@@ -256,6 +260,30 @@ export function EditorPage() {
     setFileTranslation(null);
     setFileViewMode("original");
   }, [selectedPath, language]);
+
+  // Auto-switch to translated view when a skill translation becomes available.
+  // Resets when the user switches to a different skill file or changes language.
+  useEffect(() => {
+    // Reset tracking on file/language change
+    if (translationKey !== prevTranslationKeyRef.current) {
+      userToggledViewMode.current = false;
+      prevTranslatedResultRef.current = null;
+      prevTranslationKeyRef.current = translationKey;
+    }
+
+    // Respect user's manual toggle
+    if (userToggledViewMode.current) return;
+
+    const hadResult = prevTranslatedResultRef.current?.content_md != null;
+    const hasResult = translatedResult?.content_md != null;
+
+    // Auto-switch when translation first becomes available
+    if (!hadResult && hasResult && viewMode === "original") {
+      setViewMode("translated");
+    }
+
+    prevTranslatedResultRef.current = translatedResult;
+  }, [translatedResult, viewMode, translationKey, selectedPath, language]);
 
   // Preload cached file translation when content available
   useEffect(() => {

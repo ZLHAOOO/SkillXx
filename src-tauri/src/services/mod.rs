@@ -4,6 +4,7 @@ pub mod cache;
 pub mod claude_config;
 pub mod codex_config;
 pub mod codex_proxy;
+pub mod hermes_config;
 pub mod config_manager;
 pub mod clawhub;
 pub mod detector;

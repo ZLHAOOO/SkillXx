@@ -6,6 +6,7 @@ pub mod config;
 pub mod editors;
 pub mod feedback;
 pub mod files;
+pub mod hermes_config;
 pub mod llm;
 pub mod llm_providers;
 pub mod marketplace;
@@ -35,6 +36,7 @@ pub use llm_providers::{
 };
 pub use claude_config::{apply_claude_provider, clear_claude_provider, read_claude_env, restart_claude_code_cmd, write_claude_env, list_claude_backups, restore_claude_backup};
 pub use codex_config::{apply_codex_provider, clear_codex_provider, read_codex_env, restart_codex_cmd, list_codex_backups, restore_codex_backup, restore_codex_original};
+pub use hermes_config::{apply_hermes_provider, clear_hermes_provider, list_hermes_backups, read_hermes_env, restart_hermes_cmd};
 pub use marketplace::{
     check_marketplace_updates_if_stale, fetch_marketplace_skill_descriptions,
     fetch_marketplace_skills, fetch_skill_file_content, fetch_skill_files, get_marketplace_sources,

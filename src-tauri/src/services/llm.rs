@@ -1,5 +1,5 @@
 use crate::models::LlmProvider;
-use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
+use reqwest::header::CONTENT_TYPE;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -173,8 +173,11 @@ pub async fn chat(provider: &LlmProvider, req: ChatRequest) -> Result<String, Ll
 
     let mut request_builder = client
         .post(&url)
-        .header(CONTENT_TYPE, "application/json")
-        .header("anthropic-version", "2023-06-01");
+        .header(CONTENT_TYPE, "application/json");
+
+    if provider.api_format == "anthropic" {
+        request_builder = request_builder.header("anthropic-version", "2023-06-01");
+    }
 
     if let Some(auth) = &auth_header {
         request_builder = request_builder.header("Authorization", auth);

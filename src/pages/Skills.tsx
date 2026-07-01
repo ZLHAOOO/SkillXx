@@ -3,6 +3,7 @@ import { useDebouncedCallback } from "use-debounce";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { confirm, open } from "@tauri-apps/plugin-dialog";
+import { listen } from "@tauri-apps/api/event";
 import { ToastContainer, useToast } from "@/components/ui/toast";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -17,6 +18,7 @@ import {
   InstalledSkillPackage,
   ProjectBinding,
   Skill,
+  SkillCategoryAssignment,
   SkillCategoryDimension,
   Tool,
   UserPreferences,
@@ -153,6 +155,7 @@ export function Skills() {
   const navigate = useNavigate();
   const translation = useSkillTranslation();
   const [batchTranslating, setBatchTranslating] = useState(false);
+  const [batchTranslateProgress, setBatchTranslateProgress] = useState({ total: 0, current: 0 });
   const [skills, setSkills] = useState<Skill[]>([]);
   const [skillPackages, setSkillPackages] = useState<InstalledSkillPackage[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
@@ -205,6 +208,7 @@ export function Skills() {
   const [showBatchTagDialog, setShowBatchTagDialog] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [showAiAssistantDialog, setShowAiAssistantDialog] = useState(false);
+  const [showAiClassifyDialog, setShowAiClassifyDialog] = useState(false);
   const [aiClassifying, setAiClassifying] = useState(false);
   const [aiClassifyProgress, setAiClassifyProgress] = useState({ total: 0, processed: 0, currentName: "" });
   const [aiClassifyError, setAiClassifyError] = useState<string | null>(null);
@@ -678,14 +682,17 @@ export function Skills() {
       const confirmed = await confirm(confirmMessage, { title: t("skills.batchTranslate") });
       if (!confirmed) return;
 
-      // Determine target language for batch translate (use display preference, fallback to UI language)
       const translateTargetLang = nameLang !== "original" ? nameLang : language;
+      const ids = pending.map((s) => s.instance_id);
 
       setBatchTranslating(true);
+      setBatchTranslateProgress({ total: ids.length, current: 0 });
+
       let progressToastId: string | undefined;
       try {
-        const ids = pending.map((s) => s.instance_id);
-        const result = await translation.translateBatch(ids, translateTargetLang, (p) => {
+        // Fire-and-forget: backend handles concurrent translation
+        const resultPromise = translation.translateBatch(ids, translateTargetLang, (p) => {
+          setBatchTranslateProgress({ total: p.total, current: p.current });
           const progressMsg = t("skills.batchTranslateProgress")
             .replace("{current}", String(p.current))
             .replace("{total}", String(p.total))
@@ -697,6 +704,9 @@ export function Skills() {
             updateToast(progressToastId, progressMsg);
           }
         });
+
+        // Wait for completion to refresh data
+        const result = await resultPromise;
 
         if (progressToastId) {
           removeToast(progressToastId);
@@ -712,9 +722,10 @@ export function Skills() {
           fail > 0 ? "error" : "success",
         );
 
-        // Refresh config so UI reflects new translations
+        // Refresh config and skills data so UI reflects new translations
         const latestConfig = await invoke<AppConfig>("get_config");
         setConfig(latestConfig);
+        await dataReloadData();
       } catch (err) {
         if (progressToastId) {
           removeToast(progressToastId);
@@ -726,9 +737,10 @@ export function Skills() {
         );
       } finally {
         setBatchTranslating(false);
+        setBatchTranslateProgress({ total: 0, current: 0 });
       }
     },
-    [translation, language, addToast, updateToast, removeToast, t, skillMetadata, config],
+    [addToast, config, language, skillMetadata, t, translation, updateToast, removeToast, dataReloadData]
   );
 
   const handleDelete = actionHandleDelete;
@@ -1492,58 +1504,104 @@ export function Skills() {
     setAiClassifyError(null);
     setAiClassifyProgress({ total: skillsToClassify.length, processed: 0, currentName: "" });
 
-    try {
-      const nextCategories = { ...config.skill_categories };
-      let processed = 0;
-      let classified = 0;
+    // Accumulate results as they arrive
+    const classifiedMap: Record<string, SkillCategoryAssignment> = {};
+    let classifiedCount = 0;
+    let failedCount = 0;
 
-      for (const skill of skillsToClassify) {
+    try {
+      const allIds = skillsToClassify.map((s) => s.instance_id);
+
+      // Listen for per-item progress events
+      const unlistenProgress = await listen<{
+        current: number;
+        total: number;
+        instance_id: string;
+        skill_name: string;
+        status: string;
+        level1?: string;
+        level2?: string[];
+      }>("llm:classify-item-progress", (event) => {
+        const p = event.payload;
         setAiClassifyProgress({
-          total: skillsToClassify.length,
-          processed,
-          currentName: skill.name,
+          total: p.total,
+          processed: p.current,
+          currentName: p.skill_name,
         });
 
-        try {
-          const result = await invoke<{ classifications: Array<{ instance_id: string; level1: string; level2: string[] }> }>(
-            "ai_classify_skills",
-            { skillIds: [skill.instance_id], level1Categories: level1Cats, level2Values: level2Values },
-          );
-          if (result.classifications.length > 0) {
-            const c = result.classifications[0];
-            nextCategories[skill.instance_id] = {
-              level1: c.level1,
-              level2: c.level2.length > 0 ? c.level2[0] : undefined,
-            };
-            classified++;
-          }
-        } catch {
-          // Skip individual failures
+        if (p.status === "classified" && p.level1) {
+          classifiedMap[p.instance_id] = {
+            level1: p.level1,
+            level2: p.level2 && p.level2.length > 0 ? p.level2[0] : null,
+          };
+          classifiedCount++;
+
+          // Save incrementally to config so UI updates in real-time
+          const nextCategories = { ...config.skill_categories, ...classifiedMap };
+          const nextConfig: AppConfig = { ...config, skill_categories: nextCategories };
+          // Fire-and-forget save; ignore failure for individual saves
+          void invoke("save_config", { config: nextConfig }).then(() => {
+            setConfig(nextConfig);
+          });
+        } else {
+          failedCount++;
         }
+      });
 
-        processed++;
-      }
+      // Listen for final completion event
+      const completePromise = new Promise<{ total: number; classified: number }>((resolve) => {
+        void listen<{ total: number; classified: number }>("llm:classify-complete", (event) => {
+          unlistenProgress();
+          resolve(event.payload);
+        });
+      });
 
-      setAiClassifyProgress({ total: skillsToClassify.length, processed, currentName: "" });
+      // Invoke backend (fire-and-forget from UI perspective)
+      await invoke("ai_classify_skills", {
+        skillIds: allIds,
+        level1Categories: level1Cats,
+        level2Values: level2Values,
+      });
 
-      if (classified > 0) {
+      // Wait for completion
+      const completeResult = await completePromise;
+
+      setAiClassifyProgress({ total: completeResult.total, processed: completeResult.total, currentName: "" });
+
+      // Final save with all results (incremental saves may have already updated)
+      if (Object.keys(classifiedMap).length > 0) {
+        const nextCategories = { ...config.skill_categories, ...classifiedMap };
         const nextConfig: AppConfig = { ...config, skill_categories: nextCategories };
         await invoke("save_config", { config: nextConfig });
         setConfig(nextConfig);
         addToast(
-          t("skills.aiClassifySuccess").replace("{count}", String(classified)),
+          t("skills.aiClassifySuccess").replace("{count}", String(classifiedCount)),
           "success",
         );
       } else {
         addToast(t("skills.aiClassifyNone"), "info");
       }
-      setAiClassifying(false);
+
+      if (failedCount > 0 && classifiedCount > 0) {
+        addToast(
+          t("skills.aiClassifyPartial").replace("{fail}", String(failedCount)),
+          "info",
+        );
+      }
+
+      setShowAiClassifyDialog(true);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       setAiClassifyError(errorMsg);
+      setShowAiClassifyDialog(true);
+      addToast(
+        t("skills.aiClassifyError").replace("{error}", errorMsg),
+        "error",
+      );
+    } finally {
       setAiClassifying(false);
     }
-  }, [addToast, config, categoryDimensions, translation]);
+  }, [addToast, config, categoryDimensions, t, translation]);
 
   useEffect(() => {
     if (!isBatchManageMode) {
@@ -2048,6 +2106,13 @@ export function Skills() {
   }
 
   return (
+    <>
+      <style>{`
+        @keyframes ai-btn-pulse {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+      `}</style>
     <div style={{
       flex: 1,
       display: "flex",
@@ -2314,21 +2379,15 @@ export function Skills() {
             </div>
 
             {!isBatchManageMode && (
-              <div style={{ position: "relative", display: "inline-flex" }}>
+              <div
+                style={{ position: "relative", display: "inline-flex" }}
+                onMouseEnter={() => setAiAssistantHovered(true)}
+                onMouseLeave={() => setAiAssistantHovered(false)}
+              >
                 <button
                   type="button"
                   onClick={() => setShowAiAssistantDialog(true)}
                   disabled={batchTranslating || aiClassifying || sortedUnifiedItems.length === 0}
-                  onMouseEnter={(e) => {
-                    setAiAssistantHovered(true);
-                    if (!batchTranslating && !aiClassifying) {
-                      e.currentTarget.style.color = "var(--foreground)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    setAiAssistantHovered(false);
-                    e.currentTarget.style.color = "var(--muted-foreground)";
-                  }}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -2341,7 +2400,8 @@ export function Skills() {
                     borderRadius: "8px",
                     cursor: (batchTranslating || aiClassifying) ? "not-allowed" : "pointer",
                     transition: "color 0.15s, background-color 0.15s",
-                    opacity: (batchTranslating || aiClassifying) ? 0.6 : 1,
+                    opacity: aiClassifying ? undefined : (batchTranslating ? 0.6 : 1),
+                    animation: aiClassifying ? "ai-btn-pulse 1.2s ease-in-out infinite" : undefined,
                   }}
                 >
                   <img
@@ -2353,7 +2413,7 @@ export function Skills() {
                   />
                 </button>
                 {/* Tooltip */}
-                {aiAssistantHovered && !batchTranslating && !aiClassifying && (
+                {aiAssistantHovered && (
                   <div
                     style={{
                       position: "absolute",
@@ -2371,7 +2431,43 @@ export function Skills() {
                       zIndex: 100,
                     }}
                   >
-                    {t("skills.aiAssistant")}
+                    {aiClassifying
+                      ? t("skills.aiClassifyTooltip")
+                          .replace("{current}", String(aiClassifyProgress.processed))
+                          .replace("{total}", String(aiClassifyProgress.total))
+                      : batchTranslating
+                        ? t("skills.batchTranslateProgress")
+                            .replace("{current}", String(batchTranslateProgress.current))
+                            .replace("{total}", String(batchTranslateProgress.total))
+                            .replace("{name}", "")
+                        : t("skills.aiAssistant")}
+                  </div>
+                )}
+                {/* Progress bar under AI assistant button */}
+                {(batchTranslating || aiClassifying) && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "-4px",
+                      left: "2px",
+                      right: "2px",
+                      height: "3px",
+                      backgroundColor: "var(--secondary)",
+                      borderRadius: "2px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: batchTranslating
+                          ? `${batchTranslateProgress.total > 0 ? Math.round((batchTranslateProgress.current / batchTranslateProgress.total) * 100) : 0}%`
+                          : `${aiClassifyProgress.total > 0 ? Math.round((aiClassifyProgress.processed / aiClassifyProgress.total) * 100) : 0}%`,
+                        height: "100%",
+                        backgroundColor: "var(--primary)",
+                        borderRadius: "2px",
+                        transition: "width 0.3s ease",
+                      }}
+                    />
                   </div>
                 )}
               </div>
@@ -2998,18 +3094,16 @@ export function Skills() {
       )}
 
       <AiClassifyDialog
-        open={aiClassifying || (!aiClassifying && aiClassifyProgress.processed > 0)}
+        open={showAiClassifyDialog}
         totalCount={aiClassifyProgress.total}
         processedCount={aiClassifyProgress.processed}
         currentName={aiClassifyProgress.currentName}
         classifying={aiClassifying}
         done={!aiClassifying && aiClassifyProgress.processed > 0 && !aiClassifyError}
         error={aiClassifyError}
-        onClose={() => {
-          setAiClassifyProgress({ total: 0, processed: 0, currentName: "" });
-          setAiClassifyError(null);
-        }}
+        onClose={() => setShowAiClassifyDialog(false)}
         onRetry={() => {
+          setShowAiClassifyDialog(false);
           setAiClassifyError(null);
           const targets = sortedUnifiedItems
             .filter((it) => it.kind === "skill" && it.skill)
@@ -3020,6 +3114,7 @@ export function Skills() {
       />
       </Suspense>
     </div>
+    </>
   );
 }
 

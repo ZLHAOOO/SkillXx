@@ -1,8 +1,10 @@
 use crate::models::auth::AuthSession;
 use crate::models::marketplace::{MarketplaceSource, SourceType};
+use dirs::home_dir;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserPreferences {
@@ -358,7 +360,7 @@ pub struct ToolConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            version: "3.3.0".to_string(),
+            version: "3.3.1".to_string(),
             skills_dir: Self::default_skills_dir(),
             tools: HashMap::new(),
             custom_tools: HashMap::new(),
@@ -414,6 +416,27 @@ impl AppConfig {
                 skills_path: custom.skills_path.clone(),
                 config_path: custom.config_path.clone(),
             }
+        }).or_else(|| {
+            let prefix = "hermes-";
+            if !tool_id.starts_with(prefix) {
+                return None;
+            }
+            let profile_name = &tool_id[prefix.len()..];
+            if profile_name.is_empty() {
+                return None;
+            }
+            let home_dir = home_dir()?;
+            let profile_dir = home_dir.join(".hermes").join("profiles").join(profile_name);
+            if !profile_dir.is_dir() {
+                return None;
+            }
+            let enabled = self.tools.get(tool_id).map(|t| t.enabled).unwrap_or(false);
+            Some(ToolConfig {
+                enabled,
+                detected: true,
+                skills_path: profile_dir.join("skills"),
+                config_path: profile_dir,
+            })
         })
     }
 
@@ -520,7 +543,7 @@ mod tests {
     #[test]
     fn skill_tags_default_to_empty_when_loading_legacy_config() {
         let config_json = r#"{
-            "version": "3.2.2",
+            "version": "3.3.1",
             "skills_dir": "/tmp/skills",
             "tools": {},
             "custom_tools": {},
@@ -591,7 +614,7 @@ mod tests {
     #[test]
     fn llm_provider_loads_from_legacy_config_without_field() {
         let config_json = r#"{
-            "version": "3.2.2",
+            "version": "3.3.1",
             "skills_dir": "/tmp/skills",
             "tools": {},
             "custom_tools": {},

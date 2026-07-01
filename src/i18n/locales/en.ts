@@ -249,6 +249,8 @@ export const en = {
     aiClassifyProgress: "{processed}/{total}",
     aiClassifySuccess: "AI classification complete: classified {count} skills",
     aiClassifyNone: "AI classification complete: no skills were classified. Check category definitions or skill info.",
+    aiClassifyTooltip: "Classifying {current}/{total}",
+    aiClassifyPartial: "{fail} skills failed classification, skipped",
     enabledFor: "Enabled for",
     skillDescriptionPlaceholder: "Briefly describe what this skill does",
     // Category system

@@ -114,6 +114,25 @@ fn set_tool_enabled_in_config(tool_id: &str, enabled: bool) -> Result<(), String
         return manager.save(&config);
     }
 
+    // Hermes profile tools: create a ToolConfig entry on-the-fly
+    if tool_id.starts_with("hermes-") {
+        let profile_name = &tool_id["hermes-".len()..];
+        if !profile_name.is_empty() {
+            let home_dir = dirs::home_dir().ok_or_else(|| format!("Tool not found: {}", tool_id))?;
+            let profile_dir = home_dir.join(".hermes").join("profiles").join(profile_name);
+            if profile_dir.is_dir() {
+                let tool_config = crate::models::ToolConfig {
+                    enabled,
+                    detected: true,
+                    skills_path: profile_dir.join("skills"),
+                    config_path: profile_dir,
+                };
+                config.tools.insert(tool_id.to_string(), tool_config);
+                return manager.save(&config);
+            }
+        }
+    }
+
     Err(format!("Tool not found: {}", tool_id))
 }
 

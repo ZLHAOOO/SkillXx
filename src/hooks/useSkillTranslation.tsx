@@ -165,11 +165,13 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
     refreshConfigured();
   }, [refreshConfigured]);
 
-  const cacheKey = (instanceId: string, targetLang: string) =>
-    `${targetLang}::${instanceId}`;
+  const cacheKey = useCallback((instanceId: string, targetLang: string) =>
+    `${targetLang}::${instanceId}`,
+  []);
 
-  const fileCacheKey = (instanceId: string, targetLang: string, path: string) =>
-    `${targetLang}::${instanceId}::${normalizeTranslationPath(path)}`;
+  const fileCacheKey = useCallback((instanceId: string, targetLang: string, path: string) =>
+    `${targetLang}::${instanceId}::${normalizeTranslationPath(path)}`,
+  [normalizeTranslationPath]);
 
   const translateSkill = useCallback(
     async (instanceId: string, targetLang: string, force: boolean = false): Promise<SkillTranslationOutput> => {
@@ -238,43 +240,73 @@ export function SkillTranslationProvider({ children }: { children: ReactNode }) 
       targetLang: string,
       onProgress?: (p: BatchTranslationProgress) => void
     ): Promise<BatchTranslationResult> => {
-      const succeeded: string[] = [];
-      const failed: BatchTranslationFailure[] = [];
-      const results: Array<{
-        instance_id: string;
-        translation: SkillTranslationOutput | null;
-      }> = [];
-
-      for (let i = 0; i < instanceIds.length; i++) {
-        const instanceId = instanceIds[i];
-        if (onProgress) {
-          onProgress({
-            current: i + 1,
-            total: instanceIds.length,
-            instance_id: instanceId,
-            skill_name: instanceId,
-          });
-        }
-
-        try {
-          const translation = await translateSkill(instanceId, targetLang, false);
-          succeeded.push(instanceId);
-          results.push({ instance_id: instanceId, translation });
-        } catch (err) {
-          const reason = err instanceof Error ? err.message : String(err);
-          failed.push({ instance_id: instanceId, reason });
-          results.push({ instance_id: instanceId, translation: null });
-        }
-
-        // 每次翻译间隔 300ms，避免对 LLM API 造成并发压力
-        if (i < instanceIds.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-        }
+      if (instanceIds.length === 0) {
+        return { succeeded: [], failed: [], results: [] };
       }
 
-      return { succeeded, failed, results };
+      let unlistenProgress: UnlistenFn | null = null;
+      let unlistenComplete: UnlistenFn | null = null;
+
+      try {
+        // Set up progress listener
+        if (onProgress) {
+          unlistenProgress = await listen<BatchTranslationProgress>(
+            "llm:batch-progress",
+            (event) => {
+              onProgress(event.payload);
+            }
+          );
+        }
+
+        // Wait for completion event
+        const completePromise = new Promise<{
+          succeeded: number;
+          failed: number;
+          error: string;
+        }>((resolve) => {
+          void listen<{
+            succeeded: number;
+            failed: number;
+            error: string;
+          }>("llm:batch-complete", (event) => {
+            resolve(event.payload);
+          }).then((fn: UnlistenFn) => {
+            unlistenComplete = fn;
+          });
+        });
+
+        // Invoke the backend batch command (fire-and-forget from UI perspective)
+        await invoke("translate_skills_batch", {
+          instanceIds,
+          targetLang,
+          force: false,
+        });
+
+        await completePromise;
+
+        // Re-fetch individual results from the store
+        const results: Array<{
+          instance_id: string;
+          translation: SkillTranslationOutput | null;
+        }> = instanceIds.map((id) => {
+          const key = cacheKey(id, targetLang);
+          return {
+            instance_id: id,
+            translation: storeRef.current.results.get(key) ?? null,
+          };
+        });
+
+        return {
+          succeeded: results.filter((r) => r.translation != null).map((r) => r.instance_id),
+          failed: [],
+          results,
+        };
+      } finally {
+        if (unlistenProgress) unlistenProgress();
+        if (unlistenComplete != null) (unlistenComplete as () => void)();
+      }
     },
-    [translateSkill]
+    [cacheKey]
   );
 
   const translateSkillFiles = useCallback(

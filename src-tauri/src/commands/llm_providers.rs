@@ -93,9 +93,14 @@ pub fn get_llm_providers() -> Result<Vec<LlmProviderConfig>, String> {
 
 #[tauri::command]
 pub fn save_llm_provider_multi(mut provider: LlmProviderConfig) -> Result<LlmProviderConfig, String> {
-    // Normalize: default to openai if empty
+    // Auto-detect api_format based on which URLs are configured
+    // (only if not already set by the caller)
     if provider.api_format.is_empty() {
-        provider.api_format = "openai".to_string();
+        provider.api_format = if !provider.base_url_anthropic.trim().is_empty() {
+            "anthropic".to_string()
+        } else {
+            "openai".to_string()
+        };
     }
     let manager = ConfigManager::new();
     let mut config = manager.load()?;
