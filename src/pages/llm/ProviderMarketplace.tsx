@@ -24,6 +24,8 @@ function ProviderMarketplaceCard({
   const iconPath = getProviderIcon(entry.name, entry.id);
   const [imgFailed, setImgFailed] = useState(false);
 
+  console.log(`[DEBUG] MarketplaceCard: name=${entry.name}, id=${entry.id}, iconPath=${iconPath}`);
+
   return (
     <div
       style={{
@@ -66,7 +68,8 @@ function ProviderMarketplaceCard({
             width={40}
             height={40}
             style={{ borderRadius: "6px", objectFit: "contain", flexShrink: 0 }}
-            onError={() => setImgFailed(true)}
+            onError={(e) => { console.log(`[DEBUG] marketplace img onError: ${iconPath}`, e); setImgFailed(true); }}
+            onLoad={() => console.log(`[DEBUG] marketplace img onLoad: ${iconPath}`)}
           />
         ) : (
           <div

@@ -64,7 +64,7 @@
   --color-card-border: rgba(0, 224, 255, 0.35);
   --color-banner-bg: rgba(255, 214, 0, 0.1);
   --color-banner-border: rgba(255, 214, 0, 0.45);
-  --color-hero-accent-bg: linear-gradient(135deg, #0A1230 0%, #142048 100%);
+  --color-hero-accent-bg: #0A1024;
   --color-hero-accent-fg: #DCEFFF;
 
   --shadow-sm: 0 0 10px rgba(0, 224, 255, 0.25);

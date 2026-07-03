@@ -98,7 +98,7 @@ fn prune_backups(profile_name: &str) -> Result<(), String> {
         .collect();
     backups.sort_by(|a, b| b.cmp(a));
     for old in backups.iter().skip(MAX_BACKUPS) {
-        let _ = fs::remove_dir_all(dir.join(old));
+        let _ = fs::remove_file(dir.join(old));
     }
     Ok(())
 }

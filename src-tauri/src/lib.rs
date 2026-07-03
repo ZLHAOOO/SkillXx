@@ -5,8 +5,8 @@ mod services;
 mod test_support;
 
 use commands::{
-    ai_classify_skills, batch_set_skill_tools, check_cli_installed, check_marketplace_updates_if_stale, check_sync_status,
-    check_update, apply_claude_provider, apply_codex_provider, clear_claude_provider, clear_codex_provider, clear_llm_provider, clear_translation_cache,
+    ai_classify_skills, apply_model_to_tool, batch_set_skill_tools, check_cli_installed, check_marketplace_updates_if_stale, check_sync_status,
+    check_update, apply_claude_provider, apply_codex_provider, apply_codex_provider_passthrough, clear_claude_provider, clear_codex_provider, clear_llm_provider, clear_translation_cache,
     create_custom_tool, create_skill, delete_custom_tool, delete_llm_provider, delete_skill,
     detect_available_editors, detect_tools, disable_skill, download_and_install, enable_skill,
     fetch_marketplace_skill_descriptions, fetch_marketplace_skills, fetch_skill_file_content,
@@ -20,7 +20,9 @@ use commands::{
  refresh_skills, refresh_tools, remove_skill_package, restart_claude_code_cmd, restart_codex_cmd,
  list_claude_backups, restore_claude_backup,
  list_codex_backups, restore_codex_backup, restore_codex_original,
+    start_codex_proxy, stop_codex_proxy, update_codex_proxy_config,
     list_hermes_backups, read_hermes_env, apply_hermes_provider, clear_hermes_provider, restart_hermes_cmd,
+    list_gemini_backups, read_gemini_env, apply_gemini_provider, clear_gemini_provider,
  save_config,
  save_llm_provider, save_llm_provider_multi, save_tool_bindings, save_tools_order,
     scan_existing_skills, search_marketplace, set_tool_enabled, submit_feedback,
@@ -153,6 +155,7 @@ pub fn run() {
             get_tool_bindings,
             save_tool_bindings,
             read_claude_env,
+            apply_model_to_tool,
             apply_claude_provider,
             write_claude_env,
             clear_claude_provider,
@@ -166,11 +169,19 @@ pub fn run() {
             list_codex_backups,
             restore_codex_backup,
             restore_codex_original,
+            apply_codex_provider_passthrough,
+            start_codex_proxy,
+            stop_codex_proxy,
+            update_codex_proxy_config,
             read_hermes_env,
             apply_hermes_provider,
             clear_hermes_provider,
             list_hermes_backups,
             restart_hermes_cmd,
+            read_gemini_env,
+            apply_gemini_provider,
+            clear_gemini_provider,
+            list_gemini_backups,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

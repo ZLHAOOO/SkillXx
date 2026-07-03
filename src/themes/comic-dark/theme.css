@@ -67,10 +67,10 @@
   --color-hero-accent-bg: #FF2E97;
   --color-hero-accent-fg: #0F0F1A;
 
-  --shadow-sm: 3px 3px 0 0 #FFFEF0;
-  --shadow-md: 5px 5px 0 0 #FFFEF0;
-  --shadow-lg: 8px 8px 0 0 #FFFEF0;
-  --shadow-inset: inset 0 0 0 2px #FFFEF0;
+  --shadow-sm: 3px 3px 0 0 rgba(255,254,240,1);
+  --shadow-md: 4px 4px 0 0 rgba(255,254,240,1);
+  --shadow-lg: 6px 6px 0 0 rgba(255,254,240,1);
+  --shadow-inset: inset 0 0 0 2px rgba(255,254,240,1);
   --glow-accent: 0 0 0 transparent;
   --scanline: radial-gradient(circle at 50% 50%, rgba(255,254,240,0.16) 1px, transparent 1.5px) 0 0 / 8px 8px;
   --clip-corner: 0;
@@ -95,10 +95,10 @@
   border-right: 3px solid #FFFEF0;
 }
 
-/* —— 形态 token：漫画暗 · sharp + 3px 白墨边 + 硬偏移阴影 —— */
+/* —— 形态 token：漫画暗 · sharp + 4px 白墨边 + 硬偏移阴影 —— */
 [data-theme-style="comic"][data-mode="dark"] {
   --radius-card: 6px;
   --radius-button: 4px;
-  --border-w-card: 3px;
+  --border-w-card: 4px;
   --shadow-toast: 5px 5px 0 0 #FFFEF0;
 }

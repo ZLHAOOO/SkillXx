@@ -237,17 +237,10 @@ function ProviderLogo({ name, id, size = 40 }: { name: string; id?: string; size
   return (
     <div
       style={{
-        width: size,
-        height: size,
-        borderRadius: "6px",
-        backgroundColor: "var(--muted)",
-        color: "var(--muted-foreground)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: size * 0.4,
-        fontWeight: 700,
-        flexShrink: 0,
+        width: size, height: size, borderRadius: "6px",
+        backgroundColor: "var(--muted)", color: "var(--muted-foreground)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: size * 0.4, fontWeight: 700, flexShrink: 0,
       }}
     >
       {initial}

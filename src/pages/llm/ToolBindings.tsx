@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "@/i18n";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/loading";
+import { getToolIconUrl } from "@/assets/tools";
 
 /* ================================================================
    Types
@@ -24,6 +24,20 @@ export interface LlmProviderConfig {
   timeout_secs?: number;
 }
 
+export interface ApplyModelInfo {
+  id: string;
+  name: string;
+  base_url: string;
+  base_url_anthropic: string;
+  base_url_openai: string;
+  api_key: string;
+  model: string;
+  protocol: string;
+  relay_mode?: boolean;
+  responses_passthrough?: boolean;
+  one_m_context?: boolean;
+}
+
 export interface ToolInfo {
   id: string;
   name: string;
@@ -32,124 +46,51 @@ export interface ToolInfo {
 
 type ToolBindings = Record<string, string>;
 
-const TOOL_IDS = ["claude-code", "codex", "gemini", "opencode", "openclaw", "hermes"] as const;
+const TOOL_IDS = ["claude-code", "codex", "gemini", "hermes"] as const;
 
 const TOOL_COLORS: Record<string, string> = {
   "claude-code": "#d4a574",
   "codex": "#6b7280",
   "gemini": "#4285f4",
-  "opencode": "#10b981",
-  "openclaw": "#8b5cf6",
   "hermes": "#f59e0b",
 };
 
 /* ================================================================
-   ProviderInfo – label + protocol badge
+   Checkbox – matches project's Toggle style
    ================================================================ */
-function ProviderInfo({ provider, toolId, isUnavailable }: {
-  provider: LlmProviderConfig;
-  toolId: string;
-  isUnavailable: boolean;
+function Checkbox({ checked, onChange, disabled, children }: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+  children: React.ReactNode;
 }) {
-  const protocol = toolId === "claude-code" ? "anthropic" : "openai";
   return (
-    <>
-      {!isUnavailable && (
-        <span style={{
-          fontSize: "10px", fontWeight: 500, padding: "0px 5px",
-          borderRadius: "9999px", lineHeight: "16px", flexShrink: 0,
-          ...(protocol === "anthropic"
-            ? { backgroundColor: "color-mix(in srgb, #d97757 15%, transparent)", color: "#d97757" }
-            : { backgroundColor: "color-mix(in srgb, #10a37f 15%, transparent)", color: "#10a37f" }),
-        }}>
-          {protocol === "anthropic" ? "Anthropic" : "OpenAI"}
-        </span>
-      )}
-      <span style={{
-        fontSize: "12px",
-        color: isUnavailable ? "#d97757" : "var(--muted-foreground)",
-        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-      }}>
-        {provider.name}
-        {provider.model && <span style={{ opacity: 0.7 }}> · {provider.model}</span>}
-        {isUnavailable && <span style={{ opacity: 0.7 }}>（缺少 Anthropic URL）</span>}
+    <label
+      onClick={(e) => {
+        if (!disabled) {
+          e.preventDefault();
+          onChange(!checked);
+        }
+      }}
+      className={`flex items-center gap-2 select-none ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+    >
+      <div
+        className={`w-4 h-4 border rounded-[3px] flex items-center justify-center transition-all flex-shrink-0 ${
+          checked
+            ? "border-[var(--primary)] bg-[var(--primary)]"
+            : "border-[var(--input)] bg-transparent hover:border-[var(--primary)] hover:bg-[var(--primary)]/10"
+        } ${disabled ? "opacity-40" : ""}`}
+      >
+        {checked && (
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="text-white">
+            <path d="M2 5L4 7L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </div>
+      <span className={`text-xs transition-colors ${checked ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}`}>
+        {children}
       </span>
-    </>
-  );
-}
-
-/* ================================================================
-   ConfigSection – shared write / restart / restore buttons
-   ================================================================ */
-function ConfigSection({
-  icon, iconBg, title, badge, description, accent,
-  onWrite, onRestart, onRestore,
-  writeLabel, restartLabel, restoreLabel,
-  writing, restarting, restoring, configWritten, writeDisabled,
-  unavailable, unavailableMsg,
-  extra,
-}: {
-  icon: string;
-  iconBg: string;
-  title: string;
-  badge: string;
-  description: string;
-  accent: string;
-  onWrite: () => void;
-  onRestart: () => void;
-  onRestore: () => void;
-  writeLabel: string;
-  restartLabel: string;
-  restoreLabel: string;
-  writing: boolean;
-  restarting: boolean;
-  restoring: boolean;
-  configWritten: boolean;
-  writeDisabled: boolean;
-  unavailable: boolean;
-  unavailableMsg?: string;
-  extra?: React.ReactNode;
-}) {
-  return (
-    <div style={{ marginTop: "8px", padding: "16px", borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "var(--secondary)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-        <div style={{
-          width: "28px", height: "28px", borderRadius: "50%",
-          backgroundColor: iconBg, color: "#fff",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontWeight: 700, fontSize: "12px", flexShrink: 0,
-        }}>{icon}</div>
-        <span style={{ fontWeight: 600, fontSize: "14px" }}>{title}</span>
-        <Badge style={{ fontSize: "11px", backgroundColor: "var(--primary)", color: "var(--primary-foreground)" }}>{badge}</Badge>
-      </div>
-      <div style={{ fontSize: "12px", color: "var(--muted-foreground)", marginBottom: "12px", lineHeight: "1.5" }}>
-        {description}
-        <br /><span style={{ opacity: 0.7 }}>写入前会自动备份原始配置，支持一键恢复。</span>
-      </div>
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-        {unavailable && unavailableMsg && (
-          <span style={{ fontSize: "12px", color: "#d97757" }}>{unavailableMsg}</span>
-        )}
-        {!configWritten ? (
-          <Button onClick={onWrite} disabled={writing || writeDisabled} variant="default" size="sm">
-            {writing ? "写入中..." : writeLabel}
-          </Button>
-        ) : (
-          <>
-            <Button onClick={onRestart} disabled={restarting || writeDisabled} variant="default" size="sm">
-              {restarting ? "重启中..." : restartLabel}
-            </Button>
-            <span style={{ fontSize: "12px", color: "var(--muted-foreground)", alignSelf: "center" }}>
-              配置已写入，重启后生效
-            </span>
-          </>
-        )}
-        <Button onClick={onRestore} disabled={restoring} variant="outline" size="sm" style={{ borderColor: accent, color: accent }}>
-          {restoring ? "恢复中..." : restoreLabel}
-        </Button>
-      </div>
-      {extra}
-    </div>
+    </label>
   );
 }
 
@@ -159,9 +100,6 @@ function ConfigSection({
 export function ToolBindings() {
   const { t } = useTranslation();
   const toast = useToast();
-  // Stable t: avoid re-creating fetchData when context value object changes
-  const stableT = useMemo(() => t, [t]);
-  // Stable toast reference (useToast returns new object each render)
   const addToastRef = useRef(toast.addToast);
   addToastRef.current = toast.addToast;
 
@@ -171,254 +109,338 @@ export function ToolBindings() {
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Claude Code
-  const [writingClaude, setWritingClaude] = useState(false);
-  const [claudeWritten, setClaudeWritten] = useState(false);
-  const [restartingClaude, setRestartingClaude] = useState(false);
-  const [restoringClaude, setRestoringClaude] = useState(false);
-
-  // Codex
-  const [writingCodex, setWritingCodex] = useState(false);
-  const [codexWritten, setCodexWritten] = useState(false);
-  const [restartingCodex, setRestartingCodex] = useState(false);
-  const [restoringCodex, setRestoringCodex] = useState(false);
-
-  // Hermes
-  const [hermesProfile, setHermesProfile] = useState("");
-  const [writingHermes, setWritingHermes] = useState(false);
-  const [hermesWritten, setHermesWritten] = useState(false);
-  const [restartingHermes, setRestartingHermes] = useState(false);
+  // Per-tool operation state
+  const [writing, setWriting] = useState<Record<string, boolean>>({});
+  const [written, setWritten] = useState<Record<string, boolean>>({});
+  const [restarting, setRestarting] = useState<Record<string, boolean>>({});
+  const [restoring, setRestoring] = useState<Record<string, boolean>>({});
 
   const [tools, setTools] = useState<ToolInfo[]>([]);
 
-  /* ---- data loading (simple useEffect, no useCallback) ---- */
+  // ---- Selection state (EchoBird pattern) ----
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+
+  // ---- Bottom bar checkboxes ----
+  const readBool = (key: string, fallback: boolean): boolean => {
+    try {
+      const v = localStorage.getItem(key);
+      return v === null ? fallback : v === "true";
+    } catch {
+      return fallback;
+    }
+  };
+  const writeBool = (key: string, v: boolean) => {
+    try {
+      localStorage.setItem(key, String(v));
+    } catch {
+      // private mode
+    }
+  };
+
+  const [modifyConfig, setModifyConfig] = useState<boolean>(() =>
+    readBool("skillx_bottom_modify_config", true)
+  );
+  const [launchAfterApply, setLaunchAfterApply] = useState<boolean>(() =>
+    readBool("skillx_bottom_launch_after", true)
+  );
+  // Responses passthrough for Codex — NOT persisted.
+  // Reset to provider default each time the Codex binding changes.
+  // StepFun → true (passthrough), others → false (proxy).
+  const [responsesPassthrough, setResponsesPassthrough] = useState<boolean>(false);
+  const [currentCodexProviderId, setCurrentCodexProviderId] = useState<string>("");
+
+  const getResponsesPassthroughDefault = useCallback((providerName: string): boolean => {
+    const name = providerName.toLowerCase();
+    return name.includes("step") || name.includes("阶跃");
+  }, []);
+  const [isLaunching, setIsLaunching] = useState(false);
+
+  // ---- Data loading ----
+  const loadData = useCallback(async () => {
+    let cancelled = false;
+    setLoading(true);
+    try {
+      const [providerList, currentBindings, toolList] = await Promise.all([
+        invoke<LlmProviderConfig[]>("get_llm_providers"),
+        invoke<ToolBindings>("get_tool_bindings"),
+        invoke<ToolInfo[]>("detect_tools"),
+      ]);
+      if (cancelled) return;
+      setProviders(providerList);
+      setBindings(currentBindings);
+      setTools(
+        toolList
+          .filter((tool) => TOOL_IDS.includes(tool.id as any) || tool.id.startsWith("hermes-"))
+          // Detected tools first; undetected fall to the end. Keep original relative order otherwise.
+          .sort((a, b) => Number(b.detected) - Number(a.detected))
+      );
+    } catch (err) {
+      if (!cancelled) {
+        addToastRef.current(t("llmProviders.bindings.loadFailed"), "error");
+        console.error("Failed to load tool bindings:", err);
+      }
+    } finally {
+      if (!cancelled) {
+        setLoading(false);
+      }
+    }
+  }, [t]);
 
   useEffect(() => {
-    let cancelled = false;
+    loadData();
+  }, [loadData]);
 
-    async function load() {
-      setLoading(true);
-      try {
-        const [providerList, currentBindings, toolList] = await Promise.all([
-          invoke<LlmProviderConfig[]>("get_llm_providers"),
-          invoke<ToolBindings>("get_tool_bindings"),
-          invoke<ToolInfo[]>("detect_tools"),
-        ]);
-        if (cancelled) return;
-        setProviders(providerList);
-        setBindings(currentBindings);
-        setTools(toolList.filter(
-          (tool) => TOOL_IDS.includes(tool.id as any) || tool.id.startsWith("hermes-")
-        ));
-      } catch (err) {
-        if (!cancelled) {
-          addToastRef.current(stableT("llmProviders.bindings.loadFailed"), "error");
-          console.error("Failed to load tool bindings:", err);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
+  // Initialize Responses passthrough when Codex binding is present
+  // (covers the case where page loads with existing Codex binding)
+  useEffect(() => {
+    if (selectedTool === "codex") {
+      const binding = bindings["codex"];
+      if (binding) {
+        const provider = providers.find((p) => p.id === binding);
+        if (provider && currentCodexProviderId !== provider.id) {
+          const defaultPassthrough = getResponsesPassthroughDefault(provider.name);
+          setResponsesPassthrough(defaultPassthrough);
+          setCurrentCodexProviderId(provider.id);
         }
       }
     }
+  }, [selectedTool, bindings, providers, currentCodexProviderId, getResponsesPassthroughDefault]);
 
-    load();
-    return () => { cancelled = true; };
-  }, [stableT]);
-
-  /* ---- binding change ---- */
-
+  // ---- Binding change (auto-save to SkillX config) ----
   const handleBindingChange = (toolId: string, providerId: string) => {
+    // Auto-select this tool so the bottom bar acts on it without an extra click
+    setSelectedTool(toolId);
+
     setBindings((prev) => {
       const next = { ...prev, [toolId]: providerId };
       setHasChanges(true);
-      if (toolId === "claude-code") setClaudeWritten(false);
-      if (toolId === "codex") setCodexWritten(false);
+      setWritten((w) => ({ ...w, [toolId]: false }));
       return next;
     });
+
+    // When switching Codex binding, reset Responses passthrough to provider default
+    if (toolId === "codex" && providerId) {
+      const provider = providers.find((p) => p.id === providerId);
+      if (provider) {
+        const defaultPassthrough = getResponsesPassthroughDefault(provider.name);
+        setResponsesPassthrough(defaultPassthrough);
+        setCurrentCodexProviderId(provider.id);
+      }
+    }
   };
 
-  /* ---- save ---- */
-
+  // ---- Save bindings to SkillX config ----
   const handleSave = async () => {
     setSaving(true);
     try {
       await invoke("save_tool_bindings", { bindings });
       setHasChanges(false);
-      addToastRef.current(stableT("llmProviders.bindings.saved"), "success");
+      addToastRef.current(t("llmProviders.bindings.saved"), "success");
     } catch (err) {
-      addToastRef.current(stableT("llmProviders.bindings.saveFailed"), "error");
+      addToastRef.current(t("llmProviders.bindings.saveFailed"), "error");
       console.error("Failed to save:", err);
     } finally {
       setSaving(false);
     }
   };
 
-  /* ---- helper: build provider payload for Tauri commands ---- */
+  // ---- Bottom bar: write config + launch ----
+  const selectedToolBinding = selectedTool ? bindings[selectedTool] : "";
+  const selectedHasBinding = !!selectedToolBinding;
 
-  function buildProviderPayload(p: LlmProviderConfig) {
-    return {
-      id: p.id, name: p.name,
-      base_url: p.base_url,
-      base_url_openai: p.base_url_openai || "",
-      base_url_anthropic: p.base_url_anthropic || "",
-      api_format: p.api_format || "",
-      api_key: p.api_key, model: p.model,
-      temperature: p.temperature, max_tokens: p.max_tokens, timeout_secs: p.timeout_secs,
-    };
-  }
+  const handleBottomBarAction = async () => {
+    if (!selectedTool || isLaunching) return;
+    setIsLaunching(true);
 
-  /* ---- Claude Code ---- */
+    const toolBinding = bindings[selectedTool];
+    const hasBinding = !!toolBinding;
 
-  const handleWriteClaude = async () => {
-    const provider = providers.find((p) => p.id === bindings["claude-code"]);
-    if (!provider) return;
-    setWritingClaude(true);
+    // Auto-save pending binding changes first
+    if (hasChanges) {
+      await handleSave();
+    }
+
+    let writeOk = true;
+
     try {
-      const result = await invoke<string>("apply_claude_provider", { provider: buildProviderPayload(provider) });
-      setClaudeWritten(true);
-      addToastRef.current(result || "Claude Code 配置已写入", "success");
-    } catch (err) {
-      addToastRef.current("写入 Claude Code 配置失败: " + String(err), "error");
+      // Step 1: Write config (if enabled and tool has a binding)
+      if (modifyConfig && hasBinding) {
+        setWriting((prev) => ({ ...prev, [selectedTool]: true }));
+        try {
+          const provider = providers.find((p) => p.id === toolBinding);
+          if (!provider) {
+            addToastRef.current("未找到对应的模型配置", "error");
+            writeOk = false;
+          } else {
+            const result = await invoke<string>("apply_model_to_tool", {
+              toolId: selectedTool,
+              modelInfo: {
+                id: provider.id,
+                name: provider.name,
+                base_url: provider.base_url,
+                base_url_anthropic: provider.base_url_anthropic || "",
+                base_url_openai: provider.base_url_openai || "",
+                api_key: provider.api_key,
+                model: provider.model,
+                protocol: selectedTool === "claude-code" ? "anthropic" : "openai",
+                responses_passthrough: selectedTool === "codex" ? responsesPassthrough : false,
+              },
+            });
+            setWritten((prev) => ({ ...prev, [selectedTool]: true }));
+            const tool = tools.find((t) => t.id === selectedTool);
+            addToastRef.current(result || `${tool?.name || selectedTool} 配置已写入`, "success");
+          }
+        } catch (err) {
+          addToastRef.current(`写入 ${selectedTool} 配置失败: ${String(err)}`, "error");
+          writeOk = false;
+        } finally {
+          setWriting((prev) => ({ ...prev, [selectedTool]: false }));
+        }
+      }
+
+      // Step 2: Launch tool (if enabled)
+      if (launchAfterApply && writeOk) {
+        try {
+          let restartResult: string;
+          if (selectedTool === "claude-code") {
+            restartResult = await invoke<string>("restart_claude_code_cmd");
+          } else if (selectedTool.startsWith("hermes-")) {
+            restartResult = await invoke<string>("restart_hermes_cmd");
+          } else if (selectedTool === "codex") {
+            restartResult = await invoke<string>("restart_codex_cmd");
+          } else if (selectedTool === "gemini") {
+            addToastRef.current("Gemini CLI 配置已写入，下次启动时自动加载", "success");
+            return;
+          } else {
+            return;
+          }
+          addToastRef.current(restartResult || `${selectedTool} 已重启`, "success");
+        } catch (err) {
+          addToastRef.current(`重启 ${selectedTool} 失败: ${String(err)}`, "error");
+        }
+      }
     } finally {
-      setWritingClaude(false);
+      setIsLaunching(false);
     }
   };
 
+  // ---- Tool selection ----
+  const handleSelectTool = (toolId: string) => {
+    setSelectedTool((prev) => (prev === toolId ? null : toolId));
+  };
+
+  // ---- Restart / Restore handlers ----
   const handleRestartClaude = async () => {
-    setRestartingClaude(true);
+    setRestarting((prev) => ({ ...prev, ["claude-code"]: true }));
     try {
       const result = await invoke<string>("restart_claude_code_cmd");
       addToastRef.current(result || "Claude Code 已重启", "success");
-      setClaudeWritten(false);
+      setWritten((prev) => ({ ...prev, ["claude-code"]: false }));
     } catch (err) {
       addToastRef.current("重启 Claude Code 失败: " + String(err), "error");
     } finally {
-      setRestartingClaude(false);
-    }
-  };
-
-  const handleRestoreClaude = async () => {
-    setRestoringClaude(true);
-    try {
-      const result = await invoke<string>("clear_claude_provider");
-      addToastRef.current(result || "Claude Code 配置已恢复", "success");
-      setClaudeWritten(false);
-    } catch (err) {
-      addToastRef.current("恢复 Claude Code 配置失败: " + String(err), "error");
-    } finally {
-      setRestoringClaude(false);
-    }
-  };
-
-  /* ---- Codex ---- */
-
-  const handleWriteCodex = async () => {
-    const provider = providers.find((p) => p.id === bindings["codex"]);
-    if (!provider) return;
-    setWritingCodex(true);
-    try {
-      const result = await invoke<string>("apply_codex_provider", { provider: buildProviderPayload(provider) });
-      setCodexWritten(true);
-      addToastRef.current(result || "Codex 配置已写入", "success");
-    } catch (err) {
-      addToastRef.current("写入 Codex 配置失败: " + String(err), "error");
-    } finally {
-      setWritingCodex(false);
+      setRestarting((prev) => ({ ...prev, ["claude-code"]: false }));
     }
   };
 
   const handleRestartCodex = async () => {
-    setRestartingCodex(true);
+    setRestarting((prev) => ({ ...prev, ["codex"]: true }));
     try {
       const result = await invoke<string>("restart_codex_cmd");
       addToastRef.current(result || "Codex 已重启", "success");
-      setCodexWritten(false);
+      setWritten((prev) => ({ ...prev, ["codex"]: false }));
     } catch (err) {
       addToastRef.current("重启 Codex 失败: " + String(err), "error");
     } finally {
-      setRestartingCodex(false);
+      setRestarting((prev) => ({ ...prev, ["codex"]: false }));
+    }
+  };
+
+  const handleRestartHermes = async (toolId: string) => {
+    setRestarting((prev) => ({ ...prev, [toolId]: true }));
+    try {
+      const result = await invoke<string>("restart_hermes_cmd");
+      addToastRef.current(result || "Hermes 已重启", "success");
+      setWritten((prev) => ({ ...prev, [toolId]: false }));
+    } catch (err) {
+      addToastRef.current("重启 Hermes 失败: " + String(err), "error");
+    } finally {
+      setRestarting((prev) => ({ ...prev, [toolId]: false }));
+    }
+  };
+
+  const handleRestoreClaude = async () => {
+    setRestoring((prev) => ({ ...prev, ["claude-code"]: true }));
+    try {
+      const result = await invoke<string>("clear_claude_provider");
+      addToastRef.current(result || "Claude Code 配置已恢复", "success");
+      setWritten((prev) => ({ ...prev, ["claude-code"]: false }));
+    } catch (err) {
+      addToastRef.current("恢复 Claude Code 配置失败: " + String(err), "error");
+    } finally {
+      setRestoring((prev) => ({ ...prev, ["claude-code"]: false }));
     }
   };
 
   const handleRestoreCodex = async () => {
-    setRestoringCodex(true);
+    setRestoring((prev) => ({ ...prev, ["codex"]: true }));
     try {
       const result = await invoke<string>("restore_codex_original");
       addToastRef.current(result || "Codex 已恢复为原始 OpenAI 配置", "success");
-      setCodexWritten(false);
+      setWritten((prev) => ({ ...prev, ["codex"]: false }));
     } catch (err) {
       addToastRef.current("恢复 Codex 配置失败: " + String(err), "error");
     } finally {
-      setRestoringCodex(false);
+      setRestoring((prev) => ({ ...prev, ["codex"]: false }));
     }
   };
 
-  /* ---- Hermes ---- */
-
-  const handleWriteHermes = async () => {
-    if (!hermesProfile) return;
-    const provider = providers.find((p) => p.id === bindings["hermes-" + hermesProfile]);
-    if (!provider) return;
-    setWritingHermes(true);
+  const handleRestoreHermes = async (toolId: string) => {
+    const profileName = toolId.slice("hermes-".length);
+    setRestoring((prev) => ({ ...prev, [toolId]: true }));
     try {
-      const result = await invoke<string>("apply_hermes_provider", {
-        profileName: hermesProfile,
-        provider: buildProviderPayload(provider),
-      });
-      setHermesWritten(true);
-      addToastRef.current(result || `Hermes profile "${hermesProfile}" 配置已写入`, "success");
+      const result = await invoke<string>("clear_hermes_provider", { profileName });
+      addToastRef.current(result || `Hermes profile "${profileName}" 配置已清除`, "success");
+      setWritten((prev) => ({ ...prev, [toolId]: false }));
     } catch (err) {
-      addToastRef.current("写入 Hermes 配置失败: " + String(err), "error");
+      addToastRef.current(`清除 Hermes 配置失败: ${String(err)}`, "error");
     } finally {
-      setWritingHermes(false);
+      setRestoring((prev) => ({ ...prev, [toolId]: false }));
     }
   };
 
-  const handleRestartHermes = async () => {
-    setRestartingHermes(true);
+  const handleRestoreGemini = async () => {
+    setRestoring((prev) => ({ ...prev, ["gemini"]: true }));
     try {
-      const result = await invoke<string>("restart_hermes_cmd");
-      addToastRef.current(result || "Hermes 已重启", "success");
-      setHermesWritten(false);
+      const result = await invoke<string>("clear_gemini_provider");
+      addToastRef.current(result || "Gemini 配置已恢复", "success");
+      setWritten((prev) => ({ ...prev, ["gemini"]: false }));
     } catch (err) {
-      addToastRef.current("重启 Hermes 失败: " + String(err), "error");
+      addToastRef.current("恢复 Gemini 配置失败: " + String(err), "error");
     } finally {
-      setRestartingHermes(false);
+      setRestoring((prev) => ({ ...prev, ["gemini"]: false }));
     }
   };
 
-  const handleRestoreHermes = async () => {
-    if (!hermesProfile) return;
-    setWritingHermes(true);
-    try {
-      const result = await invoke<string>("clear_hermes_provider", { profileName: hermesProfile });
-      addToastRef.current(result || `Hermes profile "${hermesProfile}" 配置已清除`, "success");
-      setHermesWritten(false);
-    } catch (err) {
-      addToastRef.current("清除 Hermes 配置失败: " + String(err), "error");
-    } finally {
-      setWritingHermes(false);
-    }
+  // ---- Bottom bar button logic ----
+  const willWrite = modifyConfig && selectedHasBinding;
+  const willLaunch = launchAfterApply;
+  const buttonAction = willWrite && willLaunch ? "write_launch"
+    : willWrite ? "write"
+    : willLaunch ? "launch"
+    : "none";
+  const bottomDisabled = !selectedTool || buttonAction === "none" || isLaunching;
+
+  const getButtonText = () => {
+    if (isLaunching) return "执行中...";
+    if (!selectedTool) return "请先选择工具";
+    if (buttonAction === "write_launch") return "写入并启动";
+    if (buttonAction === "write") return "写入配置";
+    if (buttonAction === "launch") return "启动应用";
+    return "启动应用";
   };
 
-  /* ---- computed ---- */
-
-  const claudeBinding = bindings["claude-code"];
-  const claudeProvider = claudeBinding ? providers.find((p) => p.id === claudeBinding) : null;
-  const claudeUnavailable = claudeProvider !== null && claudeProvider.base_url_anthropic.trim().length === 0;
-
-  const codexBinding = bindings["codex"];
-  const codexProvider = codexBinding ? providers.find((p) => p.id === codexBinding) : null;
-
-  const hermesTools = tools.filter((t) => t.id.startsWith("hermes-"));
-  const hermesProfileNames = hermesTools.map((t) => t.id.slice("hermes-".length));
-  const hermesBoundProfile = hermesTools.find((t) => bindings[t.id]);
-  const hermesBoundProviderId = hermesBoundProfile ? bindings[hermesBoundProfile.id] : "";
-  const hermesBoundProvider = providers.find((p) => p.id === hermesBoundProviderId);
-
-  /* ---- render ---- */
-
+  // ---- Render ----
   if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 24px" }}>
@@ -430,192 +452,242 @@ export function ToolBindings() {
   if (providers.length === 0) {
     return (
       <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--muted-foreground)" }}>
-        <p style={{ fontSize: "14px", margin: 0 }}>{stableT("llmProviders.bindings.noProviders")}</p>
+        <p style={{ fontSize: "14px", margin: 0 }}>{t("llmProviders.bindings.noProviders")}</p>
       </div>
     );
   }
 
-  const renderProviderLabel = (providerId: string, toolId: string) => {
-    const provider = providers.find((p) => p.id === providerId);
-    if (!provider) return null;
-    const requiresAnthropic = toolId === "claude-code";
-    const isUnavailable = requiresAnthropic && provider.base_url_anthropic.trim().length === 0;
-    return (
-      <ProviderInfo provider={provider} toolId={toolId} isUnavailable={isUnavailable} />
-    );
-  };
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px", minHeight: "100%" }}>
       <div style={{ fontSize: "13px", color: "var(--muted-foreground)", lineHeight: "1.5" }}>
-        {stableT("llmProviders.bindings.description")}
+        {t("llmProviders.bindings.description")}
       </div>
 
-      {/* ---- tool rows ---- */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* ---- Tool cards grid (3-col) ---- */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
         {tools.map((tool) => {
           const toolId = tool.id;
           const toolName = tool.name;
           const isHermes = toolId.startsWith("hermes-");
           const toolColor = isHermes ? "#f59e0b" : (TOOL_COLORS[toolId] ?? "#6b7280");
+          const isSelected = selectedTool === toolId;
           const currentBinding = bindings[toolId] ?? "";
-          const requiresAnthropic = toolId === "claude-code";
           const currentProvider = currentBinding ? providers.find((p) => p.id === currentBinding) : null;
-          const isUnavailable = requiresAnthropic && currentProvider !== null && currentProvider.base_url_anthropic.trim().length === 0;
 
           return (
-            <div
-              key={toolId}
-              style={{
-                borderRadius: "8px",
-                border: isUnavailable ? "1px solid #d97757" : "1px solid var(--border)",
-                backgroundColor: "var(--background)",
-                padding: "14px 16px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "12px",
-                opacity: isUnavailable ? 0.8 : 1,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
-                <div style={{
-                  width: "36px", height: "36px", borderRadius: "50%",
-                  backgroundColor: toolColor, color: "#fff",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontWeight: 700, fontSize: "14px", flexShrink: 0,
-                }}>
-                  {toolName.charAt(0).toUpperCase()}
+            <div key={toolId} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {/* Card: icon | name+dropdown */}
+              <div
+                onClick={() => handleSelectTool(toolId)}
+                style={{
+                  borderRadius: "8px",
+                  border: isSelected ? "1px solid var(--primary)" : "1px solid var(--border)",
+                  backgroundColor: isSelected
+                    ? "color-mix(in srgb, var(--primary) 6%, var(--background))"
+                    : "var(--background)",
+                  padding: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  cursor: "pointer",
+                  transition: "border-color 0.15s, background-color 0.15s",
+                }}
+              >
+                {/* Icon */}
+                <div style={{ flexShrink: 0 }}>
+                  {(() => {
+                    const iconUrl = getToolIconUrl(toolId) || (isHermes ? getToolIconUrl("hermes") : null);
+                    if (iconUrl) {
+                      return (
+                        <img
+                          src={iconUrl}
+                          alt={toolName}
+                          style={{
+                            width: "36px", height: "36px", borderRadius: "8px",
+                            objectFit: "contain",
+                          }}
+                        />
+                      );
+                    }
+                    return (
+                      <div style={{
+                        width: "36px", height: "36px", borderRadius: "50%",
+                        backgroundColor: toolColor, color: "#fff",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontWeight: 700, fontSize: "15px",
+                      }}>
+                        {toolName.charAt(0).toUpperCase()}
+                      </div>
+                    );
+                  })()}
                 </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--foreground)" }}>
-                    {toolName}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "3px", overflow: "hidden" }}>
-                    {isUnavailable && (
+
+                {/* Right column: name + dropdown */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "5px" }}>
+                  {/* Name row */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ fontWeight: 700, fontSize: "15px", color: "var(--foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {toolName}
+                    </span>
+                    {currentBinding && (
                       <span style={{
-                        fontSize: "10px", fontWeight: 600, padding: "1px 6px",
-                        borderRadius: "9999px", lineHeight: "16px", flexShrink: 0,
-                        backgroundColor: "color-mix(in srgb, #d97757 20%, transparent)",
-                        color: "#d97757", border: "1px solid #d97757",
-                      }}>不可用</span>
+                        fontSize: "10px", fontWeight: 500, padding: "1px 6px",
+                        borderRadius: "9999px", lineHeight: "15px", flexShrink: 0,
+                        ...(toolId === "claude-code"
+                          ? { backgroundColor: "color-mix(in srgb, #d97757 15%, transparent)", color: "#d97757" }
+                          : { backgroundColor: "color-mix(in srgb, #10a37f 15%, transparent)", color: "#10a37f" }),
+                      }}>
+                        {toolId === "claude-code" ? "Anthropic" : "OpenAI"}
+                      </span>
                     )}
-                    {currentBinding ? renderProviderLabel(currentBinding, toolId) : (
-                      <span style={{ fontSize: "12px", color: "var(--muted-foreground)" }}>—</span>
-                    )}
+                  </div>
+                  {/* Dropdown */}
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <select value={currentBinding} onChange={(e) => handleBindingChange(toolId, e.target.value)} style={{
+                      width: "100%", padding: "4px 24px 4px 8px", borderRadius: "5px",
+                      border: "1px solid var(--input)", backgroundColor: "var(--background)",
+                      color: "var(--foreground)", fontSize: "12px", appearance: "none",
+                      backgroundImage: 'url(\'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="%23737373" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>\')',
+                      backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center",
+                      cursor: "pointer", outline: "none",
+                    }}>
+                      <option value="">— 选择模型 —</option>
+                      {providers.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} · {p.model || p.id}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
 
-              <div style={{ flexShrink: 0, minWidth: "180px" }}>
-                {isUnavailable ? (
-                  <select disabled value={currentBinding} style={{
-                    width: "100%", padding: "6px 28px 6px 10px", borderRadius: "6px",
-                    border: "1px solid #d97757",
-                    backgroundColor: "color-mix(in srgb, #d97757 8%, var(--background))",
-                    color: "#d97757", fontSize: "13px", appearance: "none",
-                    cursor: "not-allowed", outline: "none",
-                  }}>
-                    <option value="">不可用</option>
-                  </select>
-                ) : (
-                  <select value={currentBinding} onChange={(e) => handleBindingChange(toolId, e.target.value)} style={{
-                    width: "100%", padding: "6px 28px 6px 10px", borderRadius: "6px",
-                    border: "1px solid var(--input)", backgroundColor: "var(--background)",
-                    color: "var(--foreground)", fontSize: "13px", appearance: "none",
-                    backgroundImage: 'url(\'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>\')',
-                    backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center",
-                    cursor: "pointer", outline: "none",
-                  }}>
-                    <option value="">—</option>
-                    {providers.map((p) => {
-                      const unavailable = requiresAnthropic && p.base_url_anthropic.trim().length === 0;
-                      return (
-                        <option key={p.id} value={p.id} disabled={unavailable} style={unavailable ? { color: "#999" } : undefined}>
-                          {unavailable ? "✗ " : ""}{p.name} · {p.model || p.id}
-                        </option>
-                      );
-                    })}
-                  </select>
-                )}
-              </div>
+              {/* Config card (expand when selected) */}
+              {isSelected && currentBinding && currentProvider && (
+                <div style={{
+                  marginTop: "2px", padding: "10px 14px", borderRadius: "8px",
+                  border: "1px solid var(--border)", backgroundColor: "var(--secondary)",
+                }}>
+                  <div style={{ fontSize: "11px", color: "var(--muted-foreground)", lineHeight: "1.5", marginBottom: "6px" }}>
+                    选中后通过底部操作栏写入配置并启动。
+                    <br />
+                    <span style={{ opacity: 0.7 }}>也可点击「恢复原始配置」快速清除该工具的模型配置。</span>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <Button
+                      onClick={() => {
+                        if (toolId === "claude-code") handleRestoreClaude();
+                        else if (toolId === "codex") handleRestoreCodex();
+                        else if (toolId.startsWith("hermes-")) handleRestoreHermes(toolId);
+                        else if (toolId === "gemini") handleRestoreGemini();
+                      }}
+                      disabled={restoring[toolId] || restoring["claude-code"] || restoring["codex"] || restoring["gemini"]}
+                      variant="outline"
+                      size="sm"
+                    >
+                      恢复原始配置
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* ---- Claude Code ---- */}
-      {claudeBinding && claudeProvider && (
-        <ConfigSection
-          icon="C" iconBg={TOOL_COLORS["claude-code"]}
-          title="Claude Code 配置" badge={claudeProvider.name}
-          description="将当前选中的大模型配置写入 Claude Code 的 settings.json，修改后需要重启 Claude Code 才能生效。"
-          accent="#d4a574"
-          onWrite={handleWriteClaude} onRestart={handleRestartClaude} onRestore={handleRestoreClaude}
-          writeLabel="写入 Claude Code 配置" restartLabel="重启 Claude Code" restoreLabel="恢复原始配置"
-          writing={writingClaude} restarting={restartingClaude} restoring={restoringClaude}
-          configWritten={claudeWritten} writeDisabled={claudeUnavailable}
-          unavailable={claudeUnavailable} unavailableMsg="当前供应商缺少 Anthropic URL，无法写入 Claude Code 配置"
-        />
-      )}
+      {/* ---- Bottom bar (EchoBird pattern) ---- */}
+      <div style={{
+        flexShrink: 0,
+        position: "sticky",
+        bottom: 0,
+        marginTop: "auto",
+        borderTop: "1px solid var(--border)",
+        padding: "12px 16px 8px",
+        backgroundColor: "var(--background)",
+        zIndex: 10,
+        minHeight: "56px",
+        height: "56px",
+        boxSizing: "border-box",
+        display: "flex",
+        alignItems: "center",
+        overflow: "hidden",
+      }}>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "16px",
+          width: "100%",
+          flexWrap: "nowrap",
+        }}>
+          {/* Checkboxes */}
+          <div style={{ display: "flex", gap: "16px", alignItems: "center", flexShrink: 1, minWidth: 0 }}>
+            <Checkbox
+              checked={modifyConfig}
+              onChange={(v) => {
+                setModifyConfig(v);
+                writeBool("skillx_bottom_modify_config", v);
+              }}
+              disabled={!selectedTool || !selectedHasBinding}
+            >
+              修改模型配置
+            </Checkbox>
+            <Checkbox
+              checked={launchAfterApply}
+              onChange={(v) => {
+                setLaunchAfterApply(v);
+                writeBool("skillx_bottom_launch_after", v);
+              }}
+              disabled={!selectedTool}
+            >
+              启动应用
+            </Checkbox>
+            {selectedTool === "codex" && currentCodexProviderId && (
+              <Checkbox
+                checked={responsesPassthrough}
+                onChange={(v) => {
+                  setResponsesPassthrough(v);
+                }}
+                disabled={!selectedTool}
+              >
+                Responses 直连
+              </Checkbox>
+            )}
+          </div>
 
-      {/* ---- Codex ---- */}
-      {codexBinding && codexProvider && (
-        <ConfigSection
-          icon="C" iconBg={TOOL_COLORS["codex"]}
-          title="Codex 配置" badge={codexProvider.name}
-          description="将当前选中的大模型配置写入 Codex 的 config.toml + auth.json，修改后需要重启 Codex 才能生效。"
-          accent="#6b7280"
-          onWrite={handleWriteCodex} onRestart={handleRestartCodex} onRestore={handleRestoreCodex}
-          writeLabel="写入 Codex 配置" restartLabel="重启 Codex" restoreLabel="恢复 OpenAI 官方配置"
-          writing={writingCodex} restarting={restartingCodex} restoring={restoringCodex}
-          configWritten={codexWritten} writeDisabled={false}
-        />
-      )}
-
-      {/* ---- Hermes ---- */}
-      {hermesBoundProvider && hermesProfileNames.length > 0 && (
-        <ConfigSection
-          icon="H" iconBg={TOOL_COLORS["hermes"]}
-          title="Hermes 配置" badge={hermesBoundProvider.name}
-          description="将当前选中的大模型配置写入 Hermes profile 的 settings.json，修改后需要重启 Hermes 才能生效。"
-          accent="#f59e0b"
-          onWrite={handleWriteHermes} onRestart={handleRestartHermes} onRestore={handleRestoreHermes}
-          writeLabel="写入 Hermes 配置" restartLabel="重启 Hermes" restoreLabel="清除 Hermes 配置"
-          writing={writingHermes} restarting={restartingHermes} restoring={false}
-          configWritten={hermesWritten} writeDisabled={!hermesProfile}
-          extra={
-            hermesProfileNames.length > 0 ? (
-              <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "12px", color: "var(--muted-foreground)", whiteSpace: "nowrap" }}>
-                  配置 Profile:
-                </span>
-                <select
-                  value={hermesProfile}
-                  onChange={(e) => { setHermesProfile(e.target.value); setHermesWritten(false); }}
-                  style={{
-                    padding: "4px 10px", borderRadius: "4px", border: "1px solid var(--input)",
-                    backgroundColor: "var(--background)", color: "var(--foreground)",
-                    fontSize: "12px", minWidth: "140px",
-                  }}
-                >
-                  <option value="">-- 选择 Profile --</option>
-                  {hermesProfileNames.map((name) => <option key={name} value={name}>{name}</option>)}
-                </select>
-              </div>
-            ) : undefined
-          }
-        />
-      )}
-
-      {/* ---- Save ---- */}
-      {hasChanges && (
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button onClick={handleSave} disabled={saving} variant="default" size="sm">
-            {saving ? "保存中..." : "保存绑定"}
-          </Button>
+          {/* Action button */}
+          <button
+            onClick={handleBottomBarAction}
+            disabled={bottomDisabled}
+            style={{
+              height: "36px",
+              padding: "0 24px",
+              fontSize: "14px",
+              fontWeight: 600,
+              borderRadius: "8px",
+              border: "none",
+              cursor: bottomDisabled ? "not-allowed" : "pointer",
+              transition: "all 0.15s",
+              fontFamily: "inherit",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+              ...(bottomDisabled
+                ? {
+                    backgroundColor: "var(--muted)",
+                    color: "var(--muted-foreground)",
+                  }
+                : {
+                    backgroundColor: "var(--primary)",
+                    color: "var(--primary-foreground)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  }
+              ),
+            }}
+          >
+            {getButtonText()}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

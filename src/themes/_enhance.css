@@ -215,16 +215,81 @@
    Switch / Toggle 组件
    ============================================================================ */
 
-[data-theme-style] button[role="switch"] {
-  background: var(--color-bg-sunken) !important;
-  border: 1px solid var(--color-border) !important;
-  transition: all 0.2s var(--ease);
+/* —— Toggle（自定义组件） —— */
+.toggle-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: var(--pill-w, 44px);
+  height: var(--pill-h, 26px);
+  border-radius: calc(var(--pill-h, 26px) / 2);
+  background: var(--color-bg-sunken);
+  border: 1.5px solid var(--color-border);
+  cursor: pointer;
+  transition: background 0.2s var(--ease), border-color 0.2s var(--ease);
+  padding: 0;
+  flex-shrink: 0;
 }
-[data-theme-style] button[role="switch"][data-state="checked"] {
-  background: var(--color-accent) !important;
-  border-color: var(--color-accent) !important;
+.toggle-pill[data-checked="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.toggle-pill[data-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.toggle-thumb {
+  position: absolute;
+  top: 1px;
+  left: var(--thumb-pos, 3px);
+  width: var(--thumb-s, 20px);
+  height: var(--thumb-s, 20px);
+  border-radius: 50%;
+  background: var(--color-fg);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  transition: left 0.2s var(--ease);
+  pointer-events: none;
 }
 
+/* —— Switch（Radix UI 组件） —— */
+.toggle-pill[data-state="unchecked"] {
+  background: var(--color-bg-sunken);
+  border-color: var(--color-border);
+}
+.toggle-pill[data-state="checked"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.toggle-pill[data-state="unchecked"] .toggle-thumb {
+  left: 3px;
+}
+.toggle-pill[data-state="checked"] .toggle-thumb {
+  left: 21px;
+}
+
+/* —— 默认（Apple）主题：开关灰底白球，不走 accent —— */
+[data-theme-style="default"] .toggle-pill[data-checked="true"],
+[data-theme-style="default"] .toggle-pill[data-state="checked"] {
+  background: #D1D1D6 !important;
+  border-color: #D1D1D6 !important;
+}
+[data-theme-style="default"] .toggle-thumb {
+  background: #FFFFFF !important;
+}
+
+/* —— 简约（Notion）主题：开关灰底白球 —— */
+[data-theme-style="apple"] .toggle-pill {
+  background: var(--color-bg-sunken) !important;
+  border-color: var(--color-border-thin) !important;
+}
+[data-theme-style="apple"] .toggle-pill[data-checked="true"],
+[data-theme-style="apple"] .toggle-pill[data-state="checked"] {
+  background: #3A3A3A !important;
+  border-color: #3A3A3A !important;
+}
+[data-theme-style="apple"] .toggle-thumb {
+  background: #FFFFFF !important;
+}
 
 /* ============================================================================
    通用 Typography：所有主题增强文字响应主题字体
@@ -253,16 +318,243 @@
 
 
 /* ============================================================================
-   cyberpunk 专属加强：青色辉光/L 角/扫描线/雷达网格/HUD 字体
+   default (Apple) 专属加强：白卡浮画布 / 浅边 / 蓝按钮 / nav 白卡圆角
+   ============================================================================ */
+
+[data-theme-style="default"][data-mode="light"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="default"][data-mode="light"] aside.glass-sidebar a[href].active {
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: #1A1A1A !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  font-weight: 600 !important;
+}
+[data-theme-style="default"][data-mode="dark"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="default"][data-mode="dark"] aside.glass-sidebar a[href].active {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #F2F2F2 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  font-weight: 600 !important;
+}
+[data-theme-style="default"][data-mode="light"] aside.glass-sidebar a[href]:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  color: #1A1A1A !important;
+}
+[data-theme-style="default"][data-mode="dark"] aside.glass-sidebar a[href]:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  color: #F2F2F2 !important;
+}
+
+[data-theme-style="default"][data-mode="light"] button[class*="bg-primary"],
+[data-theme-style="default"][data-mode="light"] a[class*="bg-primary"] {
+  background: #0071E3 !important;
+  color: #FFFFFF !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme-style="default"][data-mode="dark"] button[class*="bg-primary"],
+[data-theme-style="default"][data-mode="dark"] a[class*="bg-primary"] {
+  background: #0A84FF !important;
+  color: #FFFFFF !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+[data-theme-style="default"][data-mode="light"] button[class*="bg-primary"]:hover {
+  background: #0064D2 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.2) !important;
+}
+[data-theme-style="default"][data-mode="dark"] button[class*="bg-primary"]:hover {
+  background: #409CFF !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3) !important;
+}
+
+[data-theme-style="default"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="default"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"] {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.2s var(--ease);
+}
+[data-theme-style="default"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="default"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"] {
+  background: #1A1A1A !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.2s var(--ease);
+}
+[data-theme-style="default"] [class*="rounded-xl"][class*="bg-card"]:hover,
+[data-theme-style="default"] [class*="rounded-lg"][class*="bg-card"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme-style="default"][data-mode="light"] input[class*="border-input"] {
+  background: #ECECEC !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 0.5rem !important;
+  color: #1A1A1A !important;
+  box-shadow: none !important;
+}
+[data-theme-style="default"][data-mode="dark"] input[class*="border-input"] {
+  background: #1A1A1A !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 0.5rem !important;
+  color: #F2F2F2 !important;
+  box-shadow: none !important;
+}
+[data-theme-style="default"][data-mode="light"] input[class*="border-input"]:focus {
+  background: #FFFFFF !important;
+  border: 1px solid #0071E3 !important;
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1) !important;
+}
+[data-theme-style="default"][data-mode="dark"] input[class*="border-input"]:focus {
+  background: #2C2C2E !important;
+  border: 1px solid #0A84FF !important;
+  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15) !important;
+}
+
+[data-theme-style="default"][data-mode="light"] body {
+  background-color: #F5F5F5 !important;
+}
+[data-theme-style="default"][data-mode="dark"] body {
+  background-color: #0E0E0E !important;
+}
+
+
+/* ============================================================================
+   apple (Notion) 专属加强：极简清爽 · 微妙边框 · 柔和阴影 · 轻交互
+   ============================================================================ */
+
+[data-theme-style="apple"][data-mode="light"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="apple"][data-mode="light"] aside.glass-sidebar a[href].active {
+  background: #F5F5F5 !important;
+  color: #1A1A1A !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+}
+[data-theme-style="apple"][data-mode="dark"] aside.glass-sidebar a[href][aria-current="page"],
+[data-theme-style="apple"][data-mode="dark"] aside.glass-sidebar a[href].active {
+  background: #1A1A1A !important;
+  color: #E8E8E8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+}
+[data-theme-style="apple"][data-mode="light"] aside.glass-sidebar a[href]:hover {
+  background: #F5F5F5 !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  color: #1A1A1A !important;
+}
+[data-theme-style="apple"][data-mode="dark"] aside.glass-sidebar a[href]:hover {
+  background: #1A1A1A !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: #E8E8E8 !important;
+}
+
+[data-theme-style="apple"][data-mode="light"] button[class*="bg-primary"],
+[data-theme-style="apple"][data-mode="light"] a[class*="bg-primary"] {
+  background: #3A3A3A !important;
+  color: #FFFFFF !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.375rem !important;
+  box-shadow: none !important;
+}
+[data-theme-style="apple"][data-mode="dark"] button[class*="bg-primary"],
+[data-theme-style="apple"][data-mode="dark"] a[class*="bg-primary"] {
+  background: #C8C8C8 !important;
+  color: #0E0E0E !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.375rem !important;
+  box-shadow: none !important;
+}
+[data-theme-style="apple"][data-mode="light"] button[class*="bg-primary"]:hover {
+  background: #1F1F1F !important;
+}
+[data-theme-style="apple"][data-mode="dark"] button[class*="bg-primary"]:hover {
+  background: #E0E0E0 !important;
+}
+
+[data-theme-style="apple"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="apple"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"] {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+[data-theme-style="apple"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"],
+[data-theme-style="apple"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"] {
+  background: #1A1A1A !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+/* Notion: no hover lift, only subtle bg change */
+[data-theme-style="apple"] [class*="rounded-xl"][class*="bg-card"]:hover,
+[data-theme-style="apple"] [class*="rounded-lg"][class*="bg-card"]:hover {
+  transform: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+}
+[data-theme-style="apple"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"]:hover,
+[data-theme-style="apple"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"]:hover {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme-style="apple"][data-mode="light"] input[class*="border-input"] {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 0.375rem !important;
+  color: #1A1A1A !important;
+  box-shadow: none !important;
+}
+[data-theme-style="apple"][data-mode="dark"] input[class*="border-input"] {
+  background: #1A1A1A !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 0.375rem !important;
+  color: #E8E8E8 !important;
+  box-shadow: none !important;
+}
+[data-theme-style="apple"][data-mode="light"] input[class*="border-input"]:focus {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04) !important;
+}
+[data-theme-style="apple"][data-mode="dark"] input[class*="border-input"]:focus {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04) !important;
+}
+
+[data-theme-style="apple"][data-mode="light"] body {
+  background-color: #FFFFFF !important;
+}
+[data-theme-style="apple"][data-mode="dark"] body {
+  background-color: #0E0E0E !important;
+}
+
+
+/* ============================================================================
+   cyberpunk (Sci-Fi HUD) 专属加强：青色辉光/L 角/扫描线/雷达网格/HUD 字体
    ============================================================================ */
 
 [data-theme-style="cyberpunk"] aside.glass-sidebar a[href][aria-current="page"],
 [data-theme-style="cyberpunk"] aside.glass-sidebar a[href].active {
-  background: rgba(0, 224, 255, 0.15) !important;
+  background: rgba(0, 224, 255, 0.12) !important;
   color: #00E0FF !important;
   border: 1px solid #00E0FF !important;
-  box-shadow: 0 0 12px rgba(0, 224, 255, 0.6), inset 0 0 8px rgba(0, 224, 255, 0.3) !important;
-  text-shadow: 0 0 8px rgba(0, 224, 255, 0.8) !important;
+  box-shadow: 0 0 12px rgba(0, 224, 255, 0.5), inset 0 0 8px rgba(0, 224, 255, 0.25) !important;
+  text-shadow: 0 0 8px rgba(0, 224, 255, 0.7) !important;
   font-family: var(--font-display) !important;
   text-transform: uppercase !important;
   letter-spacing: 0.1em !important;
@@ -272,9 +564,9 @@
 [data-theme-style="cyberpunk"] button[class*="bg-primary"],
 [data-theme-style="cyberpunk"] a[class*="bg-primary"] {
   background: #00E0FF !important;
-  color: #050818 !important;
+  color: #0F1729 !important;
   border: 1px solid #14FFEC !important;
-  box-shadow: 0 0 12px rgba(0, 224, 255, 0.6) !important;
+  box-shadow: 0 0 12px rgba(0, 224, 255, 0.5) !important;
   font-family: var(--font-display) !important;
   text-transform: uppercase !important;
   letter-spacing: 0.15em !important;
@@ -283,21 +575,21 @@
 }
 [data-theme-style="cyberpunk"] button[class*="bg-primary"]:hover {
   background: #14FFEC !important;
-  box-shadow: 0 0 20px rgba(0, 224, 255, 0.8) !important;
+  box-shadow: 0 0 20px rgba(0, 224, 255, 0.7) !important;
 }
 [data-theme-style="cyberpunk"] button[class*="bg-primary"]:active {
   transform: scale(0.95) !important;
-  box-shadow: 0 0 8px rgba(0, 224, 255, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 224, 255, 0.4) !important;
 }
 
 [data-theme-style="cyberpunk"] [class*="rounded-xl"][class*="bg-card"],
 [data-theme-style="cyberpunk"] [class*="rounded-lg"][class*="bg-card"] {
-  background: rgba(14, 20, 48, 0.6) !important;
+  background: rgba(15, 23, 42, 0.65) !important;
   backdrop-filter: blur(12px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
-  border: 1px solid rgba(0, 224, 255, 0.35) !important;
+  border: 1px solid rgba(0, 224, 255, 0.3) !important;
   border-radius: 4px !important;
-  box-shadow: 0 0 10px rgba(0, 224, 255, 0.25) !important;
+  box-shadow: 0 0 10px rgba(0, 224, 255, 0.2) !important;
   position: relative;
 }
 /* HUD L 角装饰 */
@@ -323,7 +615,7 @@
 }
 
 [data-theme-style="cyberpunk"] input[class*="border-input"] {
-  background: rgba(2, 4, 12, 0.7) !important;
+  background: rgba(5, 8, 24, 0.7) !important;
   border: 1px solid #00E0FF !important;
   color: #00E0FF !important;
   font-family: var(--font-mono) !important;
@@ -332,14 +624,14 @@
   letter-spacing: 0.04em;
 }
 [data-theme-style="cyberpunk"] input[class*="border-input"]:focus {
-  box-shadow: 0 0 12px rgba(0, 224, 255, 0.6), inset 0 0 8px rgba(0, 224, 255, 0.2) !important;
+  box-shadow: 0 0 12px rgba(0, 224, 255, 0.5), inset 0 0 8px rgba(0, 224, 255, 0.15) !important;
 }
 
 [data-theme-style="cyberpunk"] body {
   background-image:
     var(--scanline),
-    linear-gradient(rgba(0, 224, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 224, 255, 0.05) 1px, transparent 1px) !important;
+    linear-gradient(rgba(0, 224, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 224, 255, 0.04) 1px, transparent 1px) !important;
   background-size: 100% 4px, 40px 40px, 40px 40px !important;
   background-attachment: fixed !important;
   background-color: #050818 !important;
@@ -354,14 +646,14 @@
 
 
 /* ============================================================================
-   comic 专属加强：粗墨线 / 硬偏移阴影 / 高饱和原色 / Bangers 字体
+   comic (漫画) 专属加强：粗墨线 / 硬偏移阴影 / 高饱和原色 / Bangers 字体
    ============================================================================ */
 
 [data-theme-style="comic"][data-mode="light"] aside.glass-sidebar a[href][aria-current="page"],
 [data-theme-style="comic"][data-mode="light"] aside.glass-sidebar a[href].active {
   background: #FF006E !important;
   color: #FFFEF0 !important;
-  border: 3px solid #1A1A1A !important;
+  border: 4px solid #1A1A1A !important;
   box-shadow: 4px 4px 0 0 #1A1A1A !important;
   font-weight: 900 !important;
   font-family: var(--font-display) !important;
@@ -372,7 +664,7 @@
 [data-theme-style="comic"][data-mode="dark"] aside.glass-sidebar a[href].active {
   background: #FF2E97 !important;
   color: #0F0F1A !important;
-  border: 3px solid #FFFEF0 !important;
+  border: 4px solid #FFFEF0 !important;
   box-shadow: 4px 4px 0 0 #FFFEF0 !important;
   font-weight: 900 !important;
   font-family: var(--font-display) !important;
@@ -384,7 +676,7 @@
 [data-theme-style="comic"][data-mode="light"] a[class*="bg-primary"] {
   background: #FF006E !important;
   color: #FFFFFF !important;
-  border: 3px solid #1A1A1A !important;
+  border: 4px solid #1A1A1A !important;
   box-shadow: 4px 4px 0 0 #1A1A1A !important;
   font-family: var(--font-display) !important;
   font-weight: 900 !important;
@@ -397,7 +689,7 @@
 [data-theme-style="comic"][data-mode="dark"] a[class*="bg-primary"] {
   background: #FF2E97 !important;
   color: #0F0F1A !important;
-  border: 3px solid #FFFEF0 !important;
+  border: 4px solid #FFFEF0 !important;
   box-shadow: 4px 4px 0 0 #FFFEF0 !important;
   font-family: var(--font-display) !important;
   font-weight: 900 !important;
@@ -424,16 +716,16 @@
 [data-theme-style="comic"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"],
 [data-theme-style="comic"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"] {
   background: #FFFFFF !important;
-  border: 3px solid #1A1A1A !important;
-  box-shadow: 5px 5px 0 0 #1A1A1A !important;
+  border: 4px solid #1A1A1A !important;
+  box-shadow: 4px 4px 0 0 #1A1A1A !important;
   border-radius: 6px !important;
   transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
 [data-theme-style="comic"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"],
 [data-theme-style="comic"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"] {
   background: #1A1A2A !important;
-  border: 3px solid #FFFEF0 !important;
-  box-shadow: 5px 5px 0 0 #FFFEF0 !important;
+  border: 4px solid #FFFEF0 !important;
+  box-shadow: 4px 4px 0 0 #FFFEF0 !important;
   border-radius: 6px !important;
   transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
@@ -445,23 +737,23 @@
 
 [data-theme-style="comic"][data-mode="light"] input[class*="border-input"] {
   background: #FFFFFF !important;
-  border: 3px solid #1A1A1A !important;
+  border: 4px solid #1A1A1A !important;
   border-radius: 4px !important;
   font-weight: 700;
   color: #1A1A1A !important;
-  box-shadow: 3px 3px 0 0 #1A1A1A !important;
+  box-shadow: 4px 4px 0 0 #1A1A1A !important;
 }
 [data-theme-style="comic"][data-mode="dark"] input[class*="border-input"] {
   background: #1A1A2A !important;
-  border: 3px solid #FFFEF0 !important;
+  border: 4px solid #FFFEF0 !important;
   border-radius: 4px !important;
   font-weight: 700;
   color: #FFFEF0 !important;
-  box-shadow: 3px 3px 0 0 #FFFEF0 !important;
+  box-shadow: 4px 4px 0 0 #FFFEF0 !important;
 }
 [data-theme-style="comic"] input[class*="border-input"]:focus {
   outline: none;
-  box-shadow: 5px 5px 0 0 #FF006E !important;
+  box-shadow: 6px 6px 0 0 #FF006E !important;
   transform: translate(-1px, -1px);
 }
 
@@ -485,12 +777,12 @@
 
 [data-theme-style="comic"][data-mode="light"] aside.glass-sidebar {
   background: #FFFFFF !important;
-  border-right: 3px solid #1A1A1A !important;
+  border-right: 4px solid #1A1A1A !important;
 }
 
 [data-theme-style="comic"][data-mode="dark"] aside.glass-sidebar {
   background: #1A1A2A !important;
-  border-right: 3px solid #FFFEF0 !important;
+  border-right: 4px solid #FFFEF0 !important;
 }
 [data-theme-style="comic"] aside.glass-sidebar a[href] {
   font-family: var(--font-display) !important;
@@ -511,280 +803,6 @@
 
 
 /* ============================================================================
-   apple 专属加强：白卡浮画布 / 浅边 / 灰按钮 / nav 用白卡圆角
-   ============================================================================ */
-
-[data-theme-style="apple"][data-mode="light"] aside.glass-sidebar a[href][aria-current="page"],
-[data-theme-style="apple"][data-mode="light"] aside.glass-sidebar a[href].active {
-  background: #FFFFFF !important;
-  color: #1A1A1A !important;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
-  font-weight: 600 !important;
-}
-[data-theme-style="apple"][data-mode="dark"] aside.glass-sidebar a[href][aria-current="page"],
-[data-theme-style="apple"][data-mode="dark"] aside.glass-sidebar a[href].active {
-  background: #1A1A1A !important;
-  color: #F2F2F2 !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
-  font-weight: 600 !important;
-}
-[data-theme-style="apple"][data-mode="light"] aside.glass-sidebar a[href]:hover {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
-  color: #1A1A1A !important;
-}
-[data-theme-style="apple"][data-mode="dark"] aside.glass-sidebar a[href]:hover {
-  background: #1A1A1A !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
-  color: #F2F2F2 !important;
-}
-
-[data-theme-style="apple"][data-mode="light"] button[class*="bg-primary"],
-[data-theme-style="apple"][data-mode="light"] a[class*="bg-primary"] {
-  background: #3A3A3A !important;
-  color: #FFFFFF !important;
-  border: 1px solid transparent !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-}
-[data-theme-style="apple"][data-mode="dark"] button[class*="bg-primary"],
-[data-theme-style="apple"][data-mode="dark"] a[class*="bg-primary"] {
-  background: #C8C8C8 !important;
-  color: #0E0E0E !important;
-  border: 1px solid transparent !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
-}
-[data-theme-style="apple"][data-mode="light"] button[class*="bg-primary"]:hover {
-  background: #1F1F1F !important;
-  transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15) !important;
-}
-[data-theme-style="apple"][data-mode="dark"] button[class*="bg-primary"]:hover {
-  background: #E0E0E0 !important;
-  transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4) !important;
-}
-
-[data-theme-style="apple"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"],
-[data-theme-style="apple"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"] {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0, 0, 0, 0.05) !important;
-  border-radius: 1.5rem !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03) !important;
-  transition: all 0.2s var(--ease);
-}
-[data-theme-style="apple"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"],
-[data-theme-style="apple"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"] {
-  background: #1A1A1A !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  border-radius: 1.5rem !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-  transition: all 0.2s var(--ease);
-}
-[data-theme-style="apple"] [class*="rounded-xl"][class*="bg-card"]:hover,
-[data-theme-style="apple"] [class*="rounded-lg"][class*="bg-card"]:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
-}
-
-[data-theme-style="apple"][data-mode="light"] input[class*="border-input"] {
-  background: #ECECEC !important;
-  border: 1px solid transparent !important;
-  border-radius: 9999px !important;
-  color: #1A1A1A !important;
-  box-shadow: none !important;
-}
-[data-theme-style="apple"][data-mode="dark"] input[class*="border-input"] {
-  background: #1A1A1A !important;
-  border: 1px solid transparent !important;
-  border-radius: 9999px !important;
-  color: #F2F2F2 !important;
-  box-shadow: none !important;
-}
-[data-theme-style="apple"][data-mode="light"] input[class*="border-input"]:focus {
-  background: #FFFFFF !important;
-  border: 1px solid #3A3A3A !important;
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.06) !important;
-}
-[data-theme-style="apple"][data-mode="dark"] input[class*="border-input"]:focus {
-  background: #2A2A2A !important;
-  border: 1px solid #C8C8C8 !important;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06) !important;
-}
-
-[data-theme-style="apple"][data-mode="light"] body {
-  background-color: #F5F5F5 !important;
-}
-[data-theme-style="apple"][data-mode="dark"] body {
-  background-color: #0E0E0E !important;
-}
-
-
-/* ============================================================================
-   neumorphism 专属加强：Soft UI · 暖亚麻 + 大圆角 28px + 双向柔阴影 + 顶部高光
-   ============================================================================ */
-
-/* ── Nav 胶囊：暖色 sunken 背景 + 内阴影 ── */
-[data-theme-style="neumorphism"][data-mode="light"] aside.glass-sidebar a[href][aria-current="page"],
-[data-theme-style="neumorphism"][data-mode="light"] aside.glass-sidebar a[href].active {
-  background: #EDE8DF !important;
-  color: #7A6B58 !important;
-  border: 1px solid rgba(74, 69, 60, 0.06) !important;
-  box-shadow: inset 0 2px 8px rgba(74, 69, 60, 0.08) !important;
-  font-weight: 600 !important;
-}
-[data-theme-style="neumorphism"][data-mode="dark"] aside.glass-sidebar a[href][aria-current="page"],
-[data-theme-style="neumorphism"][data-mode="dark"] aside.glass-sidebar a[href].active {
-  background: #252220 !important;
-  color: #D4B896 !important;
-  border: 1px solid rgba(212, 184, 150, 0.12) !important;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35) !important;
-  font-weight: 600 !important;
-}
-
-/* ── Primary 按钮：pill + 暖柔阴影 + hover lift ── */
-[data-theme-style="neumorphism"][data-mode="light"] button[class*="bg-primary"],
-[data-theme-style="neumorphism"][data-mode="light"] a[class*="bg-primary"] {
-  background: #7A6B58 !important;
-  color: #F7F4EE !important;
-  border: none !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 4px 16px rgba(122, 107, 88, 0.2), 0 1px 3px rgba(122, 107, 88, 0.12) !important;
-  transition: all 0.25s var(--ease);
-}
-[data-theme-style="neumorphism"][data-mode="dark"] button[class*="bg-primary"],
-[data-theme-style="neumorphism"][data-mode="dark"] a[class*="bg-primary"] {
-  background: #D4B896 !important;
-  color: #1C1A16 !important;
-  border: none !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25) !important;
-  transition: all 0.25s var(--ease);
-}
-[data-theme-style="neumorphism"][data-mode="light"] button[class*="bg-primary"]:hover {
-  background: #5C4F40 !important;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(122, 107, 88, 0.28), 0 2px 6px rgba(122, 107, 88, 0.15) !important;
-}
-[data-theme-style="neumorphism"][data-mode="dark"] button[class*="bg-primary"]:hover {
-  background: #E5C9A7 !important;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3) !important;
-}
-
-/* ── Card：大圆角 28px + 双向柔阴影 + 顶部 1px 高光 + hover lift ── */
-[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"],
-[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"] {
-  background: #F7F4EE !important;
-  border: 1px solid rgba(74, 69, 60, 0.04) !important;
-  border-radius: 1.75rem !important;
-  box-shadow:
-    0 8px 24px rgba(74, 69, 60, 0.08),
-    0 2px 4px rgba(74, 69, 60, 0.04),
-    -2px -2px 8px rgba(255, 255, 255, 0.6) !important;
-  position: relative;
-  transition: all 0.25s var(--ease);
-}
-[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"],
-[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"] {
-  background: #1C1A16 !important;
-  border: 1px solid rgba(212, 184, 150, 0.06) !important;
-  border-radius: 1.75rem !important;
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.35),
-    0 2px 4px rgba(0, 0, 0, 0.25),
-    -2px -2px 8px rgba(212, 184, 150, 0.04) !important;
-  position: relative;
-  transition: all 0.25s var(--ease);
-}
-/* 顶部 1px 柔光高光 */
-[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"]::before,
-[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"]::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 12px; right: 12px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
-  pointer-events: none;
-  border-radius: 9999px;
-}
-[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"]::before,
-[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"]::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 12px; right: 12px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212,184,150,0.18), transparent);
-  pointer-events: none;
-  border-radius: 9999px;
-}
-/* Hover：lift + 阴影扩散 */
-[data-theme-style="neumorphism"] [class*="rounded-xl"][class*="bg-card"]:hover,
-[data-theme-style="neumorphism"] [class*="rounded-lg"][class*="bg-card"]:hover {
-  transform: translateY(-4px);
-}
-[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-xl"][class*="bg-card"]:hover,
-[data-theme-style="neumorphism"][data-mode="light"] [class*="rounded-lg"][class*="bg-card"]:hover {
-  box-shadow:
-    0 16px 40px rgba(74, 69, 60, 0.12),
-    0 4px 8px rgba(74, 69, 60, 0.06),
-    -3px -3px 12px rgba(255, 255, 255, 0.7) !important;
-}
-[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-xl"][class*="bg-card"]:hover,
-[data-theme-style="neumorphism"][data-mode="dark"] [class*="rounded-lg"][class*="bg-card"]:hover {
-  box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.45),
-    0 4px 8px rgba(0, 0, 0, 0.3),
-    -3px -3px 12px rgba(212, 184, 150, 0.06) !important;
-}
-
-/* ── Input：sunken 内阴影 + pill + focus ring ── */
-[data-theme-style="neumorphism"][data-mode="light"] input[class*="border-input"] {
-  background: #EDE8DF !important;
-  border: 1px solid transparent !important;
-  color: #4A453C !important;
-  border-radius: 9999px !important;
-  box-shadow: inset 0 2px 8px rgba(74, 69, 60, 0.08) !important;
-}
-[data-theme-style="neumorphism"][data-mode="dark"] input[class*="border-input"] {
-  background: #252220 !important;
-  border: 1px solid transparent !important;
-  color: #E8E2D6 !important;
-  border-radius: 9999px !important;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35) !important;
-}
-[data-theme-style="neumorphism"][data-mode="light"] input[class*="border-input"]:focus {
-  background: #F7F4EE !important;
-  box-shadow: inset 0 2px 8px rgba(74, 69, 60, 0.06), 0 0 0 3px rgba(122, 107, 88, 0.15) !important;
-  outline: none;
-}
-[data-theme-style="neumorphism"][data-mode="dark"] input[class*="border-input"]:focus {
-  background: #1C1A16 !important;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(212, 184, 150, 0.12) !important;
-  outline: none;
-}
-
-/* ── Body 背景 ── */
-[data-theme-style="neumorphism"][data-mode="light"] body {
-  background-color: #F7F4EE !important;
-}
-[data-theme-style="neumorphism"][data-mode="dark"] body {
-  background-color: #1C1A16 !important;
-}
-
-/* ── Typography ── */
-[data-theme-style="neumorphism"] h1,
-[data-theme-style="neumorphism"] h2,
-[data-theme-style="neumorphism"] aside.glass-sidebar a[href] {
-  font-family: var(--font-display) !important;
-}
-
-/* ============================================================================
    5 主题 · 页面内联卡片视觉强化（v3.1 修复 · 2026-06-26）
    Skills/Tools/Settings/Marketplace/LlmModel 共 90+ 处内联 8/12/6/999px 圆角
    用属性选择器直接覆盖，按主题分配形态
@@ -802,7 +820,7 @@
 }
 
 /* ============================================================================
-   默认 macOS 主题：保持中等圆角，衬线 display 接管大标题
+   默认 (Apple) 主题：保持大圆角，系统无衬线接管大标题
    ============================================================================ */
 [data-theme-style="default"] h1,
 [data-theme-style="default"] h2 {
@@ -812,23 +830,23 @@
 }
 
 /* ============================================================================
-   简约（Apple）主题：所有内联 8/12px 圆角 → 大圆角（24px 卡片 / 9999px 按钮）
+   简约 (Notion) 主题：所有内联 8/12px 圆角 → 小圆角（8px 卡片 / 6px 按钮）
    ============================================================================ */
 [data-theme-style="apple"] [style*="border-radius: 8"]:not([class*="rounded-"]):not([data-sonner-toast]) {
-  border-radius: 1.25rem !important;  /* 20px */
+  border-radius: 0.5rem !important;  /* 8px */
 }
 [data-theme-style="apple"] [style*="border-radius: 12"]:not([class*="rounded-"]):not([data-sonner-toast]) {
-  border-radius: var(--radius-card) !important;  /* 24px */
+  border-radius: 0.5rem !important;  /* 8px */
 }
 [data-theme-style="apple"] button {
-  border-radius: 9999px !important;  /* 所有按钮 pill */
+  border-radius: 0.375rem !important;  /* 6px */
 }
 [data-theme-style="apple"] button[style*="border-radius: 6"] {
-  border-radius: 9999px !important;
+  border-radius: 0.375rem !important;
 }
 
 /* ============================================================================
-   科幻（Cyberpunk）主题：所有圆角 → 锐角（4px 卡片 / 2px 按钮）+ 青色辉光
+   科幻 (Sci-Fi HUD) 主题：所有圆角 → 锐角（4px 卡片 / 2px 按钮）+ 青色辉光
    ============================================================================ */
 [data-theme-style="cyberpunk"] [style*="border-radius: 8"]:not([class*="rounded-"]):not([data-sonner-toast]),
 [data-theme-style="cyberpunk"] [style*="border-radius: 12"]:not([class*="rounded-"]):not([data-sonner-toast]),
@@ -845,67 +863,15 @@
 /* 卡片青色辉光 */
 [data-theme-style="cyberpunk"] [style*="border: \"1px solid var(--border)\""] {
   border-color: rgba(0, 224, 255, 0.3) !important;
-  box-shadow: 0 0 12px rgba(0, 224, 255, 0.15) !important;
+  box-shadow: 0 0 12px rgba(0, 224, 255, 0.12) !important;
 }
 [data-theme-style="cyberpunk"] [style*="border: active ?"] {
   border-color: rgba(0, 224, 255, 0.6) !important;
-  box-shadow: 0 0 16px rgba(0, 224, 255, 0.4) !important;
+  box-shadow: 0 0 16px rgba(0, 224, 255, 0.3) !important;
 }
 
 /* ============================================================================
-   轻拟（Neumorphism）主题：所有圆角 → 软圆角（28px / pill）+ 双向柔阴影
-   Soft UI：暖亚麻调 + 大圆角 + 双向阴影 + hover lift
-   ============================================================================ */
-[data-theme-style="neumorphism"] [style*="border-radius: 8"]:not([class*="rounded-"]):not([data-sonner-toast]) {
-  border-radius: 1.5rem !important;  /* 24px */
-}
-[data-theme-style="neumorphism"] [style*="border-radius: 10"]:not([class*="rounded-"]):not([data-sonner-toast]) {
-  border-radius: 1.5rem !important;  /* 24px */
-}
-[data-theme-style="neumorphism"] [style*="border-radius: 12"]:not([class*="rounded-"]):not([data-sonner-toast]) {
-  border-radius: var(--radius-card) !important;  /* 28px */
-}
-[data-theme-style="neumorphism"] [style*="border-radius: 14"]:not([class*="rounded-"]):not([data-sonner-toast]),
-[data-theme-style="neumorphism"] [style*="border-radius: 16"]:not([class*="rounded-"]):not([data-sonner-toast]),
-[data-theme-style="neumorphism"] [style*="border-radius: 18"]:not([class*="rounded-"]):not([data-sonner-toast]),
-[data-theme-style="neumorphism"] [style*="border-radius: 20"]:not([class*="rounded-"]):not([data-sonner-toast]) {
-  border-radius: var(--radius-card) !important;  /* 28px */
-}
-[data-theme-style="neumorphism"] button {
-  border-radius: 9999px !important;
-}
-/* 内联 border 卡片 → Soft UI 双向柔阴影 */
-[data-theme-style="neumorphism"][data-mode="light"] [style*="border: \"1px solid var(--border)\""] {
-  border: 1px solid transparent !important;
-  box-shadow:
-    6px 6px 16px rgba(74, 69, 60, 0.10),
-    -6px -6px 16px rgba(255, 255, 255, 0.65) !important;
-  transition: all 0.25s var(--ease) !important;
-}
-[data-theme-style="neumorphism"][data-mode="dark"] [style*="border: \"1px solid var(--border)\""] {
-  border: 1px solid transparent !important;
-  box-shadow:
-    6px 6px 16px rgba(0, 0, 0, 0.35),
-    -6px -6px 16px rgba(212, 184, 150, 0.05) !important;
-  transition: all 0.25s var(--ease) !important;
-}
-/* Hover lift for inline cards */
-[data-theme-style="neumorphism"] [style*="border: \"1px solid var(--border)\""]:hover {
-  transform: translateY(-3px);
-}
-[data-theme-style="neumorphism"][data-mode="light"] [style*="border: \"1px solid var(--border)\""]:hover {
-  box-shadow:
-    10px 10px 24px rgba(74, 69, 60, 0.14),
-    -10px -10px 24px rgba(255, 255, 255, 0.75) !important;
-}
-[data-theme-style="neumorphism"][data-mode="dark"] [style*="border: \"1px solid var(--border)\""]:hover {
-  box-shadow:
-    10px 10px 24px rgba(0, 0, 0, 0.45),
-    -10px -10px 24px rgba(212, 184, 150, 0.08) !important;
-}
-
-/* ============================================================================
-   漫画（Comic）主题：所有圆角 → sharp（6px / 4px）+ 3px 粗墨边 + 硬偏移阴影
+   漫画 (Comic) 主题：所有圆角 → sharp（6px / 4px）+ 4px 粗墨边 + 硬偏移阴影
    ============================================================================ */
 [data-theme-style="comic"] [style*="border-radius: 8"]:not([class*="rounded-"]):not([data-sonner-toast]),
 [data-theme-style="comic"] [style*="border-radius: 12"]:not([class*="rounded-"]):not([data-sonner-toast]) {
@@ -922,19 +888,39 @@
   letter-spacing: 0.04em !important;
 }
 [data-theme-style="comic"] [style*="border: \"1px solid var(--border)\""] {
-  border-width: 3px !important;
+  border-width: 4px !important;
   border-color: var(--color-card-border) !important;
-  box-shadow: 5px 5px 0 0 var(--color-card-border) !important;
+  box-shadow: 4px 4px 0 0 var(--color-card-border) !important;
 }
 /* 漫画亮色用黑墨线，暗色用白墨线 */
 [data-theme-style="comic"][data-mode="light"] [style*="border: \"1px solid var(--border)\""] {
   border-color: #1A1A1A !important;
-  box-shadow: 5px 5px 0 0 #1A1A1A !important;
+  box-shadow: 4px 4px 0 0 #1A1A1A !important;
 }
 [data-theme-style="comic"][data-mode="dark"] [style*="border: \"1px solid var(--border)\""] {
   border-color: #FFFEF0 !important;
-  box-shadow: 5px 5px 0 0 #FFFEF0 !important;
+  box-shadow: 4px 4px 0 0 #FFFEF0 !important;
 }
+
+/* ============================================================================
+   轻拟 (Neumorphism) 主题：按钮保持 pill，但下拉菜单 / 弹窗 / 输入框保留方角
+   ============================================================================ */
+[data-theme-style="neumorphism"] [style*="border-radius: 8"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 8px !important;
+}
+[data-theme-style="neumorphism"] [style*="border-radius: 6"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 6px !important;
+}
+[data-theme-style="neumorphism"] [style*="border-radius: 12"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 12px !important;
+}
+[data-theme-style="neumorphism"] [style*="border-radius: 4"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 4px !important;
+}
+[data-theme-style="neumorphism"] [style*="border-radius: 14"]:not([class*="rounded-"]):not([data-sonner-toast]) {
+  border-radius: 14px !important;
+}
+
 
 /* ============================================================================
    通用形态 token 桥（v3 重构 · 2026-06-26）
@@ -969,6 +955,7 @@
 [data-theme-style] [class*="shadow"]:not([class*="shadow-none"]) {
   box-shadow: var(--shadow-md) !important;
 }
+
 
 /* ============================================================================
    Toast 主题化（toast.tsx 内联 hex 色 + 14px 圆角 + 黑阴影）
@@ -1048,4 +1035,3 @@
 [data-theme-style] *:focus-visible {
   outline-color: var(--ring) !important;
 }
-

@@ -17,31 +17,19 @@ export function Toggle({ checked, onChange, disabled = false }: ToggleProps) {
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
+      className="toggle-pill"
       style={{
-        width: 44,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: checked ? "var(--primary)" : isDark ? "var(--muted-foreground)" : "var(--border)",
-        border: "none",
-        cursor: disabled ? "not-allowed" : "pointer",
-        position: "relative",
-        transition: "background-color 0.2s",
-        opacity: disabled ? 0.5 : 1,
-      }}
+        "--pill-w": "44px",
+        "--pill-h": "26px",
+        "--thumb-s": "20px",
+        "--thumb-gap": "3px",
+        "--thumb-travel": "calc(var(--pill-w) - var(--thumb-s) - var(--thumb-gap) * 2)",
+        "--thumb-pos": checked ? "var(--thumb-travel)" : "var(--thumb-gap)",
+      } as React.CSSProperties}
+      data-checked={checked}
+      data-disabled={disabled}
     >
-      <span
-        style={{
-          position: "absolute",
-          top: 2,
-          left: checked ? 22 : 2,
-          width: 20,
-          height: 20,
-          borderRadius: "50%",
-          backgroundColor: "var(--primary-foreground, #ffffff)",
-          transition: "left 0.2s",
-          boxShadow: "0 1px 3px var(--shadow-color, rgba(0,0,0,0.2))",
-        }}
-      />
+      <span className="toggle-thumb" />
     </button>
   );
 }

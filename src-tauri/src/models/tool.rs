@@ -249,6 +249,74 @@ pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
         alt_config_dirs: &[],
         cli_command: "hermes",
     },
+    // ---- Lobster / Chinese agent family ----
+    ToolDefinition {
+        id: "qclaw",
+        name: "QClaw (千爪)",
+        config_dir: ".qclaw",
+        alt_config_dirs: &[],
+        cli_command: "qclaw",
+    },
+    ToolDefinition {
+        id: "easyclaw",
+        name: "EasyClaw (简爪)",
+        config_dir: ".easyclaw",
+        alt_config_dirs: &[".easyclaw-20260322-01"],
+        cli_command: "easyclaw",
+    },
+    ToolDefinition {
+        id: "autoclaw",
+        name: "AutoClaw",
+        config_dir: ".openclaw-autoclaw",
+        alt_config_dirs: &[".autoclaw"],
+        cli_command: "autoclaw",
+    },
+    ToolDefinition {
+        id: "workbuddy",
+        name: "WorkBuddy (打工搭子)",
+        // WorkBuddy stores skills under a `skills-marketplace` subdirectory. We point config_dir
+        // at that subdirectory so detection + skills path both resolve correctly with the default
+        // `<config_dir>/skills` layout.
+        config_dir: ".workbuddy/skills-marketplace",
+        alt_config_dirs: &[".workbuddy"],
+        cli_command: "workbuddy",
+    },
+    // ---- Well-known Western agents ----
+    ToolDefinition {
+        id: "amp",
+        name: "Amp",
+        config_dir: ".amp",
+        alt_config_dirs: &[],
+        cli_command: "amp",
+    },
+    ToolDefinition {
+        id: "aider",
+        name: "Aider",
+        config_dir: ".aider",
+        alt_config_dirs: &[],
+        cli_command: "aider",
+    },
+    ToolDefinition {
+        id: "copilot",
+        name: "GitHub Copilot",
+        config_dir: ".copilot",
+        alt_config_dirs: &[".config/gh-copilot"],
+        cli_command: "gh",
+    },
+    ToolDefinition {
+        id: "grok",
+        name: "Grok",
+        config_dir: ".grok",
+        alt_config_dirs: &[],
+        cli_command: "grok",
+    },
+    ToolDefinition {
+        id: "ob1",
+        name: "OB1",
+        config_dir: ".ob1",
+        alt_config_dirs: &[],
+        cli_command: "ob1",
+    },
 ];
 
 #[cfg(test)]

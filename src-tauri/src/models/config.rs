@@ -543,7 +543,7 @@ mod tests {
     #[test]
     fn skill_tags_default_to_empty_when_loading_legacy_config() {
         let config_json = r#"{
-            "version": "3.3.1",
+            "version": "3.4.0",
             "skills_dir": "/tmp/skills",
             "tools": {},
             "custom_tools": {},
@@ -614,7 +614,7 @@ mod tests {
     #[test]
     fn llm_provider_loads_from_legacy_config_without_field() {
         let config_json = r#"{
-            "version": "3.3.1",
+            "version": "3.4.0",
             "skills_dir": "/tmp/skills",
             "tools": {},
             "custom_tools": {},

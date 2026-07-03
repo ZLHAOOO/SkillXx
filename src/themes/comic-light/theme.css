@@ -67,10 +67,10 @@
   --color-hero-accent-bg: #FF006E;
   --color-hero-accent-fg: #FFFFFF;
 
-  --shadow-sm: 3px 3px 0 0 #1A1A1A;
-  --shadow-md: 5px 5px 0 0 #1A1A1A;
-  --shadow-lg: 8px 8px 0 0 #1A1A1A;
-  --shadow-inset: inset 0 0 0 2px #1A1A1A;
+  --shadow-sm: 3px 3px 0 0 rgba(26,26,26,1);
+  --shadow-md: 4px 4px 0 0 rgba(26,26,26,1);
+  --shadow-lg: 6px 6px 0 0 rgba(26,26,26,1);
+  --shadow-inset: inset 0 0 0 2px rgba(26,26,26,1);
   --glow-accent: 0 0 0 transparent;
   --scanline: radial-gradient(circle at 50% 50%, rgba(26,26,26,0.18) 1px, transparent 1.5px) 0 0 / 8px 8px;
   --clip-corner: 0;
@@ -95,10 +95,10 @@
   border-right: 3px solid #1A1A1A;
 }
 
-/* —— 形态 token：漫画 · sharp + 3px 粗墨边 + 硬偏移阴影 —— */
+/* —— 形态 token：漫画 · sharp + 4px 粗墨边 + 硬偏移阴影 —— */
 [data-theme-style="comic"][data-mode="light"] {
-  --radius-card: 6px;            /* sharp 漫画圆角 */
-  --radius-button: 4px;          /* hard 按钮 */
-  --border-w-card: 3px;          /* 3px 粗墨线 */
-  --shadow-toast: 5px 5px 0 0 #1A1A1A;  /* POW! 硬偏移 */
+  --radius-card: 6px;
+  --radius-button: 4px;
+  --border-w-card: 4px;
+  --shadow-toast: 5px 5px 0 0 #1A1A1A;
 }

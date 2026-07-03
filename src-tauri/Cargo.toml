@@ -1,6 +1,6 @@
 [package]
 name = "SkillX"
-version = "3.3.1"
+version = "3.4.0"
 description = "A unified desktop application for managing AI coding assistant skills"
 authors = ["ZLHAOOO"]
 edition = "2021"
@@ -36,9 +36,11 @@ uuid = { version = "1", features = ["v4", "serde"] }
 sha2 = "0.10"
 zip = "0.6.6"
 toml = "0.8"
+toml_edit = "0.22"
 futures-util = "0.3"
 url = "2"
 urlencoding = "2"
+bytes = "1"
 
 [dev-dependencies]
 mockito = "1.4.0"

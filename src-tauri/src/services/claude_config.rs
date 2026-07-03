@@ -286,12 +286,18 @@ pub struct ProviderEnvConfig {
 pub fn restart_claude_code() -> Result<String, String> {
     use std::process::Command;
 
-    // First, kill any running claude processes
+    // Gracefully quit Claude Code via AppleScript
+    let _ = Command::new("osascript")
+        .args(["-e", "tell application \"Claude Code\" to quit"])
+        .output();
+
+    // Also kill any CLI processes
     let _ = Command::new("pkill").args(["-f", "claude"]).output();
 
-    std::thread::sleep(std::time::Duration::from_millis(500));
+    // Wait for processes to exit
+    std::thread::sleep(std::time::Duration::from_millis(2000));
 
-    // Relaunch claude in background
+    // Relaunch
     let output = Command::new("open")
         .args(["-a", "Claude Code"])
         .output()

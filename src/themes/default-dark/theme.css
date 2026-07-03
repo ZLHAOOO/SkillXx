@@ -1,40 +1,38 @@
 /* ============================================================================
-   Default · Dark（macOS Vibrancy 风格 · 暗色）
-   macOS Sonoma 深色模式风格：深灰画布（#1c1c1e）+ 面板 #2c2c2e + 容器 #3a3a3c
-   1px 半透白边 + 衬线 display + 极简阴影
-   参考：macOS Sonoma dark mode, Things 3 dark, Bear dark
+   Default · Dark（Apple 风格 · 暗色）
+   极致简约：黑/深灰 + 精致圆角 + 微妙阴影 + Apple 蓝 + 大量留白
    ============================================================================ */
 
 [data-theme-style="default"][data-mode="dark"] {
-  /* —— 基础画布：macOS 深灰三层（#1c1c1e → #2c2c2e → #3a3a3c） —— */
-  --background: #1C1C1E;
-  --foreground: rgba(255, 255, 255, 0.92);
-  --card: #2C2C2E;
-  --card-foreground: rgba(255, 255, 255, 0.92);
-  --popover: #2C2C2E;
-  --popover-foreground: rgba(255, 255, 255, 0.92);
+  /* —— 基础画布：Apple 深色两层（#0E0E0E → #1A1A1A）—— */
+  --background: #0E0E0E;
+  --foreground: #F2F2F2;
+  --card: #1A1A1A;
+  --card-foreground: #F2F2F2;
+  --popover: #1A1A1A;
+  --popover-foreground: #F2F2F2;
 
-  /* —— Primary: macOS 蓝（亮色版）—— */
+  /* —— Primary: Apple 暗蓝 —— */
   --primary: #0A84FF;
   --primary-foreground: #FFFFFF;
 
-  /* —— Secondary: 容器灰（#3a3a3c） —— */
-  --secondary: #3A3A3C;
-  --secondary-foreground: rgba(255, 255, 255, 0.92);
+  /* —— Secondary: 深灰 —— */
+  --secondary: #1A1A1A;
+  --secondary-foreground: #F2F2F2;
 
-  /* —— Muted: 偏暗灰 —— */
-  --muted: #2C2C2E;
-  --muted-foreground: rgba(235, 235, 245, 0.6);
+  /* —— Muted: 极暗灰 —— */
+  --muted: #1A1A1A;
+  --muted-foreground: #9A9A9A;
 
-  /* —— Accent: 亮蓝灰 hover 态 —— */
-  --accent: #48484A;
-  --accent-foreground: rgba(255, 255, 255, 0.92);
+  /* —— Accent: 亮灰 hover 态 —— */
+  --accent: #2C2C2E;
+  --accent-foreground: #F2F2F2;
 
-  /* —— Destructive: macOS 红（亮色版）—— */
+  /* —— Destructive: Apple 红 —— */
   --destructive: #FF453A;
 
-  /* —— Border: 1px 半透白（关键 token）—— */
-  --border: rgba(255, 255, 255, 0.08);
+  /* —— Border: 微妙暗色边 —— */
+  --border: rgba(255, 255, 255, 0.06);
   --input: rgba(255, 255, 255, 0.1);
   --ring: #0A84FF;
 
@@ -45,81 +43,89 @@
   --chart-4: #BF5AF2;
   --chart-5: #FF453A;
 
-  /* —— Sidebar: 1px 半透白边，无背景（融入画布） —— */
+  /* —— Sidebar —— */
   --sidebar: transparent;
-  --sidebar-foreground: rgba(255, 255, 255, 0.92);
+  --sidebar-foreground: #F2F2F2;
   --sidebar-primary: #0A84FF;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: rgba(255, 255, 255, 0.06);
-  --sidebar-accent-foreground: rgba(255, 255, 255, 0.92);
-  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #F2F2F2;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
   --sidebar-ring: #0A84FF;
 
-  /* —— Semantic: macOS 暗色语义色 —— */
+  /* —— 语义色 —— */
   --color-error: #FF453A;
-  --color-error-bg: rgba(255, 69, 58, 0.12);
+  --color-error-bg: rgba(255, 69, 58, 0.14);
   --color-error-border: rgba(255, 69, 58, 0.3);
   --color-success: #30D158;
-  --color-success-bg: rgba(48, 209, 88, 0.12);
+  --color-success-bg: rgba(48, 209, 88, 0.14);
   --color-success-border: rgba(48, 209, 88, 0.3);
   --color-warning: #FF9F0A;
-  --color-warning-bg: rgba(255, 159, 10, 0.12);
+  --color-warning-bg: rgba(255, 159, 10, 0.14);
   --color-warning-border: rgba(255, 159, 10, 0.3);
   --color-primary-action: #0A84FF;
   --color-primary-action-hover: #409CFF;
 
-  /* —— 原型自有 token —— */
-  --color-bg: #1C1C1E;
-  --color-bg-elevated: #2C2C2E;
-  --color-bg-sunken: #1C1C1E;
+  /* —— 表面层级 —— */
+  --color-bg: #0E0E0E;
+  --color-bg-elevated: #1A1A1A;
+  --color-bg-sunken: #050505;
   --color-sidebar-bg: transparent;
-  --color-fg: rgba(255, 255, 255, 0.92);
-  --color-fg-muted: rgba(235, 235, 245, 0.6);
-  --color-fg-subtle: rgba(235, 235, 245, 0.3);
-  --color-border-thin: rgba(255, 255, 255, 0.08);
+  --color-fg: #F2F2F2;
+  --color-fg-muted: #9A9A9A;
+  --color-fg-subtle: #6B6B6B;
+  --color-border-thin: rgba(255, 255, 255, 0.06);
   --color-accent: #0A84FF;
   --color-accent-fg: #FFFFFF;
   --color-accent-soft: rgba(10, 132, 255, 0.18);
-  --color-card-bg: #2C2C2E;
-  --color-card-border: rgba(255, 255, 255, 0.08);
+  --color-card-bg: #1A1A1A;
+  --color-card-border: rgba(255, 255, 255, 0.06);
   --color-banner-bg: rgba(255, 159, 10, 0.15);
   --color-banner-border: rgba(255, 159, 10, 0.3);
-  --color-banner-fg: rgba(255, 255, 255, 0.92);
+  --color-banner-fg: #F2F2F2;
   --color-hero-accent-bg: #0A84FF;
   --color-hero-accent-fg: #FFFFFF;
 
-  /* —— 阴影：极克制（depth 来自背景层）—— */
-  --shadow-sm: 0 0 0 transparent;
-  --shadow-md: 0 1px 0 rgba(255, 255, 255, 0.05);
-  --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-inset: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  /* —— 阴影：微妙 soft shadow —— */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.3);
   --glow-accent: 0 0 0 transparent;
   --scanline: none;
   --clip-corner: 0;
 
-  /* —— 字体：衬线 display + 无衬线 body —— */
-  --font-display: "Charter", "Iowan Old Style", "Source Serif Pro", ui-serif, Georgia, "Times New Roman", "Songti SC", serif;
-  --font-body: var(--app-font-family, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif);
+  /* —— 字体：系统无衬线（Apple SF 风格）—— */
+  --font-display: var(--app-font-family, -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
+  --font-body: var(--app-font-family, -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
   --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
-  --color-scrollbar: rgba(255, 255, 255, 0.16);
-  --color-scrollbar-hover: rgba(255, 255, 255, 0.3);
-  --color-body-bg: #1C1C1E;
+  --color-scrollbar: rgba(255, 255, 255, 0.12);
+  --color-scrollbar-hover: rgba(255, 255, 255, 0.22);
+  --color-body-bg: #0E0E0E;
 
-  /* —— 主题形态 token（macOS 形态）—— */
-  --radius-card: 0.75rem;       /* 12px 圆角，macOS 标准 */
-  --radius-button: 0.5rem;     /* 8px 圆角（与 Skills 等页面内联值兼容）*/
-  --border-w-card: 1px;         /* 1px 半透白边 */
-  --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* —— 形态 token：Apple · 大圆角 24px + 微妙阴影 —— */
+  --radius: 0.5rem;
+  --radius-card: 1.5rem;
+  --radius-button: 0.5rem;
+  --border-w-card: 1px;
+  --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-/* 主内容画布（无卡片特征，仅背景色）*/
+/* 主内容画布 */
 [data-theme-style="default"][data-mode="dark"] .glass-content {
-  background: var(--color-bg-elevated, #2C2C2E);
+  background: var(--color-bg-elevated, #1A1A1A);
   border: none;
   box-shadow: none;
 }
 
+[data-theme-style="default"][data-mode="dark"] .glass-sidebar {
+  background: var(--color-sidebar-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-right: 1px solid var(--color-border);
+}
+
 [data-theme-style="default"][data-mode="dark"] body {
-  background: #1C1C1E;
+  background-color: #0E0E0E;
 }

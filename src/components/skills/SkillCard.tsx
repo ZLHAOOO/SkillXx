@@ -562,7 +562,7 @@ function getToolIconElement(toolId: string, tools: Tool[]) {
 
   const iconSrc = tool.icon_path
     ? convertFileSrc(tool.icon_path)
-    : getToolIconUrl(tool.id);
+    : getToolIconUrl(tool.id) || (toolId.startsWith("hermes-") ? getToolIconUrl("hermes") : null);
 
   if (iconSrc) {
     return (

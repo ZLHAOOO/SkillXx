@@ -141,6 +141,16 @@ pub fn update_tool_paths(
     tool_id: String,
     config_path: Option<String>,
     skills_path: Option<String>,
+    cache: State<AppCache>,
+) -> Result<(), String> {
+    update_tool_paths_with_cache(tool_id, config_path, skills_path, &cache)
+}
+
+fn update_tool_paths_with_cache(
+    tool_id: String,
+    config_path: Option<String>,
+    skills_path: Option<String>,
+    cache: &AppCache,
 ) -> Result<(), String> {
     let manager = ConfigManager::new();
     let mut config = manager.load()?;
@@ -156,7 +166,9 @@ pub fn update_tool_paths(
             tool_config.skills_path = PathBuf::from(path);
         }
 
-        return manager.save(&config);
+        manager.save(&config)?;
+        cache.invalidate_tools();
+        return Ok(());
     }
 
     if let Some(custom_tool) = config.custom_tools.get_mut(&tool_id) {
@@ -168,7 +180,32 @@ pub fn update_tool_paths(
             custom_tool.skills_path = PathBuf::from(path);
         }
 
-        return manager.save(&config);
+        manager.save(&config)?;
+        cache.invalidate_tools();
+        return Ok(());
+    }
+
+    // Upsert: if the tool is a builtin (in SUPPORTED_TOOLS) but hasn't been persisted yet,
+    // create an entry so the user can manually locate a tool that auto-detection missed.
+    let is_builtin = SUPPORTED_TOOLS.iter().any(|def| def.id == tool_id);
+    if is_builtin {
+        let cfg_path_string = config_path
+            .ok_or_else(|| format!("config_path is required to register builtin tool: {}", tool_id))?;
+        let cfg_path = PathBuf::from(cfg_path_string);
+        let skills = skills_path
+            .map(PathBuf::from)
+            .unwrap_or_else(|| cfg_path.join("skills"));
+        let detected = cfg_path.exists();
+        let tool_config = crate::models::ToolConfig {
+            enabled: detected,
+            detected,
+            skills_path: skills,
+            config_path: cfg_path,
+        };
+        config.tools.insert(tool_id, tool_config);
+        manager.save(&config)?;
+        cache.invalidate_tools();
+        return Ok(());
     }
 
     Err(format!("Tool not found: {}", tool_id))
@@ -276,7 +313,7 @@ pub fn delete_custom_tool(tool_id: String, cache: State<AppCache>) -> Result<(),
 
 #[cfg(test)]
 mod tests {
-    use super::{set_tool_enabled_in_config, update_tool_paths};
+    use super::{set_tool_enabled_in_config, update_tool_paths_with_cache};
     use crate::services::{AppCache, LinkerService};
     use crate::test_support::with_temp_home;
     use serde_json::json;
@@ -368,10 +405,12 @@ mod tests {
             fs::create_dir_all(&new_config).unwrap();
             fs::create_dir_all(&new_skills).unwrap();
 
-            let result = update_tool_paths(
+            let cache = AppCache::default();
+            let result = update_tool_paths_with_cache(
                 "my-tool".to_string(),
                 Some(new_config.to_string_lossy().to_string()),
                 Some(new_skills.to_string_lossy().to_string()),
+                &cache,
             );
             assert!(result.is_ok(), "expected update_tool_paths to succeed");
 

@@ -1,11 +1,14 @@
 #[allow(dead_code)]
+pub mod apply_model_to_tool;
 pub mod auth;
 pub mod claude_config;
 pub mod codex_config;
+pub mod codex_proxy;
 pub mod config;
 pub mod editors;
 pub mod feedback;
 pub mod files;
+pub mod gemini_config;
 pub mod hermes_config;
 pub mod llm;
 pub mod llm_providers;
@@ -34,9 +37,12 @@ pub use llm_providers::{
     delete_llm_provider, fetch_models_for_config, get_active_provider, get_llm_providers, get_tool_bindings,
     multi_switch_llm_provider, save_llm_provider_multi, save_tool_bindings,
 };
+pub use apply_model_to_tool::{apply_model_to_tool, ApplyModelInfo};
 pub use claude_config::{apply_claude_provider, clear_claude_provider, read_claude_env, restart_claude_code_cmd, write_claude_env, list_claude_backups, restore_claude_backup};
-pub use codex_config::{apply_codex_provider, clear_codex_provider, read_codex_env, restart_codex_cmd, list_codex_backups, restore_codex_backup, restore_codex_original};
+pub use codex_config::{apply_codex_provider, apply_codex_provider_passthrough, clear_codex_provider, read_codex_env, restart_codex_cmd, list_codex_backups, restore_codex_backup, restore_codex_original};
+pub use codex_proxy::{start_codex_proxy, update_codex_proxy_config, stop_codex_proxy};
 pub use hermes_config::{apply_hermes_provider, clear_hermes_provider, list_hermes_backups, read_hermes_env, restart_hermes_cmd};
+pub use gemini_config::{apply_gemini_provider, clear_gemini_provider, list_gemini_backups, read_gemini_env};
 pub use marketplace::{
     check_marketplace_updates_if_stale, fetch_marketplace_skill_descriptions,
     fetch_marketplace_skills, fetch_skill_file_content, fetch_skill_files, get_marketplace_sources,

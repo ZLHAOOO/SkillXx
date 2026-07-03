@@ -8,48 +8,31 @@ pub fn read_codex_env() -> Result<std::collections::HashMap<String, String>, Str
 
 /// Write a provider's config into Codex's auth.json and config.toml.
 ///
-/// Codex uses the Responses API (OpenAI-compatible). Providers that speak
-/// OpenAI format connect directly; providers that only have an Anthropic URL
-/// are bridged through the local protocol proxy.
+/// Uses a local protocol proxy to translate Codex Responses API calls into
+/// Chat Completions calls for the upstream provider. This supports both
+/// Responses-native providers (StepFun) and Chat-only providers (Agnes,
+/// LongCat, etc.) transparently.
 #[tauri::command]
 pub async fn apply_codex_provider(provider: LlmProviderConfig) -> Result<String, String> {
-    // Determine the OpenAI-compatible URL
-    let upstream_url = if !provider.base_url_openai.is_empty() {
-        provider.base_url_openai.clone()
-    } else {
-        provider.base_url.clone()
-    };
+    // Pass the raw base_url — the proxy handles URL construction
+    crate::services::codex_config::apply_codex_provider(
+        &provider.api_key,
+        &provider.base_url,
+        &provider.model,
+        &provider.name,
+    )
+}
 
-    // If the provider only has an Anthropic URL, we need the protocol proxy
-    let needs_proxy = upstream_url == provider.base_url
-        && !provider.base_url_anthropic.is_empty()
-        && provider.base_url_openai.is_empty();
-
-    if needs_proxy {
-        // Start the local proxy to bridge Anthropic → Responses API
-        let port = crate::services::codex_proxy::ensure_proxy_running(
-            upstream_url,
-            provider.api_key.clone(),
-            provider.model.clone(),
-        )
-        .await?;
-
-        let proxy_url = crate::services::codex_proxy::proxy_base_url(port);
-        crate::services::codex_config::apply_codex_provider(
-            &provider.api_key,
-            &proxy_url,
-            &provider.model,
-            &provider.name,
-        )
-    } else {
-        // Direct connection — OpenAI-compatible provider
-        crate::services::codex_config::apply_codex_provider(
-            &provider.api_key,
-            &upstream_url,
-            &provider.model,
-            &provider.name,
-        )
-    }
+/// Write a provider's config using Responses API passthrough (no proxy).
+/// Only for providers that natively support the Responses API (e.g., StepFun).
+#[tauri::command]
+pub async fn apply_codex_provider_passthrough(provider: LlmProviderConfig) -> Result<String, String> {
+    crate::services::codex_config::apply_codex_provider_passthrough(
+        &provider.api_key,
+        &provider.base_url,
+        &provider.model,
+        &provider.name,
+    )
 }
 
 /// Clear Codex provider config (with auto-backup)
