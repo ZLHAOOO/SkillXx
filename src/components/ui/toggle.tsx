@@ -1,5 +1,3 @@
-import { useTheme } from "@/hooks/useTheme";
-
 interface ToggleProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -7,9 +5,6 @@ interface ToggleProps {
 }
 
 export function Toggle({ checked, onChange, disabled = false }: ToggleProps) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-
   return (
     <button
       type="button"
