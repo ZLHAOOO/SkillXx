@@ -7,7 +7,7 @@
 > **A unified desktop application for managing AI coding assistant skills.**
 > Seamlessly organize, sync, and share skills for **Claude Code, Codex, Opencode** and other AI tools.
 
-![Version](https://img.shields.io/badge/version-3.3.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.4.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
 [中文说明](./README_CN.md)
 
@@ -33,15 +33,13 @@ It uses a powerful **symlink synchronization mechanism**, allowing you to write 
 
 Download the latest installer for your operating system from the **[Releases Page](../../releases)**.
 
-| OS | Installer Type |
-|----|----------------|
-| **macOS** | `.dmg` (Universal) |
-| **Windows** | `.msi` / `.exe` |
-| **Linux** | `.deb` / `.AppImage` / `.rpm`|
+| OS | Installer Type | Status |
+|----|----------------|--------|
+| **macOS** (Apple Silicon) | `.dmg` (aarch64) | ✅ Available |
+| **Windows** | `.msi` / `.exe` | 🔜 Coming soon |
+| **Linux** | `.deb` / `.AppImage` / `.rpm` | 🔜 Coming soon |
 
-## ⚠️ Windows Important Note
-
-If you encounter permission issues when syncing skills (symbolic link creation errors) or detection issues, please try running the application as **Administrator**. This is often required on Windows to create symbolic links unless Developer Mode is enabled.
+> 🪟 **Windows & Linux**: v3.4.0 currently ships macOS only. Windows installer will be added in a future release. We appreciate your patience.
 
 ## 🚀 Getting Started
 
