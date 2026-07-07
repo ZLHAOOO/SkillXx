@@ -1,4 +1,15 @@
 @import "tw-animate-css";
+@import "./themes/_enhance.css";
+@import "./themes/apple-dark/theme.css";
+@import "./themes/apple-light/theme.css";
+@import "./themes/comic-dark/theme.css";
+@import "./themes/comic-light/theme.css";
+@import "./themes/cyberpunk-dark/theme.css";
+@import "./themes/cyberpunk-light/theme.css";
+@import "./themes/default-dark/theme.css";
+@import "./themes/default-light/theme.css";
+@import "./themes/neumorphism-dark/theme.css";
+@import "./themes/neumorphism-light/theme.css";
 
 @plugin "tailwindcss-animate";
 
