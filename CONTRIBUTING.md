@@ -45,13 +45,15 @@ npm run tauri dev
 ### 6. 测试
 
 ```bash
-# 前端测试
-npm test
-
-# Rust 测试
+# Rust 单元测试
 cd src-tauri
 cargo test
+
+# 前端单元测试（.test.ts 文件使用 node:test，需先装 tsx）
+node --import tsx --test src/**/*.test.ts
 ```
+
+> ℹ️ 当前 `package.json` 未提供 `test` / `typecheck` / `lint` 脚本，如需可自行添加，或直接调用 `tsc --noEmit` / `eslint`。
 
 ### 7. 提交代码
 

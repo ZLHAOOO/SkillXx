@@ -5,118 +5,87 @@
 </p>
 
 > **一款统一的 AI 编码助手技能管理桌面应用。**
-> 无缝管理、同步和分享 **Claude Code、Codex、Opencode** 等 AI 工具的技能。
+> 一处编写，处处可用：**Claude Code、Codex、Gemini、Cursor、Cline** 等 20+ AI 工具通用。
 
-![Version](https://img.shields.io/badge/version-3.3.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.4.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
-[English](./README.md)
+[English](./README.md) · [Changelog](./CHANGELOG.md)
 
 ## 📖 简介
 
-**SkillX** 是一款现代化桌面应用，旨在解决 AI 助手技能配置碎片化的问题。不再需要为不同工具分别管理技能，SkillX 提供了一个中心化的管理平台。
-
-通过强大的 **软链接同步机制**，您只需编写一次技能，即可在 Claude Code、Codex、Opencode 等支持的 AI 工具中即时使用。
+**SkillX** 是一款现代化桌面应用，解决 AI 助手技能配置碎片化的问题。不再需要为不同工具分别管理技能——SkillX 通过 **软链接** 机制自动同步，你只需编写一次，即可在所有支持的工具中即时使用。
 
 ## ✨ 核心特性
 
-- **🎯 统一管理**：将所有 AI 技能集中在一个安全的位置。
-- **🔄 智能同步**：自动软链接管理，确保您的工具始终拥有最新版本的技能，无需文件复制。
-- **🎛️ 精细控制**：可以为特定工具单独启用或禁用技能，而不删除原始文件。
-- **🌐 多语言显示**：自定义技能名称和简介的显示语言（原始/中文/英文），支持一键 AI 翻译。
-- **⚡ 高性能**：基于 **Rust** 和 **Tauri 2.0** 构建，轻量且极速，支持配置缓存。
-- **🛡️ 跨平台**：原生支持 macOS、Windows 和 Linux。
-- **🔌 多工具支持**：开箱即用支持 **Claude Code、Codex、Opencode**，可扩展支持更多工具。
-- **🧩 自定义工具**：可添加带有自定义路径和可选图标的专属工具。
-- **🎨 现代界面**：基于 React 19、Tailwind CSS v4 和 Radix UI 构建的简约美观界面。
+- **🎯 统一管理**：所有 AI 技能集中在一个位置。
+- **🔄 软链接同步**：自动、无文件复制、始终最新。
+- **🎛️ 精细控制**：为不同工具单独启用/禁用技能，不删除原始文件。
+- **🌐 多语言显示**：技能名称与简介支持原始 / 中文 / 英文独立配置，支持一键 AI 翻译。
+- **🏪 模型市场**：内置 20+ LLM Provider（OpenAI、Anthropic、DeepSeek、Qwen、Kimi、GLM、Gemini、Grok、MiniMax 等）。
+- **🔗 工具绑定**：把 Provider 绑定到具体工具，一键切换模型。
+- **⚡ 高性能**：Rust + Tauri 2.0；配置缓存加速响应。
+- **🔌 多工具支持**：Claude Code、Codex、Gemini、Cursor、Cline、Kiro、Trae、Iflow、Qwen Code、Hermes、Opencode 等，同时支持自定义工具。
+- **🎨 现代界面**：React 19 + Tailwind CSS v4 + Radix UI；内置 5 组主题（明暗共 10 套）。
 
 ## 📥 下载
 
-从 **[发布页面](../../releases)** 下载最新版本的安装包。
+从 **[发布页面](../../releases)** 下载最新版本安装包。
 
-| 操作系统 | 安装包类型 |
-|----------|------------|
-| **macOS** | `.dmg` (Universal) |
-| **Windows** | `.msi` / `.exe` |
-| **Linux** | `.deb` / `.AppImage` / `.rpm`|
+| 操作系统 | 安装包 | 状态 |
+|----------|--------|------|
+| **macOS**（Apple Silicon） | `.dmg` (aarch64) | ✅ 可用 |
+| **Windows** | `.msi` / `.exe` | 🔜 即将支持 |
+| **Linux** | `.deb` / `.AppImage` / `.rpm` | 🔜 即将支持 |
 
-## ⚠️ Windows 注意事项
-
-如果在同步技能时遇到权限问题（符号链接创建错误）或检测问题，请以 **管理员身份** 运行应用。在 Windows 上，除非启用了开发者模式，否则创建符号链接通常需要管理员权限。
+> 🪟 **Windows / Linux**：v3.4.0 目前仅发布 macOS 版本，Windows 与 Linux 安装包将于后续版本提供。
 
 ## 🚀 快速开始
 
-1. **安装**：运行对应平台的安装包。
-2. **设置**：首次启动时，应用会引导您选择技能存储目录。
-3. **同步**：应用自动检测已安装的 AI 工具（如 Claude Code）并链接您的技能。
-
-## ❗ Linux 故障排除
-
-如果在 Linux 上启动 `.AppImage` 时遇到**白屏**（尤其是在 VMware/VirtualBox 等虚拟机中），可能是 WebKitGTK 硬件加速问题。
-
-请在终端中使用以下命令运行：
-
-```bash
-WEBKIT_DISABLE_COMPOSITING_MODE=1 ./SkillX_1.0.1_amd64.AppImage
-```
+1. **安装**：运行 macOS 安装包。
+2. **设置**：首次启动时，应用会引导你选择技能存储目录。
+3. **同步**：应用自动检测已安装的 AI 工具并链接技能。
 
 ## 🛠️ 技术栈
 
-- **核心**: [Tauri 2.0](https://tauri.app/) (Rust)
-- **前端**: [React 19](https://react.dev/) + TypeScript
-- **样式**: [Tailwind CSS v4](https://tailwindcss.com/)
-- **UI 组件**: [Radix UI](https://www.radix-ui.com/)
-- **编辑器**: [Monaco Editor](https://microsoft.github.io/monaco-editor/)
+- **核心**：[Tauri 2.0](https://tauri.app/) (Rust)
+- **前端**：[React 19](https://react.dev/) + TypeScript
+- **样式**：[Tailwind CSS v4](https://tailwindcss.com/)
+- **UI 组件**：[Radix UI](https://www.radix-ui.com/)
+- **编辑器**：[Monaco Editor](https://microsoft.github.io/monaco-editor/)
 
-## 📅 v3.0.0 更新内容
+## 📅 更新亮点
 
-- **🌐 多语言显示**：自定义技能名称和简介的显示语言（原始/中文/英文）
-- **🤖 一键翻译**：使用 LLM 自动翻译技能名称和简介
-- **✏️ 自定义显示名称**：编辑技能在列表中的显示方式，不修改原始文件
-- **🔒 安全加固**：文件路径验证、CSP 策略、URL 校验
-- **⚡ 性能优化**：配置缓存机制，提升响应速度
-- **🎨 UI 优化**：简约化设计，改进侧边栏、卡片和设置页面
+### v3.4.0（2026-07-03）
+- **主题系统**：新增 5 组主题（Apple / Comic / Cyberpunk / Default / Neumorphism），明暗共 10 套
+- **工具绑定**：把 LLM Provider 绑定到具体工具，一键切换模型
+- **多 Provider 管理**：并列管理多个 Provider，可标记当前激活
 
-## 📅 v3.3.0 更新内容
+### v3.3.1（2026-07-01）
+- **AI 技能管家**：统一入口整合 AI 批量翻译与 AI 分类
+- **批量操作增强**：批量分类、批量标签、批量删除、绑定智能体
+- **稳定性**：Anthropic 认证头修复、OpenAI `response_format` 修复、Tauri 2 错误格式解析修复
 
-### AI 技能管家
-- **AI 技能管家入口**：工具栏新增 AI 技能管家按钮（图标样式，悬停显示文字），整合 AI 批量翻译与 AI 分类管理两大功能
-- **AI 批量翻译**：调用 LLM 批量翻译技能名称和描述，支持进度显示和错误重试
-- **AI 分类管理**：基于两级分类体系，使用 AI 自动为技能归类（一级分类 4 选 1，二级分类支持多选）
-- **分类体系**：提示增强 / 工具调用 / 知识蒸馏 / Skillflow 四大类，支持二级维度自定义
+### v3.2.x（2026-06-23 ~ 06-26）
+- **模型市场**：20+ 内置 Provider、智能图标匹配、自定义 Provider
+- **Hermes profiles 检测**、玻璃拟态 UI、翻译缓存统一
+- Skills.tsx 拆分：3,819 → 2,525 行（-34%）
 
-### 批量管理增强
-- **批量设置分类**：多选技能后一键设置一级+二级分类
-- **批量设置标签**：多选技能后批量追加或覆盖标签
-- **批量删除**：多选技能/技能组后一键删除
-- **绑定智能体**：原"批量设置工具"更名为"绑定智能体"
+### v3.0.0（2026-06-16）
+- 多语言显示 + 一键翻译
+- 安全加固（路径校验、CSP、URL 校验）
+- 配置缓存，首次以社区开源版本发布
 
-### UI 优化
-- **LLM 页面 Tab 重设计**：图标 + 文字风格，全宽分割线，与技能库页面视觉统一
-- **搜索框折叠**：点击搜索框外区域自动折叠为图标
-- **图标尺寸优化**：搜索图标和 AI 技能管家图标放大，视觉更清晰
-
----
-
-## 📅 v3.2.1 更新内容
-
-- **🏪 模型市场**：内置 20+ LLM 供应商目录（OpenAI / Anthropic / DeepSeek / Qwen / Kimi / Gemini / GLM / 小米 / 火山 / 阶跃 / Mistral / Grok / MiniMax 等），一键添加 Provider
-- **🎨 智能图标匹配**：根据供应商名称自动匹配图标（支持中英文名、拼音、别名）
-- **📐 Provider 网格布局**：响应式卡片网格，支持搜索和筛选
-- **✏️ 自定义供应商**：支持自定义 Base URL、API Key 和模型
+> 完整历史：**[CHANGELOG.md](./CHANGELOG.md)**
 
 ## 🙏 致谢
 
-SkillX 是 **[Skills Manager](https://github.com/jiweiyeah/Skills-Manager)** 的 fork 项目，由 [jiweiyeah](https://github.com/jiweiyeah) 原创开发。我们衷心感谢原作者及所有贡献者打下的坚实基础，没有他们的出色工作，就不会有这个项目。
-
-- 原始项目：[jiweiyeah/Skills-Manager](https://github.com/jiweiyeah/Skills-Manager)
-- 原作者：[jiweiyeah](https://github.com/jiweiyeah)
+SkillX 是 **[Skills Manager](https://github.com/jiweiyeah/Skills-Manager)** 的 fork 项目，由 [jiweiyeah](https://github.com/jiweiyeah) 原创。衷心感谢原作者及所有贡献者打下的坚实基础。
 
 ## 🤝 贡献与反馈
 
-我们欢迎各种形式的贡献！
-
-- **发现 Bug？** 请在 [Issues](../../issues) 页面提交问题。
-- **有功能建议？** 欢迎开启 Issue 讨论新功能。
+- **发现 Bug**：请在 [Issues](../../issues) 提交问题。
+- **功能建议**：欢迎在 [Issues](../../issues) 讨论。
+- **贡献指南**：参见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
 ## 📈 Star 历史
 
