@@ -1,0 +1,40 @@
+# File size budgets — grandfathered baseline.
+#
+# Format: <max_lines> <path>
+# - Files listed here currently exceed the default threshold; their max is
+#   frozen at (roughly) the current line count. They must NOT grow past this.
+# - Files NOT listed here fall under the default thresholds:
+#     .ts / .tsx  → 500 lines
+#     .rs         → 800 lines
+#
+# As you refactor these files down, LOWER the number here. Never raise it.
+# Once a file drops below the default threshold, remove its line entirely.
+#
+# Rationale: this is a "ratchet" — technical debt can only decrease.
+
+# --- Frontend (TypeScript / TSX) ---
+3122 src/pages/Skills.tsx
+1841 src/pages/Tools.tsx
+1501 src/pages/Settings.tsx
+1348 src/pages/Marketplace.tsx
+1013 src/components/marketplace/SkillDetailModal.tsx
+813  src/components/skills/SkillCard.tsx
+777  src/pages/llm/ProviderAddModal.tsx
+762  src/components/skills/dialogs/SkillManageDialog.tsx
+749  src/i18n/locales/en.ts
+741  src/i18n/locales/zh.ts
+718  src/pages/Editor.tsx
+693  src/pages/llm/ToolBindings.tsx
+683  src/pages/llm/ProviderManager.tsx
+634  src/pages/ProjectBindingsDialog.tsx
+583  src/components/skills/dialogs/CategoryEditDialog.tsx
+507  src/hooks/useSkillTranslation.tsx
+
+# --- Backend (Rust) ---
+3764 src-tauri/src/services/marketplace.rs
+1485 src-tauri/src/commands/marketplace.rs
+1359 src-tauri/src/commands/llm.rs
+1118 src-tauri/src/services/config_manager.rs
+1111 src-tauri/src/commands/skills.rs
+1051 src-tauri/src/services/scanner.rs
+987  src-tauri/src/services/codex_proxy.rs

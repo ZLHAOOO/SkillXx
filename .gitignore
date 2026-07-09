@@ -30,3 +30,10 @@ Cargo.lock
 
 # Nested git repos
 skillx-git/
+
+# Editor / scratch backups — do NOT commit these; use git branches instead
+*.backup
+*.backup[0-9]*
+*.original
+*.orig
+*.bak

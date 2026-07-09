@@ -213,9 +213,21 @@ cd src-tauri && cargo test
 
 # 前端单元测试（.test.ts 文件用 node:test 运行）
 node --import tsx --test src/**/*.test.ts   # 需先装 tsx
+
+# 文件行数上限检查（本地也可跑，CI 上是必过项）
+bash scripts/check-file-size.sh
 ```
 
 > ⚠️ 当前 `package.json` 未提供 `typecheck` / `lint` / `test` 脚本，如需可自行添加或直接调 `tsc` / `eslint`。
+
+### 文件行数预算（ratchet）
+
+`.github/workflows/quality.yml` 会在每次 push / PR 时运行 `scripts/check-file-size.sh`：
+
+- 默认阈值：`.ts` / `.tsx` ≤ 500 行，`.rs` ≤ 800 行。
+- 目前已超阈值的文件在 `scripts/file-size-budgets.txt` 中被"冻结"在当前行数。
+- 规则：**只能减、不能增**。重构变小 → 手动降低预算；降到默认阈值以下 → 删掉该行。
+- 新文件必须落在默认阈值内，否则 PR 失败。这样技术债只会单调下降。
 
 ---
 
