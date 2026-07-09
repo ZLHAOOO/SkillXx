@@ -7,6 +7,26 @@
 
 ---
 
+## 执行进度速览（2026-07-09 更新）
+
+| 项 | 状态 | 提交 |
+|----|------|------|
+| 版本号统一（`config.rs` 3.3.1 → 3.4.0） | ✅ 已完成 | `6cdbc51` |
+| 文档全量对齐实际状态（CLAUDE.md / AGENTS.md / CHANGELOG / README / PRIVACY / SECURITY / CONTRIBUTING） | ✅ 已完成 | `5d4c5ff` |
+| 归档临时文档到 `docs/archive/` | ✅ 已完成 | `5d4c5ff` |
+| README 版本顺序修正 & Windows 状态明示 | ✅ 已完成 | `5d4c5ff` |
+| 删除 4 个 Skills.tsx backup 文件（约 15,276 行死代码） | ✅ 已完成 | `c3a9f96` |
+| `.gitignore` 加入 backup 模式防复发 | ✅ 已完成 | `c3a9f96` |
+| 文件行数 ratchet（shell + GitHub Actions） | ✅ 已完成 | `c3a9f96` |
+| 拆分 Skills.tsx / marketplace.rs | ⏳ 待办 | — |
+| 侧边栏 9 → 5 项、AI 翻译入口 4 → 2 | ⏳ 待办 | — |
+| 商业化路径选 A（云同步付费） | ⏳ 待决策 | — |
+| Windows 版本发布 | ⏳ 待办 | — |
+
+> 已完成的条目在下文对应位置以 **✅** 标注。
+
+---
+
 ## 一句话诊断
 
 **你做了一个"好用的工具"，但还不是"好卖的产品"。** 功能已足够丰富（甚至偏多），当前最大的敌人是**臃肿**：代码在膨胀、功能在堆叠、定位在模糊。下一步的关键不是"加"，是"减"。
@@ -50,7 +70,7 @@
 3. **AI 翻译能力入口过于分散**：卡片菜单 + 工具栏 + Editor banner + Marketplace 胶囊，**4 个入口**反而让用户找不到主入口。建议收敛到**卡片按钮 + 批量操作栏**两处。
 4. **软链接失败提示**（尤其 Windows 需开发者模式）目前只是文字警告，应该做成**引导式对话框**——一步一步教用户开启。
 5. **10 个主题**（Apple/Comic/Cyberpunk/Default/Neumorphism × 明暗）是亮点也是负担。建议默认展示 3 个"精选主题"，其余折叠。
-6. **Skills.tsx 有 5 个 backup 文件在仓库里**（.backup / .backup2 / .backup3 / .original）——用户看不到，但让协作者困惑。
+6. **Skills.tsx 有 5 个 backup 文件在仓库里**（.backup / .backup2 / .backup3 / .original）——用户看不到，但让协作者困惑。**✅ 已删除并加入 `.gitignore`（`c3a9f96`）**
 
 ### 需要用户测试验证的点
 - 从"打开应用"到"第一次成功启用一个 Skill 到某个工具"要用多少秒？目标：**60 秒内**。
@@ -78,23 +98,23 @@
 ### 具体优化建议
 
 #### A. 立即可做（1 周内）
-1. **删除仓库里的 4 个 Skills.tsx backup 文件**（`.backup / .backup2 / .backup3 / .original`）—— 版本历史用 git 就行。
-2. **删除 `.DS_Store`**（多处存在），并在 `.gitignore` 全局忽略。
-3. **归档根目录的临时文档**：`TRANSLATION_OPTIMIZATION_COMPLETED.md`、`DOWNLOAD_STATS.md` 移到 `docs/archive/`，根目录只保留 README、LICENSE、CONTRIBUTING、SECURITY、CHANGELOG 五份。
-4. **README 修顺序**：3.4 → 3.3 → 3.2 → 3.0，或只保留最近两个版本，其余移入 CHANGELOG。
+1. **删除仓库里的 4 个 Skills.tsx backup 文件**（`.backup / .backup2 / .backup3 / .original`）—— 版本历史用 git 就行。**✅ 已完成（`c3a9f96`）**
+2. **删除 `.DS_Store`**（多处存在），并在 `.gitignore` 全局忽略。**✅ 已在 `.gitignore`（原有），仓库当前无 tracked `.DS_Store`**
+3. **归档根目录的临时文档**：`TRANSLATION_OPTIMIZATION_COMPLETED.md`、`DOWNLOAD_STATS.md` 移到 `docs/archive/`，根目录只保留 README、LICENSE、CONTRIBUTING、SECURITY、CHANGELOG 五份。**✅ 已完成（`5d4c5ff`）**
+4. **README 修顺序**：3.4 → 3.3 → 3.2 → 3.0，或只保留最近两个版本，其余移入 CHANGELOG。**✅ 已完成（`5d4c5ff`）**
 
 #### B. 中期重构（1 个月内）
 5. **拆分 Skills.tsx**：按"卡片列表 / 工具栏 / 批量操作 / 对话框调度"四块拆分，目标每块 < 400 行。
 6. **拆分 marketplace.rs**：分成 `marketplace/api.rs` · `marketplace/cache.rs` · `marketplace/models.rs` · `marketplace/install.rs`。
-7. **前端建立"文件行数上限"规则**：`.eslintrc` 加 `max-lines: 500`，超过 CI 报错，防止代码再次膨胀。
+7. **前端建立"文件行数上限"规则**：`.eslintrc` 加 `max-lines: 500`，超过 CI 报错，防止代码再次膨胀。**✅ 已完成（`c3a9f96`）——因项目未装 ESLint，改用 `scripts/check-file-size.sh` + `.github/workflows/quality.yml`，`.ts/.tsx ≤500`、`.rs ≤800`，现存超标文件用 `scripts/file-size-budgets.txt` 冻结基线，ratchet 单向下降。**
 8. **国际化文件**（zh.ts / en.ts）巡检：检查是否有孤儿 key。
 
 #### C. 文档补齐（并行做）
-9. `docs/` 目前有设计文档，但**缺少**：
+9. `docs/` 目前有设计文档，但**缺少**：**⚠️ 注：原本"设计文档"其实并不存在（历史遗留误述），本次已在文档大修（`5d4c5ff`）中一并清理。**
    - `ARCHITECTURE.md`（一页图讲清前后端如何协作）
    - `CONTRIBUTING.md` 已有但过简，需补"如何加一个新 AI 工具"的 how-to
    - `docs/user-guide/` 面向普通用户的图文教程
-10. **API/命令清单**：Rust 端所有 Tauri commands（约 20+ 个）在 `docs/api.md` 里成表，前端类型和后端签名对齐一次。
+10. **API/命令清单**：Rust 端所有 Tauri commands（约 20+ 个）在 `docs/api.md` 里成表，前端类型和后端签名对齐一次。**✅ 部分完成（`5d4c5ff`）——CLAUDE.md 已按域列出 80+ 个命令；独立的 `docs/api.md` 仍待办。**
 
 ---
 
@@ -104,8 +124,8 @@
 
 | 阶段 | 目标 | 交付 |
 |------|------|------|
-| 第 1 步 | 清理仓库垃圾 | 删 backup / DS_Store，README 修正，Windows 版本状态明确 |
-| 第 2 步 | 拆分巨型文件 | Skills.tsx / marketplace.rs 拆分，设立 500 行上限规则 |
+| 第 1 步 | 清理仓库垃圾 | 删 backup / DS_Store，README 修正，Windows 版本状态明确 **✅ 已完成（`5d4c5ff` + `c3a9f96`）** |
+| 第 2 步 | 拆分巨型文件 | Skills.tsx / marketplace.rs 拆分，设立 500 行上限规则 **🟡 上限规则已落地（`c3a9f96`），实际拆分待办** |
 | 第 3 步 | 收敛导航与 AI 翻译入口 | 侧边栏 9 项 → 5 项，AI 翻译入口 4 → 2 |
 | 第 4 步 | 定位聚焦 | 官网/README 一句话定位，商业化路径选 A（云同步付费） |
 | 第 5 步 | 补 Windows | 兑现跨平台承诺 |
