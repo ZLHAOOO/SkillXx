@@ -9,21 +9,21 @@
 
 ## 执行进度速览（2026-07-09 更新）
 
-| 项 | 状态 | 提交 |
-|----|------|------|
-| 版本号统一（`config.rs` 3.3.1 → 3.4.0） | ✅ 已完成 | `6cdbc51` |
-| 文档全量对齐实际状态（CLAUDE.md / AGENTS.md / CHANGELOG / README / PRIVACY / SECURITY / CONTRIBUTING） | ✅ 已完成 | `5d4c5ff` |
-| 归档临时文档到 `docs/archive/` | ✅ 已完成 | `5d4c5ff` |
-| README 版本顺序修正 & Windows 状态明示 | ✅ 已完成 | `5d4c5ff` |
-| 删除 4 个 Skills.tsx backup 文件（约 15,276 行死代码） | ✅ 已完成 | `c3a9f96` |
-| `.gitignore` 加入 backup 模式防复发 | ✅ 已完成 | `c3a9f96` |
-| 文件行数 ratchet（shell + GitHub Actions） | ✅ 已完成 | `c3a9f96` |
-| **首次启动流程 4 步 → 0 步 + 横幅**（删 Welcome 5 文件、静默初始化、Skills 页导入横幅） | ✅ 已完成 | 本次 |
-| 拆分 Skills.tsx / marketplace.rs | ⏳ 待办 | — |
-| 侧边栏 9 → 5 项、AI 翻译入口 4 → 2 | ⏳ 待办 | — |
-| Settings 补"重新扫描导入"入口 | ⏳ 延后 | Settings.tsx 已在 ratchet 基线，等拆分重构一并加入 |
-| 商业化路径选 A（云同步付费） | ⏳ 待决策 | — |
-| Windows 版本发布 | ⏳ 待办 | — |
+| 项                                                                                          | 状态    | 提交                                   |
+| ------------------------------------------------------------------------------------------ | ----- | ------------------------------------ |
+| 版本号统一（`config.rs` 3.3.1 → 3.4.0）                                                           | ✅ 已完成 | `6cdbc51`                            |
+| 文档全量对齐实际状态（CLAUDE.md / AGENTS.md / CHANGELOG / README / PRIVACY / SECURITY / CONTRIBUTING） | ✅ 已完成 | `5d4c5ff`                            |
+| 归档临时文档到 `docs/archive/`                                                                    | ✅ 已完成 | `5d4c5ff`                            |
+| README 版本顺序修正 & Windows 状态明示                                                               | ✅ 已完成 | `5d4c5ff`                            |
+| 删除 4 个 Skills.tsx backup 文件（约 15,276 行死代码）                                                 | ✅ 已完成 | `c3a9f96`                            |
+| `.gitignore` 加入 backup 模式防复发                                                               | ✅ 已完成 | `c3a9f96`                            |
+| 文件行数 ratchet（shell + GitHub Actions）                                                       | ✅ 已完成 | `c3a9f96`                            |
+| **首次启动流程 4 步 → 0 步 + 横幅**（删 Welcome 5 文件、静默初始化、Skills 页导入横幅）                               | ✅ 已完成 | 本次                                   |
+| 拆分 Skills.tsx / marketplace.rs                                                             | ⏳ 待办  | —                                    |
+| 侧边栏 9 → 5 项、AI 翻译入口 4 → 2                                                                  | ⏳ 待办  | —                                    |
+| Settings 补"重新扫描导入"入口                                                                       | ⏳ 延后  | Settings.tsx 已在 ratchet 基线，等拆分重构一并加入 |
+| 商业化路径选 A（云同步付费）                                                                            | ⏳ 待决策 | —                                    |
+| Windows 版本发布                                                                               | ⏳ 待办  | —                                    |
 
 > 已完成的条目在下文对应位置以 **✅** 标注。
 

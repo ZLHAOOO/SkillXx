@@ -4,7 +4,9 @@ import { useTranslation } from "@/i18n";
 import { useToast } from "@/components/ui/toast";
 import { SkeletonList } from "@/components/ui/loading";
 import { MoreHorizontal } from "lucide-react";
-import { getProviderIcon, getProviderInitial } from "@/utils/providerIcon";
+import { getProviderInitial } from "@/utils/providerIcon";
+import { getProviderSvgContent } from "@/utils/providerLogoSvg";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { ProviderAddModal } from "./ProviderAddModal";
 
 export interface LlmProviderConfig {
@@ -216,19 +218,53 @@ const DEFAULT_PRESETS: Preset[] = [
   },
 ];
 
-function ProviderLogo({ name, id, size = 40 }: { name: string; id?: string; size?: number }) {
-  const iconPath = getProviderIcon(name, id);
-  const [failed, setFailed] = useState(false);
+// Providers whose SVG uses `fill="currentColor"` and therefore needs
+// explicit theme-aware coloring (white in dark mode, near-black in light).
+const CURRENT_COLOR_PROVIDERS = new Set([
+  "openai", "gpt", "chatgpt",
+  "glm", "智谱", "bigmodel",
+  "kimi", "moonshot",
+  "grok", "x.ai",
+  "openrouter",
+  "groq",
+  "zai", "z.ai",
+]);
 
-  if (iconPath && !failed) {
+function providerNeedsCurrentColor(name: string, id?: string): boolean {
+  const lowerName = name.toLowerCase();
+  const lowerId = (id || "").toLowerCase();
+  for (const kw of CURRENT_COLOR_PROVIDERS) {
+    if (lowerName.includes(kw) || lowerId.includes(kw)) return true;
+  }
+  return false;
+}
+
+function ProviderLogo({ name, id, size = 40 }: { name: string; id?: string; size?: number }) {
+  const svgContent = getProviderSvgContent(name, id);
+  const colorScheme = useColorScheme();
+  const needsTint = providerNeedsCurrentColor(name, id);
+
+  const iconColor = needsTint
+    ? colorScheme === "dark"
+      ? "#FFFFFF"
+      : "#1a1a1a"
+    : "inherit";
+
+  if (svgContent) {
     return (
-      <img
-        src={iconPath}
-        alt={name}
-        width={size}
-        height={size}
-        style={{ borderRadius: "6px", objectFit: "contain", flexShrink: 0 }}
-        onError={() => setFailed(true)}
+      <div
+        dangerouslySetInnerHTML={{ __html: svgContent }}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "6px",
+          color: iconColor,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          overflow: "hidden",
+        }}
       />
     );
   }

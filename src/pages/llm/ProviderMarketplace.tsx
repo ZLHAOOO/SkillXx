@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import providerDirectory from "@/data/providerDirectory.json";
-import { getProviderIcon, getProviderInitial } from "@/utils/providerIcon";
+import { getProviderInitial } from "@/utils/providerIcon";
+import { getProviderSvgContent } from "@/utils/providerLogoSvg";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { ProviderAddModal } from "./ProviderAddModal";
 
 interface ProviderDirectoryEntry {
@@ -14,6 +16,27 @@ interface ProviderDirectoryEntry {
   icon: string;
 }
 
+// Providers whose SVG uses `fill="currentColor"` and therefore needs
+// explicit theme-aware coloring.
+const CURRENT_COLOR_PROVIDERS = new Set([
+  "openai", "gpt", "chatgpt",
+  "glm", "智谱", "bigmodel",
+  "kimi", "moonshot",
+  "grok", "x.ai",
+  "openrouter",
+  "groq",
+  "zai", "z.ai",
+]);
+
+function providerNeedsCurrentColor(name: string, id?: string): boolean {
+  const lowerName = name.toLowerCase();
+  const lowerId = (id || "").toLowerCase();
+  for (const kw of CURRENT_COLOR_PROVIDERS) {
+    if (lowerName.includes(kw) || lowerId.includes(kw)) return true;
+  }
+  return false;
+}
+
 function ProviderMarketplaceCard({
   entry,
   onAddClick,
@@ -21,10 +44,15 @@ function ProviderMarketplaceCard({
   entry: ProviderDirectoryEntry;
   onAddClick: (entry: ProviderDirectoryEntry) => void;
 }) {
-  const iconPath = getProviderIcon(entry.name, entry.id);
-  const [imgFailed, setImgFailed] = useState(false);
+  const svgContent = getProviderSvgContent(entry.name, entry.id);
+  const colorScheme = useColorScheme();
+  const needsTint = providerNeedsCurrentColor(entry.name, entry.id);
 
-  console.log(`[DEBUG] MarketplaceCard: name=${entry.name}, id=${entry.id}, iconPath=${iconPath}`);
+  const iconColor = needsTint
+    ? colorScheme === "dark"
+      ? "#FFFFFF"
+      : "#1a1a1a"
+    : "inherit";
 
   return (
     <div
@@ -61,15 +89,20 @@ function ProviderMarketplaceCard({
       </div>
 
       <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", paddingRight: "36px" }}>
-        {iconPath && !imgFailed ? (
-          <img
-            src={iconPath}
-            alt={entry.name}
-            width={40}
-            height={40}
-            style={{ borderRadius: "6px", objectFit: "contain", flexShrink: 0 }}
-            onError={(e) => { console.log(`[DEBUG] marketplace img onError: ${iconPath}`, e); setImgFailed(true); }}
-            onLoad={() => console.log(`[DEBUG] marketplace img onLoad: ${iconPath}`)}
+        {svgContent ? (
+          <div
+            dangerouslySetInnerHTML={{ __html: svgContent }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "6px",
+              color: iconColor,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              overflow: "hidden",
+            }}
           />
         ) : (
           <div
