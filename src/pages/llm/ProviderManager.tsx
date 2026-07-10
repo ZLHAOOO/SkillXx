@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "@/i18n";
 import { useToast } from "@/components/ui/toast";
@@ -240,30 +240,41 @@ function providerNeedsCurrentColor(name: string, id?: string): boolean {
 }
 
 function ProviderLogo({ name, id, size = 40 }: { name: string; id?: string; size?: number }) {
-  const svgContent = getProviderSvgContent(name, id);
+  const rawSvg = getProviderSvgContent(name, id);
   const colorScheme = useColorScheme();
   const needsTint = providerNeedsCurrentColor(name, id);
 
-  const iconColor = needsTint
-    ? colorScheme === "dark"
-      ? "#FFFFFF"
-      : "#1a1a1a"
-    : "inherit";
+  const styledSvg = useMemo(() => {
+    if (!rawSvg) return null;
+    // Strip the root <svg>'s hardcoded width/height (most SVGs ship with
+    // width="1em" height="1em") so the viewBox can scale to the container.
+    let html = rawSvg.replace(
+      /^<svg\b/,
+      '<svg width="100%" height="100%"',
+    );
+    // For currentColor providers, override the root fill in light mode
+    // so the logo isn't white-on-white. Dark mode keeps white.
+    if (needsTint && colorScheme === "light") {
+      html = html.replace(
+        /^<svg\b([^>]*?)fill="currentColor"/,
+        '<svg$1fill="#1a1a1a"',
+      );
+    }
+    return html;
+  }, [rawSvg, colorScheme, needsTint]);
 
-  if (svgContent) {
+  if (styledSvg) {
     return (
       <div
-        dangerouslySetInnerHTML={{ __html: svgContent }}
+        dangerouslySetInnerHTML={{ __html: styledSvg }}
         style={{
           width: size,
           height: size,
           borderRadius: "6px",
-          color: iconColor,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
           flexShrink: 0,
           overflow: "hidden",
+          // currentColor SVGs inherit from this; branded ones are unaffected
+          color: needsTint && colorScheme === "dark" ? "#FFFFFF" : "inherit",
         }}
       />
     );

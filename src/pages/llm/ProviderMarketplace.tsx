@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import providerDirectory from "@/data/providerDirectory.json";
 import { getProviderInitial } from "@/utils/providerIcon";
@@ -44,15 +44,26 @@ function ProviderMarketplaceCard({
   entry: ProviderDirectoryEntry;
   onAddClick: (entry: ProviderDirectoryEntry) => void;
 }) {
-  const svgContent = getProviderSvgContent(entry.name, entry.id);
+  const rawSvg = getProviderSvgContent(entry.name, entry.id);
   const colorScheme = useColorScheme();
   const needsTint = providerNeedsCurrentColor(entry.name, entry.id);
 
-  const iconColor = needsTint
-    ? colorScheme === "dark"
-      ? "#FFFFFF"
-      : "#1a1a1a"
-    : "inherit";
+  const styledSvg = useMemo(() => {
+    if (!rawSvg) return null;
+    // Strip hardcoded width/height so viewBox fills the container.
+    let html = rawSvg.replace(
+      /^<svg\b/,
+      '<svg width="100%" height="100%"',
+    );
+    // Override currentColor fill in light mode for dark-only logos.
+    if (needsTint && colorScheme === "light") {
+      html = html.replace(
+        /^<svg\b([^>]*?)fill="currentColor"/,
+        '<svg$1fill="#1a1a1a"',
+      );
+    }
+    return html;
+  }, [rawSvg, colorScheme, needsTint]);
 
   return (
     <div
@@ -89,19 +100,16 @@ function ProviderMarketplaceCard({
       </div>
 
       <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", paddingRight: "36px" }}>
-        {svgContent ? (
+        {styledSvg ? (
           <div
-            dangerouslySetInnerHTML={{ __html: svgContent }}
+            dangerouslySetInnerHTML={{ __html: styledSvg }}
             style={{
               width: 40,
               height: 40,
               borderRadius: "6px",
-              color: iconColor,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
               flexShrink: 0,
               overflow: "hidden",
+              color: needsTint && colorScheme === "dark" ? "#FFFFFF" : "inherit",
             }}
           />
         ) : (
