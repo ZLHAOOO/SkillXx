@@ -92,6 +92,15 @@ export function useSkillsData(): UseSkillsDataReturn {
     void loadData();
   }, [loadData]);
 
+  // Global refresh signal — dispatched by e.g. the import-suggestion banner
+  // after it moves external skills into the hub. Keeps callers decoupled from
+  // this hook while still triggering a reload.
+  useEffect(() => {
+    const handler = () => { void loadData(); };
+    window.addEventListener("skillx:skills-changed", handler);
+    return () => window.removeEventListener("skillx:skills-changed", handler);
+  }, [loadData]);
+
   return {
     skills,
     skillPackages,

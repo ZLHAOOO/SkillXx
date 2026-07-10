@@ -17,4 +17,5 @@ export const defaultPreferences: UserPreferences = {
   skill_display_name_lang: "original",
   skill_display_desc_lang: "original",
   pinned_keys: [],
+  import_suggestion_dismissed: false,
 };

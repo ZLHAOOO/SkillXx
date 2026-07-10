@@ -42,6 +42,10 @@ pub struct UserPreferences {
     /// Provider ID selected for AI translation (None = fallback to active provider)
     #[serde(default)]
     pub translation_provider_id: Option<String>,
+    /// Hide the "found existing skills — import?" banner on the Skills page.
+    /// Persists the user's "never show again" choice from onboarding.
+    #[serde(default)]
+    pub import_suggestion_dismissed: bool,
 }
 
 fn default_skill_display_lang() -> String {
@@ -214,6 +218,7 @@ impl Default for UserPreferences {
             skill_display_desc_lang: default_skill_display_desc_lang(),
             pinned_keys: Vec::new(),
             translation_provider_id: None,
+            import_suggestion_dismissed: false,
         }
     }
 }

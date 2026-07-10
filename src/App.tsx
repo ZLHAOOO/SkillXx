@@ -9,7 +9,7 @@ import { Marketplace } from "@/pages/Marketplace";
 import { Settings } from "@/pages/Settings";
 import { EditorPage } from "@/pages/Editor";
 import { LlmModel } from "@/pages/LlmModel";
-import { Welcome } from "@/pages/Welcome";
+import { ImportSuggestionBanner } from "@/components/skills/ImportSuggestionBanner";
 import { useInitialization } from "@/hooks/useInitialization";
 import { useScrollIndicator } from "@/hooks/useScrollIndicator";
 import { ThemeProvider, ThemeStyle } from "@/hooks/useTheme";
@@ -71,6 +71,18 @@ function App() {
     setFontFamily(newFontFamily);
   }, []);
 
+  // Silently initialize on first launch — no welcome wizard, straight into the app.
+  // Backend defaults handle skills_dir (~/.skillx/skills); the "import existing skills"
+  // step surfaces later as a dismissible banner on the Skills page.
+  useEffect(() => {
+    if (initLoading || !configLoaded) return;
+    if (isInitialized === false) {
+      void markInitialized().catch(() => {
+        // If marking fails, the app still works; it'll retry on next launch.
+      });
+    }
+  }, [initLoading, configLoaded, isInitialized, markInitialized]);
+
   useEffect(() => {
     if (!isInitialized || !configLoaded) {
       return;
@@ -90,29 +102,12 @@ function App() {
   }, [configLoaded, isInitialized]);
 
 
-  // Wait for both initialization check and config to load
-  if (initLoading || !configLoaded) {
+  // Wait for initialization check, config load, and the silent init handshake.
+  if (initLoading || !configLoaded || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse" style={{ color: "var(--muted-foreground)" }}>Loading...</div>
       </div>
-    );
-  }
-
-  if (!isInitialized) {
-    return (
-      <ThemeProvider
-        theme={theme}
-        themeStyle={themeStyle}
-        fontFamily={fontFamily}
-        onThemeChange={handleThemeChange}
-        onThemeStyleChange={handleThemeStyleChange}
-        onFontFamilyChange={handleFontFamilyChange}
-      >
-        <I18nProvider language={language} onLanguageChange={handleLanguageChange}>
-          <Welcome onComplete={markInitialized} />
-        </I18nProvider>
-      </ThemeProvider>
     );
   }
 
@@ -130,7 +125,15 @@ function App() {
           <SkillTranslationProvider>
             <Routes>
               <Route path="/" element={<Layout collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />}>
-                <Route index element={<Skills />} />
+                <Route
+                  index
+                  element={
+                    <>
+                      <ImportSuggestionBanner />
+                      <Skills />
+                    </>
+                  }
+                />
                 <Route path="tools" element={<Tools />} />
                 <Route path="marketplace" element={<Marketplace />} />
                 <Route path="settings" element={<Settings />} />

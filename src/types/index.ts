@@ -115,6 +115,9 @@ export interface UserPreferences {
 
   // Pin
   pinned_keys: string[];
+
+  // Onboarding: hide the "found existing skills — import?" banner on Skills page.
+  import_suggestion_dismissed?: boolean;
 }
 
 export interface AuthProfile {
