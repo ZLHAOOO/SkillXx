@@ -15,6 +15,7 @@ pub mod linker;
 pub mod llm;
 pub mod marketplace;
 pub mod path_validator;
+pub mod pi_config;
 pub mod scanner;
 pub mod skill_packages;
 pub mod translation;

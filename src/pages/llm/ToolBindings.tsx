@@ -46,13 +46,14 @@ export interface ToolInfo {
 
 type ToolBindings = Record<string, string>;
 
-const TOOL_IDS = ["claude-code", "codex", "gemini", "hermes"] as const;
+const TOOL_IDS = ["claude-code", "codex", "gemini", "hermes", "pi"] as const;
 
 const TOOL_COLORS: Record<string, string> = {
   "claude-code": "#d4a574",
   "codex": "#6b7280",
   "gemini": "#4285f4",
   "hermes": "#f59e0b",
+  "pi": "#8b5cf6",
 };
 
 /* ================================================================
@@ -311,6 +312,9 @@ export function ToolBindings() {
           } else if (selectedTool === "gemini") {
             addToastRef.current("Gemini CLI 配置已写入，下次启动时自动加载", "success");
             return;
+          } else if (selectedTool === "pi") {
+            addToastRef.current("Pi 配置已写入，下次启动 pi 或在会话中调 /model 时自动加载", "success");
+            return;
           } else {
             return;
           }
@@ -419,6 +423,19 @@ export function ToolBindings() {
       addToastRef.current("恢复 Gemini 配置失败: " + String(err), "error");
     } finally {
       setRestoring((prev) => ({ ...prev, ["gemini"]: false }));
+    }
+  };
+
+  const handleRestorePi = async () => {
+    setRestoring((prev) => ({ ...prev, ["pi"]: true }));
+    try {
+      const result = await invoke<string>("clear_pi_provider");
+      addToastRef.current(result || "Pi 配置已恢复", "success");
+      setWritten((prev) => ({ ...prev, ["pi"]: false }));
+    } catch (err) {
+      addToastRef.current("恢复 Pi 配置失败: " + String(err), "error");
+    } finally {
+      setRestoring((prev) => ({ ...prev, ["pi"]: false }));
     }
   };
 
@@ -580,8 +597,9 @@ export function ToolBindings() {
                         else if (toolId === "codex") handleRestoreCodex();
                         else if (toolId.startsWith("hermes-")) handleRestoreHermes(toolId);
                         else if (toolId === "gemini") handleRestoreGemini();
+                        else if (toolId === "pi") handleRestorePi();
                       }}
-                      disabled={restoring[toolId] || restoring["claude-code"] || restoring["codex"] || restoring["gemini"]}
+                      disabled={restoring[toolId] || restoring["claude-code"] || restoring["codex"] || restoring["gemini"] || restoring["pi"]}
                       variant="outline"
                       size="sm"
                     >

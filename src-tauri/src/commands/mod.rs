@@ -13,6 +13,7 @@ pub mod hermes_config;
 pub mod llm;
 pub mod llm_providers;
 pub mod marketplace;
+pub mod pi_config;
 pub mod platform_marketplace;
 pub mod skill_packages;
 pub mod skills;
@@ -43,6 +44,7 @@ pub use codex_config::{apply_codex_provider, apply_codex_provider_passthrough, c
 pub use codex_proxy::{start_codex_proxy, update_codex_proxy_config, stop_codex_proxy};
 pub use hermes_config::{apply_hermes_provider, clear_hermes_provider, list_hermes_backups, read_hermes_env, restart_hermes_cmd};
 pub use gemini_config::{apply_gemini_provider, clear_gemini_provider, list_gemini_backups, read_gemini_env};
+pub use pi_config::{apply_pi_provider, clear_pi_provider, list_pi_backups, read_pi_providers};
 pub use marketplace::{
     check_marketplace_updates_if_stale, fetch_marketplace_skill_descriptions,
     fetch_marketplace_skills, fetch_skill_file_content, fetch_skill_files, get_marketplace_sources,

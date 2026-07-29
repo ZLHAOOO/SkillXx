@@ -23,6 +23,7 @@ use commands::{
     start_codex_proxy, stop_codex_proxy, update_codex_proxy_config,
     list_hermes_backups, read_hermes_env, apply_hermes_provider, clear_hermes_provider, restart_hermes_cmd,
     list_gemini_backups, read_gemini_env, apply_gemini_provider, clear_gemini_provider,
+    list_pi_backups, read_pi_providers, apply_pi_provider, clear_pi_provider,
  save_config,
  save_llm_provider, save_llm_provider_multi, save_tool_bindings, save_tools_order,
     scan_existing_skills, search_marketplace, set_tool_enabled, submit_feedback,
@@ -182,6 +183,10 @@ pub fn run() {
             apply_gemini_provider,
             clear_gemini_provider,
             list_gemini_backups,
+            read_pi_providers,
+            apply_pi_provider,
+            clear_pi_provider,
+            list_pi_backups,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

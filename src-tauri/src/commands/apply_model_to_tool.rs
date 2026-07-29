@@ -129,6 +129,24 @@ pub async fn apply_model_to_tool(
                 &model_info.model,
             )
         }
+        "pi" => {
+            let provider = LlmProviderConfig {
+                id: model_info.id.clone(),
+                name: model_info.name.clone(),
+                base_url: model_info.base_url.clone(),
+                base_url_openai: model_info.base_url_openai.clone(),
+                base_url_anthropic: model_info.base_url_anthropic.clone(),
+                api_key: model_info.api_key.clone(),
+                model: model_info.model.clone(),
+                models: vec![],
+                api_format: model_info.protocol.clone(),
+                temperature: None,
+                max_tokens: None,
+                timeout_secs: None,
+                website_url: None,
+            };
+            crate::services::pi_config::apply_provider(&provider, &model_info.protocol)
+        }
         _ => Err(format!("Unsupported tool: {}", tool_id)),
     }
 }
