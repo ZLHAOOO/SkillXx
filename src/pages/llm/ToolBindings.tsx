@@ -113,7 +113,6 @@ export function ToolBindings() {
   // Per-tool operation state
   const [writing, setWriting] = useState<Record<string, boolean>>({});
   const [written, setWritten] = useState<Record<string, boolean>>({});
-  const [restarting, setRestarting] = useState<Record<string, boolean>>({});
   const [restoring, setRestoring] = useState<Record<string, boolean>>({});
 
   const [tools, setTools] = useState<ToolInfo[]>([]);
@@ -333,46 +332,7 @@ export function ToolBindings() {
     setSelectedTool((prev) => (prev === toolId ? null : toolId));
   };
 
-  // ---- Restart / Restore handlers ----
-  const handleRestartClaude = async () => {
-    setRestarting((prev) => ({ ...prev, ["claude-code"]: true }));
-    try {
-      const result = await invoke<string>("restart_claude_code_cmd");
-      addToastRef.current(result || "Claude Code 已重启", "success");
-      setWritten((prev) => ({ ...prev, ["claude-code"]: false }));
-    } catch (err) {
-      addToastRef.current("重启 Claude Code 失败: " + String(err), "error");
-    } finally {
-      setRestarting((prev) => ({ ...prev, ["claude-code"]: false }));
-    }
-  };
-
-  const handleRestartCodex = async () => {
-    setRestarting((prev) => ({ ...prev, ["codex"]: true }));
-    try {
-      const result = await invoke<string>("restart_codex_cmd");
-      addToastRef.current(result || "Codex 已重启", "success");
-      setWritten((prev) => ({ ...prev, ["codex"]: false }));
-    } catch (err) {
-      addToastRef.current("重启 Codex 失败: " + String(err), "error");
-    } finally {
-      setRestarting((prev) => ({ ...prev, ["codex"]: false }));
-    }
-  };
-
-  const handleRestartHermes = async (toolId: string) => {
-    setRestarting((prev) => ({ ...prev, [toolId]: true }));
-    try {
-      const result = await invoke<string>("restart_hermes_cmd");
-      addToastRef.current(result || "Hermes 已重启", "success");
-      setWritten((prev) => ({ ...prev, [toolId]: false }));
-    } catch (err) {
-      addToastRef.current("重启 Hermes 失败: " + String(err), "error");
-    } finally {
-      setRestarting((prev) => ({ ...prev, [toolId]: false }));
-    }
-  };
-
+  // ---- Restore handlers ----
   const handleRestoreClaude = async () => {
     setRestoring((prev) => ({ ...prev, ["claude-code"]: true }));
     try {

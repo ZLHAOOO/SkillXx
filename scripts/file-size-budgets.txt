@@ -24,8 +24,8 @@
 749  src/i18n/locales/en.ts
 741  src/i18n/locales/zh.ts
 718  src/pages/Editor.tsx
-693  src/pages/llm/ToolBindings.tsx
-719  src/pages/llm/ProviderManager.tsx
+671  src/pages/llm/ToolBindings.tsx
+651  src/pages/llm/ProviderManager.tsx
 634  src/pages/ProjectBindingsDialog.tsx
 583  src/components/skills/dialogs/CategoryEditDialog.tsx
 507  src/hooks/useSkillTranslation.tsx
