@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import providerDirectory from "@/data/providerDirectory.json";
 import { getProviderInitial } from "@/utils/providerIcon";
-import { getProviderSvgContent } from "@/utils/providerLogoSvg";
+import { getProviderSvgContent, isProviderPng, getProviderPngPath } from "@/utils/providerLogoSvg";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { ProviderAddModal } from "./ProviderAddModal";
 
@@ -16,27 +16,6 @@ interface ProviderDirectoryEntry {
   icon: string;
 }
 
-// Providers whose SVG uses `fill="currentColor"` and therefore needs
-// explicit theme-aware coloring.
-const CURRENT_COLOR_PROVIDERS = new Set([
-  "openai", "gpt", "chatgpt",
-  "glm", "智谱", "bigmodel",
-  "kimi", "moonshot",
-  "grok", "x.ai",
-  "openrouter",
-  "groq",
-  "zai", "z.ai",
-]);
-
-function providerNeedsCurrentColor(name: string, id?: string): boolean {
-  const lowerName = name.toLowerCase();
-  const lowerId = (id || "").toLowerCase();
-  for (const kw of CURRENT_COLOR_PROVIDERS) {
-    if (lowerName.includes(kw) || lowerId.includes(kw)) return true;
-  }
-  return false;
-}
-
 function ProviderMarketplaceCard({
   entry,
   onAddClick,
@@ -44,26 +23,37 @@ function ProviderMarketplaceCard({
   entry: ProviderDirectoryEntry;
   onAddClick: (entry: ProviderDirectoryEntry) => void;
 }) {
-  const rawSvg = getProviderSvgContent(entry.name, entry.id);
   const colorScheme = useColorScheme();
-  const needsTint = providerNeedsCurrentColor(entry.name, entry.id);
+  const pngPath = getProviderPngPath(entry.name, entry.id);
+  const rawSvg = pngPath ? null : getProviderSvgContent(entry.name, entry.id, colorScheme);
 
   const styledSvg = useMemo(() => {
     if (!rawSvg) return null;
-    // Strip hardcoded width/height so viewBox fills the container.
-    let html = rawSvg.replace(
-      /^<svg\b/,
-      '<svg width="100%" height="100%"',
-    );
-    // Override currentColor fill in light mode for dark-only logos.
-    if (needsTint && colorScheme === "light") {
-      html = html.replace(
-        /^<svg\b([^>]*?)fill="currentColor"/,
-        '<svg$1fill="#1a1a1a"',
-      );
+
+    // Detect intrinsic dimensions and viewBox presence before transforming.
+    const wMatch = rawSvg.match(/\bwidth="(\d+)"|\bwidth='(\d+)'/);
+    const hMatch = rawSvg.match(/\bheight="(\d+)"|\bheight='(\d+)'/);
+    const hasViewBox = /viewBox=/.test(rawSvg);
+
+    let html = rawSvg
+      .replace(/^<\?xml[^>]*>\s*/i, "")
+      .replace(/^<!--[\s\S]*?-->\s*/i, "")
+      .replace(/^<!DOCTYPE[^>]*>\s*/i, "");
+
+    // Add viewBox from width/height if missing (required for proper scaling),
+    // then strip fixed dimensions so the viewBox fills the container.
+    if (!hasViewBox && wMatch && hMatch) {
+      const w = wMatch[1] || wMatch[2];
+      const h = hMatch[1] || hMatch[2];
+      html = html.replace(/^<svg\b/, `<svg viewBox="0 0 ${w} ${h}"`);
     }
+
+    html = html
+      .replace(/\b(?:width|height)="[^"]*"/g, "")
+      .replace(/\b(?:width|height)='[^']*'/g, "");
+
     return html;
-  }, [rawSvg, colorScheme, needsTint]);
+  }, [rawSvg]);
 
   return (
     <div
@@ -100,7 +90,19 @@ function ProviderMarketplaceCard({
       </div>
 
       <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", paddingRight: "36px" }}>
-        {styledSvg ? (
+        {pngPath ? (
+          <img
+            src={pngPath}
+            alt={entry.name}
+            width={40}
+            height={40}
+            style={{
+              borderRadius: "6px",
+              flexShrink: 0,
+              objectFit: "contain",
+            }}
+          />
+        ) : styledSvg ? (
           <div
             dangerouslySetInnerHTML={{ __html: styledSvg }}
             style={{
@@ -109,7 +111,6 @@ function ProviderMarketplaceCard({
               borderRadius: "6px",
               flexShrink: 0,
               overflow: "hidden",
-              color: needsTint && colorScheme === "dark" ? "#FFFFFF" : "inherit",
             }}
           />
         ) : (

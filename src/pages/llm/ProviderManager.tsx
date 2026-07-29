@@ -5,7 +5,7 @@ import { useToast } from "@/components/ui/toast";
 import { SkeletonList } from "@/components/ui/loading";
 import { MoreHorizontal } from "lucide-react";
 import { getProviderInitial } from "@/utils/providerIcon";
-import { getProviderSvgContent } from "@/utils/providerLogoSvg";
+import { getProviderSvgContent, isProviderPng, getProviderPngPath } from "@/utils/providerLogoSvg";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { ProviderAddModal } from "./ProviderAddModal";
 
@@ -218,50 +218,58 @@ const DEFAULT_PRESETS: Preset[] = [
   },
 ];
 
-// Providers whose SVG uses `fill="currentColor"` and therefore needs
-// explicit theme-aware coloring (white in dark mode, near-black in light).
-const CURRENT_COLOR_PROVIDERS = new Set([
-  "openai", "gpt", "chatgpt",
-  "glm", "智谱", "bigmodel",
-  "kimi", "moonshot",
-  "grok", "x.ai",
-  "openrouter",
-  "groq",
-  "zai", "z.ai",
-]);
-
-function providerNeedsCurrentColor(name: string, id?: string): boolean {
-  const lowerName = name.toLowerCase();
-  const lowerId = (id || "").toLowerCase();
-  for (const kw of CURRENT_COLOR_PROVIDERS) {
-    if (lowerName.includes(kw) || lowerId.includes(kw)) return true;
-  }
-  return false;
-}
-
 function ProviderLogo({ name, id, size = 40 }: { name: string; id?: string; size?: number }) {
-  const rawSvg = getProviderSvgContent(name, id);
   const colorScheme = useColorScheme();
-  const needsTint = providerNeedsCurrentColor(name, id);
+
+  // PNG providers are served as static assets via <img>.
+  if (isProviderPng(name, id)) {
+    const pngSrc = getProviderPngPath(name, id);
+    if (pngSrc) {
+      return (
+        <img
+          src={pngSrc}
+          alt={name}
+          width={size}
+          height={size}
+          style={{
+            borderRadius: "6px",
+            flexShrink: 0,
+            objectFit: "contain",
+          }}
+        />
+      );
+    }
+  }
+
+  const rawSvg = getProviderSvgContent(name, id, colorScheme);
 
   const styledSvg = useMemo(() => {
     if (!rawSvg) return null;
-    // Strip the root <svg>'s hardcoded width/height (most SVGs ship with
-    // width="1em" height="1em") so the viewBox can scale to the container.
-    let html = rawSvg.replace(
-      /^<svg\b/,
-      '<svg width="100%" height="100%"',
-    );
-    // For currentColor providers, override the root fill in light mode
-    // so the logo isn't white-on-white. Dark mode keeps white.
-    if (needsTint && colorScheme === "light") {
-      html = html.replace(
-        /^<svg\b([^>]*?)fill="currentColor"/,
-        '<svg$1fill="#1a1a1a"',
-      );
+
+    // Detect intrinsic dimensions and viewBox presence before transforming.
+    const wMatch = rawSvg.match(/\bwidth="(\d+)"|\bwidth='(\d+)'/);
+    const hMatch = rawSvg.match(/\bheight="(\d+)"|\bheight='(\d+)'/);
+    const hasViewBox = /viewBox=/.test(rawSvg);
+
+    let html = rawSvg
+      .replace(/^<\?xml[^>]*>\s*/i, "")
+      .replace(/^<!--[\s\S]*?-->\s*/i, "")
+      .replace(/^<!DOCTYPE[^>]*>\s*/i, "");
+
+    // Add viewBox from width/height if missing (required for proper scaling),
+    // then strip fixed dimensions so the viewBox fills the container.
+    if (!hasViewBox && wMatch && hMatch) {
+      const w = wMatch[1] || wMatch[2];
+      const h = hMatch[1] || hMatch[2];
+      html = html.replace(/^<svg\b/, `<svg viewBox="0 0 ${w} ${h}"`);
     }
+
+    html = html
+      .replace(/\b(?:width|height)="[^"]*"/g, "")
+      .replace(/\b(?:width|height)='[^']*'/g, "");
+
     return html;
-  }, [rawSvg, colorScheme, needsTint]);
+  }, [rawSvg]);
 
   if (styledSvg) {
     return (
@@ -273,8 +281,6 @@ function ProviderLogo({ name, id, size = 40 }: { name: string; id?: string; size
           borderRadius: "6px",
           flexShrink: 0,
           overflow: "hidden",
-          // currentColor SVGs inherit from this; branded ones are unaffected
-          color: needsTint && colorScheme === "dark" ? "#FFFFFF" : "inherit",
         }}
       />
     );

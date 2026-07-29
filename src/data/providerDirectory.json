@@ -178,5 +178,14 @@
     "model": "agnes-2.0-flash",
     "website_url": "https://platform.agnes-ai.com",
     "icon": "agnes.svg"
+  },
+  {
+    "id": "longcat",
+    "name": "LongCat",
+    "base_url_openai": "https://api.longcat.chat/openai/v1",
+    "base_url_anthropic": "https://api.longcat.chat/anthropic",
+    "model": "longcat-2.0",
+    "website_url": "https://longcat.chat",
+    "icon": "longcat.png"
   }
 ]

@@ -1,82 +1,123 @@
 /**
- * Inline SVG content for provider logos.
+ * Provider logo SVGs imported via Vite ?raw.
  *
- * These SVGs use `fill="currentColor"` so their color is controlled by the
- * parent element's CSS `color` property — enabling theme-aware rendering
- * (dark = white, light = near-black) without touching the image files.
+ * Theme-aware SVGs use `fill="currentColor"` — the caller strips the XML
+ * header / DOCTYPE and overrides the root fill based on the active scheme.
+ * Branded-color SVGs carry their own hardcoded fills and work as-is.
+ * A few providers (e.g. LongCat) only have PNG logos and are served via
+ * the public path instead.
  */
 
-// Vite ?raw imports — pulls the SVG file content as a string at build time.
-import openaiRaw from "../assets/providers/openai.svg?raw";
-import glmRaw from "../assets/providers/glm.svg?raw";
-import kimiRaw from "../assets/providers/kimi-cn.svg?raw";
-import grokRaw from "../assets/providers/grok.svg?raw";
-import openrouterRaw from "../assets/providers/openrouter.svg?raw";
-import groqRaw from "../assets/providers/groq.svg?raw";
-import zaiRaw from "../assets/providers/zai.svg?raw";
+// ── Theme-aware SVGs (white in dark, dark in light) ──────────────────────
+import openaiLightRaw from "@/assets/providers/light/openai.svg?raw";
+import openaiDarkRaw from "@/assets/providers/dark/openai.svg?raw";
+import grokLightRaw from "@/assets/providers/light/grok.svg?raw";
+import grokDarkRaw from "@/assets/providers/dark/grok.svg?raw";
+import groqLightRaw from "@/assets/providers/light/groq.svg?raw";
+import groqDarkRaw from "@/assets/providers/dark/groq.svg?raw";
+import kimiLightRaw from "@/assets/providers/light/kimi.svg?raw";
+import kimiDarkRaw from "@/assets/providers/dark/kimi.svg?raw";
+import openrouterLightRaw from "@/assets/providers/light/openrouter.svg?raw";
+import openrouterDarkRaw from "@/assets/providers/dark/openrouter.svg?raw";
 
-// Fallbacks for providers whose SVGs use hardcoded branded colors (no currentColor).
-// These are rendered as-is — their brand color works on both light and dark.
-import anthropicRaw from "../assets/providers/anthropic.svg?raw";
-import deepseekRaw from "../assets/providers/deepseek.svg?raw";
-import geminiRaw from "../assets/providers/gemini.svg?raw";
-import hunyuanRaw from "../assets/providers/hunyuan.svg?raw";
-import longcatRaw from "../assets/providers/longcat.svg?raw";
-import minimaxRaw from "../assets/providers/minimax-cn.svg?raw";
-import mistralRaw from "../assets/providers/mistral.svg?raw";
-import nvidiaRaw from "../assets/providers/nvidia.svg?raw";
-import perplexityRaw from "../assets/providers/perplexity.svg?raw";
-import qwenRaw from "../assets/providers/qwen.svg?raw";
-import stepfunRaw from "../assets/providers/stepfun.svg?raw";
-import volcengineRaw from "../assets/providers/volcengine.svg?raw";
-import xiaomiRaw from "../assets/providers/xiaomi.svg?raw";
-import cohereRaw from "../assets/providers/cohere.svg?raw";
+// ── Branded-color SVGs (same file for both themes) ───────────────────────
+import anthropicRaw from "@/assets/providers/anthropic.svg?raw";
+import deepseekRaw from "@/assets/providers/deepseek.svg?raw";
+import geminiRaw from "@/assets/providers/gemini.svg?raw";
+import hunyuanRaw from "@/assets/providers/hunyuan.svg?raw";
+import xiaomiRaw from "@/assets/providers/xiaomi.svg?raw";
+import minimaxRaw from "@/assets/providers/minimax-cn.svg?raw";
+import mistralRaw from "@/assets/providers/mistral.svg?raw";
+import nvidiaRaw from "@/assets/providers/nvidia.svg?raw";
+import perplexityRaw from "@/assets/providers/perplexity.svg?raw";
+import qwenRaw from "@/assets/providers/qwen.svg?raw";
+import stepfunRaw from "@/assets/providers/stepfun.svg?raw";
+import volcengineRaw from "@/assets/providers/volcengine.svg?raw";
+import cohereRaw from "@/assets/providers/cohere.svg?raw";
 
-/**
- * Ordered list of (keyword list, svg content) pairs.
- * Matches are tried in order; first hit wins.
- */
-export const PROVIDER_SVG_MAP: [string[], string][] = [
-  // Theme-aware (uses currentColor — rendered with CSS color for light/dark)
-  [["openai", "gpt", "chatgpt"], openaiRaw],
-  [["glm", "智谱", "bigmodel"], glmRaw],
-  [["kimi", "moonshot"], kimiRaw],
-  [["grok", "x.ai"], grokRaw],
-  [["openrouter"], openrouterRaw],
-  [["groq"], groqRaw],
-  [["zai", "z.ai"], zaiRaw],
+type SvgVariant = {
+  light: string;
+  dark: string;
+};
 
-  // Branded-color SVGs (hardcoded fills — look fine on both backgrounds)
-  [["anthropic", "claude"], anthropicRaw],
-  [["deepseek"], deepseekRaw],
-  [["gemini", "google"], geminiRaw],
-  [["hunyuan", "混元", "腾讯"], hunyuanRaw],
-  [["longcat"], longcatRaw],
-  [["xiaomi", "小米", "mimo"], xiaomiRaw],
-  [["minimax"], minimaxRaw],
-  [["mistral"], mistralRaw],
-  [["nvidia", "nemotron"], nvidiaRaw],
-  [["perplexity"], perplexityRaw],
-  [["qwen", "通义"], qwenRaw],
-  [["stepfun", "阶跃"], stepfunRaw],
-  [["volcengine", "火山", "ark", "字节"], volcengineRaw],
-  [["bailian", "百炼", "dashscope"], qwenRaw],
-  [["bai", "baidu", "千帆", "百度"], qwenRaw],
-  [["ernie", "文心", "yiyan"], longcatRaw],
-  [["cohere"], cohereRaw],
+type IconEntry = {
+  keywords: string[];
+  svg: SvgVariant;
+};
+
+const ICON_MAP: IconEntry[] = [
+  // Theme-aware (light/dark variants)
+  { keywords: ["openai", "gpt", "chatgpt"], svg: { light: openaiLightRaw, dark: openaiDarkRaw } },
+  { keywords: ["glm", "智谱", "bigmodel"], svg: { light: openaiLightRaw, dark: openaiDarkRaw } },
+  { keywords: ["kimi", "moonshot"], svg: { light: kimiLightRaw, dark: kimiDarkRaw } },
+  { keywords: ["grok", "x.ai"], svg: { light: grokLightRaw, dark: grokDarkRaw } },
+  { keywords: ["openrouter"], svg: { light: openrouterLightRaw, dark: openrouterDarkRaw } },
+  { keywords: ["groq"], svg: { light: groqLightRaw, dark: groqDarkRaw } },
+  { keywords: ["zai", "z.ai"], svg: { light: grokLightRaw, dark: grokDarkRaw } },
+
+  // Branded-color (same for both themes)
+  { keywords: ["anthropic", "claude"], svg: { light: anthropicRaw, dark: anthropicRaw } },
+  { keywords: ["deepseek"], svg: { light: deepseekRaw, dark: deepseekRaw } },
+  { keywords: ["gemini", "google"], svg: { light: geminiRaw, dark: geminiRaw } },
+  { keywords: ["hunyuan", "混元", "腾讯"], svg: { light: hunyuanRaw, dark: hunyuanRaw } },
+  { keywords: ["xiaomi", "小米", "mimo"], svg: { light: xiaomiRaw, dark: xiaomiRaw } },
+  { keywords: ["minimax"], svg: { light: minimaxRaw, dark: minimaxRaw } },
+  { keywords: ["mistral"], svg: { light: mistralRaw, dark: mistralRaw } },
+  { keywords: ["nvidia", "nemotron"], svg: { light: nvidiaRaw, dark: nvidiaRaw } },
+  { keywords: ["perplexity"], svg: { light: perplexityRaw, dark: perplexityRaw } },
+  { keywords: ["qwen", "通义"], svg: { light: qwenRaw, dark: qwenRaw } },
+  { keywords: ["stepfun", "阶跃"], svg: { light: stepfunRaw, dark: stepfunRaw } },
+  { keywords: ["volcengine", "火山", "ark", "字节"], svg: { light: volcengineRaw, dark: volcengineRaw } },
+  { keywords: ["bailian", "百炼", "dashscope"], svg: { light: qwenRaw, dark: qwenRaw } },
+  { keywords: ["bai", "baidu", "千帆", "百度"], svg: { light: qwenRaw, dark: qwenRaw } },
+  { keywords: ["ernie", "文心", "yiyan"], svg: { light: cohereRaw, dark: cohereRaw } },
+  { keywords: ["cohere"], svg: { light: cohereRaw, dark: cohereRaw } },
+];
+
+// Providers that use PNG instead of SVG (served as static assets).
+const PNG_PROVIDERS: [string[], string][] = [
+  [["longcat"], "longcat.png"],
 ];
 
 /**
- * Look up the inline SVG string for a provider by name/id.
+ * Look up the raw SVG content for a provider by name/id and color scheme.
  * Returns null if no match (caller should show the letter fallback).
  */
-export function getProviderSvgContent(name: string, id?: string): string | null {
+export function getProviderSvgContent(name: string, id: string | undefined, colorScheme: "dark" | "light"): string | null {
   const lowerName = name.toLowerCase();
   const lowerId = (id || "").toLowerCase();
 
-  for (const [keywords, svg] of PROVIDER_SVG_MAP) {
+  for (const { keywords, svg } of ICON_MAP) {
     if (keywords.some((kw) => lowerName.includes(kw) || lowerId.includes(kw))) {
-      return svg;
+      return colorScheme === "dark" ? svg.dark : svg.light;
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if a provider uses a PNG logo (served as static asset via <img>).
+ */
+export function isProviderPng(name: string, id?: string): boolean {
+  const lowerName = name.toLowerCase();
+  const lowerId = (id || "").toLowerCase();
+
+  return PNG_PROVIDERS.some(([keywords]) =>
+    keywords.some((kw) => lowerName.includes(kw) || lowerId.includes(kw)),
+  );
+}
+
+/**
+ * Get the public path for a provider's PNG logo.
+ * Returns null if the provider doesn't use PNG.
+ */
+export function getProviderPngPath(name: string, id?: string): string | null {
+  const lowerName = name.toLowerCase();
+  const lowerId = (id || "").toLowerCase();
+
+  for (const [keywords, filename] of PNG_PROVIDERS) {
+    if (keywords.some((kw) => lowerName.includes(kw) || lowerId.includes(kw))) {
+      return `/icons/providers/${filename}`;
     }
   }
   return null;
