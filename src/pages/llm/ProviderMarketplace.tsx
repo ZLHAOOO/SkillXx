@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import providerDirectory from "@/data/providerDirectory.json";
 import { getProviderInitial } from "@/utils/providerIcon";
-import { getProviderSvgContent, isProviderPng, getProviderPngPath } from "@/utils/providerLogoSvg";
+import { getProviderSvgContent, getProviderPngPath } from "@/utils/providerLogoSvg";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { ProviderAddModal } from "./ProviderAddModal";
 
