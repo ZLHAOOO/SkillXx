@@ -19,6 +19,8 @@ import kimiLightRaw from "@/assets/providers/light/kimi.svg?raw";
 import kimiDarkRaw from "@/assets/providers/dark/kimi.svg?raw";
 import openrouterLightRaw from "@/assets/providers/light/openrouter.svg?raw";
 import openrouterDarkRaw from "@/assets/providers/dark/openrouter.svg?raw";
+import glmLightRaw from "@/assets/providers/light/glm.svg?raw";
+import glmDarkRaw from "@/assets/providers/dark/glm.svg?raw";
 
 // ── Branded-color SVGs (same file for both themes) ───────────────────────
 import anthropicRaw from "@/assets/providers/anthropic.svg?raw";
@@ -48,7 +50,7 @@ type IconEntry = {
 const ICON_MAP: IconEntry[] = [
   // Theme-aware (light/dark variants)
   { keywords: ["openai", "gpt", "chatgpt"], svg: { light: openaiLightRaw, dark: openaiDarkRaw } },
-  { keywords: ["glm", "智谱", "bigmodel"], svg: { light: openaiLightRaw, dark: openaiDarkRaw } },
+  { keywords: ["glm", "智谱", "bigmodel"], svg: { light: glmLightRaw, dark: glmDarkRaw } },
   { keywords: ["kimi", "moonshot"], svg: { light: kimiLightRaw, dark: kimiDarkRaw } },
   { keywords: ["grok", "x.ai"], svg: { light: grokLightRaw, dark: grokDarkRaw } },
   { keywords: ["openrouter"], svg: { light: openrouterLightRaw, dark: openrouterDarkRaw } },

@@ -198,6 +198,7 @@ export const zh = {
     batchTranslateNoNew: "暂无未翻译的 Skill",
     batchTranslateConfirmSkip: "将翻译 {new} 项，已跳过 {skipped} 项已翻译。继续？",
     editDisplayName: "编辑显示名称",
+    editContent: "编辑 SKILL.md 内容",
     editDisplayNameDesc: "自定义此 Skill 在列表中的显示方式，不会修改原始 Skill 文件。",
     displayNameLabel: "显示名称",
     displayNameHint: "留空则使用原始名称：",
@@ -355,6 +356,8 @@ export const zh = {
     skillsManageDisabled: "请先启用该工具",
     customEdit: "编辑",
     customDelete: "删除",
+    hermesManageProfiles: "管理配置文件",
+    hermesProfileCount: "{count} 个配置文件",
   },
   settings: {
     title: "设 置",

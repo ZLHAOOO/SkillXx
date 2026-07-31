@@ -38,7 +38,7 @@ pub use llm_providers::{
     delete_llm_provider, fetch_models_for_config, get_active_provider, get_llm_providers, get_tool_bindings,
     multi_switch_llm_provider, save_llm_provider_multi, save_tool_bindings,
 };
-pub use apply_model_to_tool::{apply_model_to_tool, ApplyModelInfo};
+pub use apply_model_to_tool::apply_model_to_tool;
 pub use claude_config::{apply_claude_provider, clear_claude_provider, read_claude_env, restart_claude_code_cmd, write_claude_env, list_claude_backups, restore_claude_backup};
 pub use codex_config::{apply_codex_provider, apply_codex_provider_passthrough, clear_codex_provider, read_codex_env, restart_codex_cmd, list_codex_backups, restore_codex_backup, restore_codex_original};
 pub use codex_proxy::{start_codex_proxy, update_codex_proxy_config, stop_codex_proxy};

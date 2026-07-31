@@ -16,6 +16,8 @@ export interface Skill {
   enabled: Record<string, boolean>;
   package_meta?: SkillPackageMeta | null;
   path: string;
+  /** Bundled with the SkillX app itself (e.g. `skillx-find`); auto-linked to every enabled tool. */
+  is_default?: boolean;
 }
 
 export interface ProjectBinding {

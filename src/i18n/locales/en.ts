@@ -198,6 +198,7 @@ export const en = {
     batchTranslateNoNew: "No untranslated skills",
     batchTranslateConfirmSkip: "Translate {new} skill(s), {skipped} already done. Continue?",
     editDisplayName: "Edit display name",
+    editContent: "Edit SKILL.md content",
     editDisplayNameDesc: "Customize how this skill appears in the list. This does not modify the original skill files.",
     displayNameLabel: "Display name",
     displayNameHint: "Leave empty to use original name:",
@@ -361,6 +362,8 @@ export const en = {
     skillsManageDisabled: "Enable this tool first",
     customEdit: "Edit",
     customDelete: "Delete",
+    hermesManageProfiles: "Manage profiles",
+    hermesProfileCount: "{count} profile(s)",
   },
   settings: {
     title: "Settings",

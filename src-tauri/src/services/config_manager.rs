@@ -11,10 +11,17 @@ use crate::models::{
 use crate::services::linker::LinkerService;
 use crate::services::linker::{is_symlink_or_junction, normalize_path, remove_symlink_or_junction};
 
-/// Cached config with modification timestamp for invalidation
+/// Cached config, tied to the exact file state it was loaded from.
+///
+/// The cache is process-global while `ConfigManager::config_path` derives from
+/// `$HOME`, so two managers in the same process can point at different files.
+/// The path is therefore part of the cache identity — without it, an entry
+/// loaded from one config file could be served for a different one.
 struct ConfigCache {
+    path: PathBuf,
     config: AppConfig,
     last_modified: SystemTime,
+    len: u64,
 }
 
 /// Global config cache to avoid reading from disk on every command
@@ -411,35 +418,26 @@ impl ConfigManager {
         Ok(())
     }
 
-    /// Get the last modification time of the config file
-    fn get_file_modified_time(&self) -> Option<SystemTime> {
-        fs::metadata(&self.config_path)
-            .ok()
-            .and_then(|m| m.modified().ok())
+    /// Modification time + byte length of the config file, used as its identity
+    /// for cache validation.
+    fn get_file_fingerprint(&self) -> Option<(SystemTime, u64)> {
+        let meta = fs::metadata(&self.config_path).ok()?;
+        Some((meta.modified().ok()?, meta.len()))
     }
 
-    /// Check if the cache is valid (file hasn't been modified since last load)
+    /// Check if the cache is valid (same file, untouched since it was loaded).
+    ///
+    /// The comparison is exact on purpose. An earlier version allowed a 100ms
+    /// mtime tolerance to absorb filesystem timestamp coarseness, but that
+    /// traded a correctness problem for a performance one: a rewrite landing
+    /// within the tolerance window was treated as "unchanged" and stale config
+    /// was served. A spurious cache miss only costs one extra read.
     fn is_cache_valid(&self, cache: &ConfigCache) -> bool {
-        match self.get_file_modified_time() {
-            Some(modified) => {
-                // Cache is valid if file modification time hasn't changed
-                // Add a small tolerance (1ms) to handle filesystem timestamp precision
-                modified
-                    .duration_since(UNIX_EPOCH)
-                    .ok()
-                    .and_then(|d| Some(d.as_millis()))
-                    .and_then(|current| {
-                        cache
-                            .last_modified
-                            .duration_since(UNIX_EPOCH)
-                            .ok()
-                            .map(|cached| {
-                                let diff = current.abs_diff(cached.as_millis());
-                                diff < 100 // Less than 100ms difference
-                            })
-                    })
-                    .unwrap_or(false)
-            }
+        if cache.path != self.config_path {
+            return false;
+        }
+        match self.get_file_fingerprint() {
+            Some((modified, len)) => modified == cache.last_modified && len == cache.len,
             None => false,
         }
     }
@@ -609,11 +607,13 @@ impl ConfigManager {
         }
 
         // Update the cache
-        if let Some(modified) = self.get_file_modified_time() {
+        if let Some((modified, len)) = self.get_file_fingerprint() {
             let mut cache_lock = get_cache().lock().map_err(|e| format!("Cache lock error: {}", e))?;
             *cache_lock = Some(ConfigCache {
+                path: self.config_path.clone(),
                 config: config.clone(),
                 last_modified: modified,
+                len,
             });
         }
 

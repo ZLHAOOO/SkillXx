@@ -297,20 +297,20 @@ export function Skills() {
   const listContainerRef = useRef<HTMLElement | null>(null);
   const hasRestoredScrollRef = useRef(false);
 
-  const handleOpenUnifiedItem = useCallback(async (item: UnifiedSkillListItem) => {
-    if (!item.openPath) {
-      return;
-    }
-
+  /**
+   * Opens a skill/group path in the content editor, honouring the user's
+   * "default editor" preference (built-in Monaco vs. an external editor).
+   */
+  const openContentInEditor = useCallback(async (openPath: string) => {
     try {
       const editorId = config?.preferences?.default_editor || "builtin";
 
       if (editorId === "builtin") {
         const currentScrollOffset = listContainerRef.current?.scrollTop ?? 0;
         saveSkillsListScrollOffset(currentScrollOffset);
-        navigate(`/editor?root=${encodeURIComponent(item.openPath)}`);
+        navigate(`/editor?root=${encodeURIComponent(openPath)}`);
       } else {
-        await invoke("open_in_editor", { editorId, path: item.openPath });
+        await invoke("open_in_editor", { editorId, path: openPath });
       }
     } catch (err) {
       addToast(err instanceof Error ? err.message : String(err), "error");
@@ -631,6 +631,16 @@ export function Skills() {
     setTagDraft("");
     setShowTagFilterMenu(false);
   }, []);
+
+  /** Opens the manage dialog for a skill or a group. Card body click and the
+   *  three-dot "edit" entry both route here. */
+  const handleManageUnifiedItem = useCallback((item: UnifiedSkillListItem) => {
+    if (item.kind === "skill" && item.skill) {
+      openSkillEditor(item.skill.instance_id, "tools");
+    } else if (item.kind === "group") {
+      openGroupEditor(item.id);
+    }
+  }, [openSkillEditor, openGroupEditor]);
 
   const closeSkillEditor = useCallback(() => {
     setToolEditorSkillId(null);
@@ -1767,6 +1777,9 @@ export function Skills() {
     [groupEditorPackageId, unifiedItems],
   );
 
+  /** On-disk path of the group being edited, if it has one. */
+  const groupEditorOpenPath = groupEditorItem?.openPath ?? null;
+
   const groupEditorMetadataKey = useMemo(
     () => (groupEditorItem ? getGroupMetadataKey(groupEditorItem.id) : null),
     [groupEditorItem],
@@ -2779,7 +2792,9 @@ export function Skills() {
               }}
             >
               {sortedUnifiedItems.map((item) => {
-                const canOpen = Boolean(item.openPath);
+                // Card body click opens the manage dialog, which needs the
+                // underlying skill/group rather than an on-disk path.
+                const canOpen = item.kind === "group" || Boolean(item.skill);
 
                 const cardTitle = item.kind === "skill" && item.skill
                   ? (() => {
@@ -2839,15 +2854,9 @@ export function Skills() {
                     tools={tools}
                     deletingSkill={deletingSkill}
                     deletingGroupId={deletingGroupId}
-                    onOpen={() => void handleOpenUnifiedItem(item)}
+                    onOpen={() => handleManageUnifiedItem(item)}
                     onToggleBatchSelection={() => handleToggleBatchItemSelection(item.key)}
-                    onEdit={() => {
-                      if (item.kind === "skill" && item.skill) {
-                        openSkillEditor(item.skill.instance_id, "tools");
-                      } else if (item.kind === "group") {
-                        openGroupEditor(item.id);
-                      }
-                    }}
+                    onEdit={() => handleManageUnifiedItem(item)}
                     onDelete={() => {
                       if (item.kind === "skill" && item.skill) {
                         void handleDelete(item.skill);
@@ -2909,6 +2918,7 @@ export function Skills() {
           displayDescription={(toolEditorSkill as typeof toolEditorSkill & { displayDescription?: string | null })?.displayDescription}
           displayNameLang={config?.preferences?.skill_display_name_lang || "original"}
           displayDescLang={config?.preferences?.skill_display_desc_lang || "original"}
+          onOpenContent={toolEditorSkill.path ? () => void openContentInEditor(toolEditorSkill.path) : undefined}
           t={t}
         />
       )}
@@ -2975,6 +2985,7 @@ export function Skills() {
             void persistMetadataTags(groupEditorMetadataKey, [...groupEditorTags, tag]);
           }}
           savingTags={savingTagsSkillId === groupEditorMetadataKey}
+          onOpenContent={groupEditorOpenPath ? () => void openContentInEditor(groupEditorOpenPath) : undefined}
           t={t}
         />
       )}

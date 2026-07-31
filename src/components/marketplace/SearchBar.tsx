@@ -3,9 +3,7 @@ import skillhubLogo from "@/assets/platforms/SkillHub.png";
 import clawhubLogo from "@/assets/platforms/clawd-logo.png";
 import skillsShLogo from "@/assets/platforms/skills-sh.svg";
 import awesomeSkillsLogo from "@/assets/platforms/awesome-skills.svg";
-
-// RedSkill logo as inline SVG (no asset file yet)
-const redskillLogoSvg = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23e53935"><circle cx="12" cy="12" r="10"/></svg>`;
+import redskillLogo from "@/assets/platforms/redskill.svg";
 
 interface SearchBarProps {
   onSearch: (platform: string, query: string) => void;
@@ -19,7 +17,7 @@ const platformLogos: Record<string, string> = {
   "awesome-claude-skills": awesomeSkillsLogo,
   "skillhub": skillhubLogo,
   "clawhub": clawhubLogo,
-  "redskill": redskillLogoSvg,
+  "redskill": redskillLogo,
 };
 
 const platformLabels: Record<string, string> = {

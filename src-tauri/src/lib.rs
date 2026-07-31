@@ -32,7 +32,7 @@ use commands::{
     translate_skill_name_desc_custom, translate_skills_batch, translate_text_content,
     update_custom_tool, update_tool_paths, write_claude_env, write_file,
 };
-use services::{AppCache, MarketplaceCache};
+use services::{ensure_all_default_skills_in_hub, AppCache, ConfigManager, MarketplaceCache};
 use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
 
@@ -73,6 +73,15 @@ pub fn run() {
                             eprintln!("Failed to check deep link registration for '{}': {}", scheme, err);
                         }
                     }
+                }
+            }
+
+            // One-time bootstrap: copy bundled default skills (e.g. skillx-find)
+            // into the user's hub if they're not already there. Idempotent —
+            // existing SKILL.md files are never overwritten.
+            if let Ok(config) = ConfigManager::new().load() {
+                if let Err(err) = ensure_all_default_skills_in_hub(&config.skills_dir) {
+                    eprintln!("[skillx] failed to bootstrap default skills: {}", err);
                 }
             }
             Ok(())

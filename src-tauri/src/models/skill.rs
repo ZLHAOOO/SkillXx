@@ -21,6 +21,10 @@ pub struct Skill {
     pub package_meta: Option<SkillPackageMeta>,
     pub enabled: HashMap<String, bool>,
     pub path: PathBuf,
+    /// True if this skill ships with the SkillX app itself (e.g. `skillx-find`).
+    /// Auto-linked to every enabled agent by default; users can still remove it.
+    #[serde(default)]
+    pub is_default: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -87,6 +91,7 @@ impl Skill {
             package_meta: None,
             enabled: HashMap::new(),
             path,
+            is_default: false,
         }
     }
 

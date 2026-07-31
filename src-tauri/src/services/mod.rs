@@ -1,5 +1,6 @@
 #[allow(dead_code)]
 pub mod auth;
+pub mod bundled_skills;
 pub mod cache;
 pub mod claude_config;
 pub mod codex_config;
@@ -22,6 +23,10 @@ pub mod translation;
 pub mod translation_cache;
 pub mod updater;
 
+pub use bundled_skills::{
+    clear_default_skill_removed, ensure_all_default_skills_in_hub,
+    ensure_default_skills_linked_for_tool, is_default_skill, mark_default_skill_removed,
+};
 pub use cache::AppCache;
 pub use config_manager::ConfigManager;
 pub use detector::DetectorService;

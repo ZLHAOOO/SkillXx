@@ -154,7 +154,8 @@ export function getGroupToolLabel(toolLabel: string, state: GroupToolState): str
   return `${toolLabel} · ${getGroupToolCoverageLabel(state)}`;
 }
 
-function getSkillBadgeLabel(_skill: Skill): string | null {
+function getSkillBadgeLabel(skill: Skill): string | null {
+  if (skill.is_default) return "默认";
   return null;
 }
 

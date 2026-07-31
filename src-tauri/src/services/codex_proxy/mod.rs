@@ -686,6 +686,68 @@ fn map_finish_reason(reason: &str) -> &'static str {
 // Format translation: Chat Completions SSE → Responses SSE (streaming)
 // ---------------------------------------------------------------------------
 
+/// Assemble the trailing SSE frames of a streamed response: the terminal
+/// `response` event carrying the full output, followed by `[DONE]`.
+///
+/// A stream can end two ways — the upstream sends `data: [DONE]`, or the byte
+/// stream simply runs out — and both must produce the same payload. They used
+/// to be built by two copies of this logic, and they had drifted: the `[DONE]`
+/// path never appended `acc_tool_calls`, so on a normal completion every tool
+/// call the model asked for was dropped from the final snapshot. Funnelling
+/// both endings through one function makes that class of divergence impossible.
+fn final_response_frames(
+    acc_content: &str,
+    acc_tool_calls: &[Value],
+    model: &str,
+    finish_reason: &str,
+    usage_info: Option<&Value>,
+) -> String {
+    let mut output_items: Vec<Value> = Vec::new();
+
+    if !acc_content.is_empty() {
+        output_items.push(json!({
+            "type": "message",
+            "role": "assistant",
+            "content": [{ "type": "output_text", "text": acc_content }]
+        }));
+    }
+
+    // Slots are pre-allocated by index as deltas arrive, so a slot may never
+    // have received a name. Those are incomplete and must not be emitted.
+    for tool_call in acc_tool_calls {
+        if !tool_call
+            .get("name")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .is_empty()
+        {
+            output_items.push(tool_call.clone());
+        }
+    }
+
+    let mut resp = json!({
+        "type": "response",
+        "id": format!("resp_{}", uuid()),
+        "status": map_finish_reason(finish_reason),
+        "output": output_items,
+        "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+        }
+    });
+    if !model.is_empty() {
+        resp["model"] = Value::String(model.to_string());
+    }
+    if let Some(usage) = usage_info {
+        resp["usage"] = usage.clone();
+    }
+
+    format!(
+        "data: {}\n\ndata: [DONE]\n\n",
+        serde_json::to_string(&resp).unwrap()
+    )
+}
+
 async fn chat_sse_to_responses_sse(
     byte_stream: impl futures_util::Stream<Item = Result<bytes::Bytes, reqwest::Error>> + Unpin,
 ) -> Result<String, String> {
@@ -694,7 +756,6 @@ async fn chat_sse_to_responses_sse(
     let mut acc_content = String::new();
     let mut acc_tool_calls: Vec<Value> = Vec::new();
     let mut model = String::new();
-    let mut output_items: Vec<Value> = Vec::new();
     let mut finish_reason = String::new();
     let mut usage_info: Option<Value> = None;
     let mut is_first = true;
@@ -713,35 +774,13 @@ async fn chat_sse_to_responses_sse(
             }
             let data = &line[6..];
             if data == "[DONE]" {
-                // Build final output_items from accumulated content
-                let mut final_output = output_items.clone();
-
-                if !acc_content.is_empty() && final_output.iter().all(|o| o.get("type").and_then(Value::as_str) != Some("message")) {
-                    final_output.push(json!({
-                        "type": "message",
-                        "role": "assistant",
-                        "content": [{ "type": "output_text", "text": acc_content }]
-                    }));
-                }
-
-                let mut resp = json!({
-                    "type": "response",
-                    "id": format!("resp_{}", uuid()),
-                    "status": map_finish_reason(&finish_reason),
-                    "output": final_output,
-                    "usage": {
-                        "input_tokens": 0,
-                        "output_tokens": 0
-                    }
-                });
-                if !model.is_empty() {
-                    resp["model"] = Value::String(model.clone());
-                }
-                if let Some(u) = &usage_info {
-                    resp["usage"] = u.clone();
-                }
-                output.push_str(&format!("data: {}\n\n", serde_json::to_string(&resp).unwrap()));
-                output.push_str("data: [DONE]\n\n");
+                output.push_str(&final_response_frames(
+                    &acc_content,
+                    &acc_tool_calls,
+                    &model,
+                    &finish_reason,
+                    usage_info.as_ref(),
+                ));
                 return Ok(output);
             }
 
@@ -793,10 +832,12 @@ async fn chat_sse_to_responses_sse(
             // Process reasoning content
             if let Some(reasoning) = delta.get("reasoning_content").and_then(Value::as_str) {
                 if !reasoning.is_empty() {
+                    // Same output block as regular content: both stream into the
+                    // single assistant message, which is always item 0.
                     let chunk_resp = json!({
                         "type": "response_output_text.delta",
                         "delta": reasoning,
-                        "output_index": if output_items.is_empty() { output_items.len() } else { 0 }
+                        "output_index": 0
                     });
                     output.push_str(&format!("data: {}\n\n", serde_json::to_string(&chunk_resp).unwrap()));
                 }
@@ -831,11 +872,12 @@ async fn chat_sse_to_responses_sse(
                             acc_tool_calls[idx]["call_id"] = Value::String(id.to_string());
                         }
                     }
-                    if let Some(call_type) = tc_delta.get("type").and_then(Value::as_str) {
-                        if !call_type.is_empty() {
-                            acc_tool_calls[idx]["type"] = Value::String(call_type.to_string());
-                        }
-                    }
+                    // NOTE: the upstream delta's `type` is deliberately not copied.
+                    // Chat Completions labels tool calls `"function"`; the Responses
+                    // format this accumulator is building calls them
+                    // `"function_call"`, which is how the slot is initialised above.
+                    // Copying the field across formats overwrote a valid item type
+                    // with one Codex does not recognise.
 
                     // Send function_call_arguments.delta event
                     let args_delta = tc_delta
@@ -873,7 +915,7 @@ async fn chat_sse_to_responses_sse(
                     });
                     output.push_str(&format!("data: {}\n\n", serde_json::to_string(&event).unwrap()));
                 }
-                for (idx, tc) in acc_tool_calls.iter().enumerate() {
+                for tc in acc_tool_calls.iter() {
                     if !tc.get("name").and_then(Value::as_str).unwrap_or("").is_empty() {
                         let item = json!({
                             "type": "function_call",
@@ -898,34 +940,13 @@ async fn chat_sse_to_responses_sse(
 
     // If stream ended without [DONE], emit final response
     if !output.is_empty() && !output.contains("[DONE]") {
-        let mut final_output = output_items;
-        if !acc_content.is_empty() && final_output.iter().all(|o| o.get("type").and_then(Value::as_str) != Some("message")) {
-            final_output.push(json!({
-                "type": "message",
-                "role": "assistant",
-                "content": [{ "type": "output_text", "text": acc_content }]
-            }));
-        }
-        for tc in &acc_tool_calls {
-            if !tc.get("name").and_then(Value::as_str).unwrap_or("").is_empty() {
-                final_output.push(tc.clone());
-            }
-        }
-        let mut resp = json!({
-            "type": "response",
-            "id": format!("resp_{}", uuid()),
-            "status": map_finish_reason(&finish_reason),
-            "output": final_output,
-            "usage": { "input_tokens": 0, "output_tokens": 0 }
-        });
-        if !model.is_empty() {
-            resp["model"] = Value::String(model);
-        }
-        if let Some(u) = &usage_info {
-            resp["usage"] = u.clone();
-        }
-        output.push_str(&format!("data: {}\n\n", serde_json::to_string(&resp).unwrap()));
-        output.push_str("data: [DONE]\n\n");
+        output.push_str(&final_response_frames(
+            &acc_content,
+            &acc_tool_calls,
+            &model,
+            &finish_reason,
+            usage_info.as_ref(),
+        ));
     }
 
     if output.is_empty() {
@@ -985,3 +1006,6 @@ fn uuid() -> String {
     let id = COUNTER.fetch_add(1, Ordering::Relaxed);
     format!("{:016x}", id)
 }
+
+#[cfg(test)]
+mod tests;

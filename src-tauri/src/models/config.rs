@@ -76,6 +76,20 @@ fn default_api_format() -> String {
     "openai".to_string()
 }
 
+impl Default for LlmProvider {
+    fn default() -> Self {
+        Self {
+            base_url: String::new(),
+            api_key: String::new(),
+            model: String::new(),
+            temperature: None,
+            max_tokens: None,
+            timeout_secs: None,
+            api_format: default_api_format(),
+        }
+    }
+}
+
 /// Multi-provider config entry (new with ClaudeCode refactor)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LlmProviderConfig {
@@ -328,6 +342,11 @@ pub struct AppConfig {
     /// Ordered list of level-1 category IDs
     #[serde(default)]
     pub skill_level1_categories: Vec<String>,
+    /// Default skills the user has explicitly removed for a given tool.
+    /// Outer key = tool_id, inner vec = default skill ids the user opted out of.
+    /// Once a removal is recorded, auto-link will not re-add the link.
+    #[serde(default)]
+    pub removed_default_skills: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -365,7 +384,7 @@ pub struct ToolConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            version: "3.5.0".to_string(),
+            version: "3.5.1".to_string(),
             skills_dir: Self::default_skills_dir(),
             tools: HashMap::new(),
             custom_tools: HashMap::new(),
@@ -384,6 +403,7 @@ impl Default for AppConfig {
             skill_categories: HashMap::new(),
             skill_category_dimensions: Vec::new(),
             skill_level1_categories: Vec::new(),
+            removed_default_skills: HashMap::new(),
         }
     }
 }

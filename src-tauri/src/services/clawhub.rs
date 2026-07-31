@@ -1,6 +1,6 @@
 use reqwest::Client;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 use urlencoding;
@@ -441,64 +441,56 @@ fn write_clawhub_meta(dir: &Path, slug: &str) -> Result<(), String> {
 }
 
 /// Build a tree of FileNode from a flat list of file paths.
-/// Directories are inferred from path separators.
-fn build_tree(mut nodes: Vec<crate::services::file_ops::FileNode>) -> Vec<crate::services::file_ops::FileNode> {
-    if nodes.is_empty() {
-        return Vec::new();
-    }
-
-    // Sort by path for consistent ordering
-    nodes.sort_by(|a, b| a.path.cmp(&b.path));
-
-    let mut root_dirs: HashMap<String, Vec<crate::services::file_ops::FileNode>> = HashMap::new();
-    let mut root_files: Vec<crate::services::file_ops::FileNode> = Vec::new();
-
-    for node in nodes {
-        let parts: Vec<&str> = node.path.split('/').collect();
-        if parts.len() == 1 {
-            root_files.push(node);
-        } else {
-            let dir_path = parts[..parts.len() - 1].join("/");
-            root_dirs.entry(dir_path).or_default().push(node);
-        }
-    }
-
-    // Build directory tree from nested structure
-    let mut tree: Vec<crate::services::file_ops::FileNode> = Vec::new();
-
-    // Process root files
-    tree.extend(root_files);
-
-    // Process root directories
-    for (dir_path, mut children) in root_dirs {
-        let dir_node = build_dir_node(&dir_path, &mut children);
-        tree.push(dir_node);
-    }
-
-    // Sort: directories first, then files, alphabetically
+/// Directories are inferred from path separators, at any depth.
+fn build_tree(nodes: Vec<crate::services::file_ops::FileNode>) -> Vec<crate::services::file_ops::FileNode> {
+    let entries = nodes
+        .into_iter()
+        .map(|node| (node.path.clone(), node))
+        .collect();
+    let mut tree = build_level(entries, "");
+    // Sort: directories first, then files, alphabetically (recursive).
     sort_tree(&mut tree);
-
     tree
 }
 
-fn build_dir_node(
-    dir_path: &str,
-    children: &mut Vec<crate::services::file_ops::FileNode>,
-) -> crate::services::file_ops::FileNode {
-    sort_tree(children);
+/// Group one level of the tree by its leading path segment, recursing into each
+/// directory. `prefix` is the already-consumed path; each entry carries the
+/// remainder of its path relative to that prefix.
+fn build_level(
+    entries: Vec<(String, crate::services::file_ops::FileNode)>,
+    prefix: &str,
+) -> Vec<crate::services::file_ops::FileNode> {
+    let mut files: Vec<crate::services::file_ops::FileNode> = Vec::new();
+    let mut dirs: BTreeMap<String, Vec<(String, crate::services::file_ops::FileNode)>> =
+        BTreeMap::new();
 
-    let name = dir_path
-        .rsplit('/')
-        .next()
-        .unwrap_or(dir_path)
-        .to_string();
-
-    crate::services::file_ops::FileNode {
-        name: name.clone(),
-        path: dir_path.to_string(),
-        is_dir: true,
-        children: Some(std::mem::take(children)),
+    for (relative, node) in entries {
+        match relative.split_once('/') {
+            None => files.push(node),
+            Some((segment, rest)) => dirs
+                .entry(segment.to_string())
+                .or_default()
+                .push((rest.to_string(), node)),
+        }
     }
+
+    let mut level: Vec<crate::services::file_ops::FileNode> = Vec::new();
+    for (segment, children) in dirs {
+        let dir_path = if prefix.is_empty() {
+            segment.clone()
+        } else {
+            format!("{}/{}", prefix, segment)
+        };
+        let children = build_level(children, &dir_path);
+        level.push(crate::services::file_ops::FileNode {
+            name: segment,
+            path: dir_path,
+            is_dir: true,
+            children: Some(children),
+        });
+    }
+    level.extend(files);
+    level
 }
 
 fn sort_tree(nodes: &mut [crate::services::file_ops::FileNode]) {
@@ -538,10 +530,28 @@ mod tests {
         assert_eq!(tree[0].path, "a");
         assert_eq!(tree[1].path, "b");
         assert_eq!(tree[2].path, "top.md");
-        assert_eq!(tree[0].children.as_ref().unwrap().len(), 2);
-        assert_eq!(tree[0].children.as_ref().unwrap()[0].path, "a/file.txt");
-        assert_eq!(tree[0].children.as_ref().unwrap()[1].path, "a/sub");
-        assert_eq!(tree[0].children.as_ref().unwrap()[1].children.as_ref().unwrap()[0].path, "a/sub/inner.txt");
+
+        // Within a directory, sub-directories sort before files.
+        let a_children = tree[0].children.as_ref().unwrap();
+        assert_eq!(a_children.len(), 2);
+        assert_eq!(a_children[0].path, "a/sub");
+        assert_eq!(a_children[1].path, "a/file.txt");
+        assert_eq!(a_children[0].children.as_ref().unwrap()[0].path, "a/sub/inner.txt");
+    }
+
+    #[test]
+    fn build_tree_nests_deeply_instead_of_flattening() {
+        let nodes = vec![
+            FileNode { path: "x/y/z/deep.txt".into(), name: "deep.txt".into(), is_dir: false, children: None },
+        ];
+        let tree = build_tree(nodes);
+        assert_eq!(tree.len(), 1);
+        assert_eq!(tree[0].path, "x");
+        let y = &tree[0].children.as_ref().unwrap()[0];
+        assert_eq!(y.path, "x/y");
+        let z = &y.children.as_ref().unwrap()[0];
+        assert_eq!(z.path, "x/y/z");
+        assert_eq!(z.children.as_ref().unwrap()[0].path, "x/y/z/deep.txt");
     }
 
     #[test]

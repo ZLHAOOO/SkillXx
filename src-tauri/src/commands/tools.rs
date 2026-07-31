@@ -1,8 +1,43 @@
 use std::path::PathBuf;
 
-use crate::models::{CustomToolConfig, Tool, SUPPORTED_TOOLS};
-use crate::services::{AppCache, ConfigManager, DetectorService, LinkerService};
+use crate::models::{CustomToolConfig, Tool, ToolConfig, SUPPORTED_TOOLS};
+use crate::services::{
+    ensure_default_skills_linked_for_tool, AppCache, ConfigManager, DetectorService, LinkerService,
+};
 use tauri::State;
+
+/// Auto-link bundled default skills to a single tool, respecting the user's
+/// previous opt-outs stored in `removed_default_skills`. Silently no-ops if the
+/// tool is not enabled, or the hub has not been bootstrapped yet.
+fn auto_link_defaults_for_tool(tool_id: &str, tool_config: &ToolConfig) {
+    if !tool_config.enabled {
+        return;
+    }
+    let manager = ConfigManager::new();
+    let Ok(config) = manager.load() else {
+        return;
+    };
+    if let Err(err) = ensure_default_skills_linked_for_tool(
+        tool_id,
+        tool_config.enabled,
+        &tool_config.skills_path,
+        &config.skills_dir,
+        &config,
+    ) {
+        eprintln!(
+            "[skillx] failed to auto-link defaults for {}: {}",
+            tool_id, err
+        );
+    }
+}
+
+/// Auto-link bundled default skills for every detected/enabled tool. Called
+/// after a detection or refresh pass.
+fn auto_link_defaults_for_all_tools(tools: &[Tool]) {
+    for tool in tools {
+        auto_link_defaults_for_tool(&tool.id, &tool.config);
+    }
+}
 
 #[tauri::command]
 pub fn detect_tools(cache: State<AppCache>) -> Result<Vec<Tool>, String> {
@@ -13,6 +48,7 @@ pub fn detect_tools(cache: State<AppCache>) -> Result<Vec<Tool>, String> {
 
     // Cache miss - detect and cache
     let tools = DetectorService::detect_all();
+    auto_link_defaults_for_all_tools(&tools);
     cache.set_tools(tools.clone());
     Ok(tools)
 }
@@ -21,6 +57,7 @@ pub fn detect_tools(cache: State<AppCache>) -> Result<Vec<Tool>, String> {
 pub fn refresh_tools(cache: State<AppCache>) -> Result<Vec<Tool>, String> {
     // Force re-detect and update cache
     let tools = DetectorService::detect_all();
+    auto_link_defaults_for_all_tools(&tools);
     cache.set_tools(tools.clone());
     Ok(tools)
 }
@@ -58,7 +95,19 @@ fn set_tool_enabled_with_cache(
     set_tool_enabled_in_config(&tool_id, enabled)?;
     cache.invalidate_tools();
     cache.invalidate_skills();
+
+    if enabled {
+        // After enabling, re-link any default skills that aren't user-opted-out.
+        if let Some(tool_config) = get_tool_config(&tool_id) {
+            auto_link_defaults_for_tool(&tool_id, &tool_config);
+        }
+    }
+
     Ok(())
+}
+
+fn get_tool_config(tool_id: &str) -> Option<ToolConfig> {
+    ConfigManager::new().load().ok().and_then(|c| c.get_tool_config(tool_id))
 }
 
 fn should_remove_links_when_disabling_tool(config: &crate::models::AppConfig) -> bool {
@@ -242,12 +291,24 @@ pub fn create_custom_tool(
     }
 
     let config_path_buf = PathBuf::from(config_path);
+    let skills_path_buf = PathBuf::from(skills_path);
     let enabled = config_path_buf.exists();
+
+    // Auto-link bundled defaults BEFORE the insert consumes `tool_id`.
+    if enabled {
+        let new_tool_config = ToolConfig {
+            enabled,
+            detected: true,
+            skills_path: skills_path_buf.clone(),
+            config_path: config_path_buf.clone(),
+        };
+        auto_link_defaults_for_tool(&tool_id, &new_tool_config);
+    }
 
     let custom_tool = CustomToolConfig {
         name,
         config_path: config_path_buf,
-        skills_path: PathBuf::from(skills_path),
+        skills_path: skills_path_buf,
         enabled,
         icon_path: icon_path.map(PathBuf::from),
     };
