@@ -27,6 +27,7 @@ import { SkillDetailModal } from "@/components/marketplace/SkillDetailModal";
 import { formatInstallCountLabel } from "@/pages/marketplace/formatInstallCount";
 import { buildMarketplaceMetaItems } from "@/pages/marketplace/buildMarketplaceMetaItems";
 import { sortMarketplaceSkillsByInstallStatus } from "@/pages/marketplace/sortMarketplaceSkillsByInstallStatus";
+import { buildMarketplaceErrorMessage } from "@/pages/marketplace/buildMarketplaceErrorMessage";
 import { getMarketplaceMetaChipStyle } from "@/components/marketplace/marketplaceMetaChipStyle";
 import { MODAL_LAYER_Z_INDEX, MODAL_OVERLAY_COLOR } from "@/constants/modal";
 import { getSkillColor } from "@/lib/getSkillColor";
@@ -103,13 +104,10 @@ export function Marketplace() {
   );
 
   const showMarketplaceError = useCallback((err: unknown, fallbackMessage: string) => {
-    const rawMessage = err instanceof Error ? err.message : String(err);
-    const rateLimited =
-      /(^|[^0-9])429([^0-9]|$)/.test(rawMessage)
-      || /too many requests/i.test(rawMessage)
-      || /rate limit/i.test(rawMessage)
-      || /请求过于频繁/.test(rawMessage);
-    addToast(rateLimited ? t("marketplace.rateLimited") : fallbackMessage, "error");
+    addToast(
+      buildMarketplaceErrorMessage(err, fallbackMessage, t("marketplace.rateLimited")),
+      "error",
+    );
     console.error("[marketplace] request failed", err);
   }, [addToast, t]);
 

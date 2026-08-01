@@ -13,10 +13,10 @@
 # Rationale: this is a "ratchet" — technical debt can only decrease.
 
 # --- Frontend (TypeScript / TSX) ---
-3133 src/pages/Skills.tsx
+3099 src/pages/Skills.tsx
 1273 src/pages/Tools.tsx
 1501 src/pages/Settings.tsx
-1348 src/pages/Marketplace.tsx
+1346 src/pages/Marketplace.tsx
 1013 src/components/marketplace/SkillDetailModal.tsx
 577  src/components/skills/SkillCard.tsx
 777  src/pages/llm/ProviderAddModal.tsx
@@ -36,4 +36,3 @@
 1074 src-tauri/src/commands/marketplace/mod.rs
 1359 src-tauri/src/commands/llm.rs
 1118 src-tauri/src/services/config_manager.rs
-1011 src-tauri/src/services/codex_proxy/mod.rs

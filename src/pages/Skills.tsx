@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy, type CSSProperties } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
@@ -84,6 +84,8 @@ import {
   buildSkillsHeaderActionLayout,
   type SkillsHeaderActionId,
 } from "./skills/headerActionLayout";
+import { buildTagFilterMenuItemStyle } from "./skills/tagFilterMenuItemStyle";
+import { getUnifiedItemMetaLabel } from "./skills/getUnifiedItemMetaLabel";
 import {
   buildProjectBindingFromSkillsDir,
   hasProjectSkillsDirConflict,
@@ -112,43 +114,7 @@ function getToolDisplayName(toolId: string, tools: Tool[]): string {
   return toolId;
 }
 
-function buildTagFilterMenuItemStyle(active: boolean): CSSProperties {
-  return {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: "12px",
-    width: "100%",
-    padding: "8px 10px",
-    fontSize: "12px",
-    fontWeight: 500,
-    color: active ? "var(--primary)" : "var(--foreground)",
-    backgroundColor: active ? "color-mix(in srgb, var(--primary) 8%, transparent)" : "var(--background)",
-    border: active ? "1px solid color-mix(in srgb, var(--primary) 28%, transparent)" : "1px solid var(--border)",
-    borderRadius: "8px",
-    cursor: "pointer",
-    textAlign: "left",
-  };
-}
-
 type SkillEditorTab = "tools" | "tags" | "category";
-
-function getUnifiedItemMetaLabel(item: UnifiedSkillListItem, t: (key: TranslationPath) => string) {
-  if (item.kind === "group") {
-    return t("skills.groupMembersCount").replace("{count}", String(item.memberCount ?? 0));
-  }
-
-  const summary = item.toolSummary;
-  if (!summary || summary.state === "none") {
-    return t("skills.noToolsEnabled");
-  }
-
-  if (summary.state === "all") {
-    return t("skills.allEnabled");
-  }
-
-  return `${t("skills.enableFor")} ${summary.enabledCount}/${summary.totalCount}`;
-}
 
 export function Skills() {
   const { t, language } = useTranslation();
