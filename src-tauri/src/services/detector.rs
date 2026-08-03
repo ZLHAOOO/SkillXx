@@ -1,4 +1,5 @@
 use rayon::prelude::*; // Enable parallel processing
+use std::collections::HashSet;
 use std::fs;
 
 use crate::models::{
@@ -19,10 +20,12 @@ impl DetectorService {
 
         // Use parallel iterator to detect all tools simultaneously
         // This prevents one slow detection (e.g. checking a network path) from blocking the UI
-        let builtin_tools: Vec<Tool> = SUPPORTED_TOOLS
+        let mut builtin_tools: Vec<Tool> = SUPPORTED_TOOLS
             .par_iter()
             .map(|def| Self::detect_tool(def, &saved_config))
             .collect();
+
+        Self::drop_hidden_installs(&mut builtin_tools);
 
         tools.extend(builtin_tools);
 
@@ -45,6 +48,25 @@ impl DetectorService {
         }
 
         tools
+    }
+
+    /// Drop compatibility entries whose superseding install was also detected, so one product
+    /// spread over two config directories doesn't surface a card for the directory it no
+    /// longer reads. Undetected entries are dropped too — they were already hidden in the UI.
+    fn drop_hidden_installs(tools: &mut Vec<Tool>) {
+        let detected: HashSet<&str> = tools
+            .iter()
+            .filter(|tool| tool.detected)
+            .map(|tool| tool.id.as_str())
+            .collect();
+
+        let hidden: HashSet<&str> = SUPPORTED_TOOLS
+            .iter()
+            .filter(|def| def.hidden_by().is_some_and(|other| detected.contains(other)))
+            .map(|def| def.id)
+            .collect();
+
+        tools.retain(|tool| !hidden.contains(tool.id.as_str()));
     }
 
     /// Detect Hermes profiles (independent agents with their own skills)
@@ -288,6 +310,39 @@ mod tests {
 
             let found = tools.iter().any(|tool| tool.id == "my-tool");
             assert!(found, "expected custom tool to be detected");
+        });
+    }
+
+    #[test]
+    fn a_live_copaw_install_hides_the_renamed_qwenpaw_directory() {
+        with_temp_home(|home_dir| {
+            write_config(home_dir);
+            // Early adopters keep running out of `.copaw` while QwenPaw leaves an empty
+            // `.qwenpaw` behind, so only the `.copaw` card should show up.
+            fs::create_dir_all(home_dir.join(".copaw")).unwrap();
+            fs::create_dir_all(home_dir.join(".qwenpaw")).unwrap();
+
+            let tools = DetectorService::detect_all();
+            let has = |id: &str| tools.iter().any(|tool| tool.id == id);
+
+            assert!(has("copaw"));
+            assert!(!has("qwenpaw"));
+        });
+    }
+
+    #[test]
+    fn qwenpaw_still_shows_up_on_its_own() {
+        with_temp_home(|home_dir| {
+            write_config(home_dir);
+            fs::create_dir_all(home_dir.join(".qwenpaw")).unwrap();
+
+            let tools = DetectorService::detect_all();
+            let qwenpaw = tools
+                .iter()
+                .find(|tool| tool.id == "qwenpaw")
+                .expect("qwenpaw should be listed when no .copaw install exists");
+
+            assert!(qwenpaw.detected);
         });
     }
 }

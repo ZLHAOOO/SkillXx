@@ -465,10 +465,23 @@ impl AppConfig {
         })
     }
 
+    /// True when another install of the same product is present and is the one that actually
+    /// reads the skills, so this entry must not receive links even if it stayed enabled in a
+    /// config written before the other install showed up. See `ToolDefinition::hidden_by`.
+    fn is_hidden_by_sibling_install(&self, tool_id: &str) -> bool {
+        super::tool::SUPPORTED_TOOLS
+            .iter()
+            .find(|def| def.id == tool_id)
+            .and_then(|def| def.hidden_by())
+            .and_then(|other| self.tools.get(other))
+            .is_some_and(|other| other.detected)
+    }
+
     pub fn collect_tool_configs(&self) -> Vec<(String, ToolConfig)> {
         let mut configs: Vec<(String, ToolConfig)> = self
             .tools
             .iter()
+            .filter(|(id, _)| !self.is_hidden_by_sibling_install(id))
             .map(|(id, config)| (id.clone(), config.clone()))
             .collect();
 
@@ -519,8 +532,44 @@ mod tests {
     use super::default_marketplace_sources;
     use super::AppConfig;
     use super::SkillMetadata;
-    use crate::models::SourceType;
+    use crate::models::{SourceType, ToolConfig};
     use std::collections::HashMap;
+    use std::path::PathBuf;
+
+    #[test]
+    fn collect_tool_configs_skips_an_install_hidden_by_its_sibling() {
+        let tool_config = |detected: bool| ToolConfig {
+            enabled: true,
+            detected,
+            skills_path: PathBuf::from("/tmp/pool"),
+            config_path: PathBuf::from("/tmp"),
+        };
+
+        let mut config = AppConfig::default();
+        config.tools = HashMap::from([
+            ("qwenpaw".to_string(), tool_config(true)),
+            ("copaw".to_string(), tool_config(true)),
+        ]);
+
+        // A live `.copaw` install owns the skills, so `.qwenpaw` must not be linked into even
+        // though an older config left it enabled.
+        let ids: Vec<String> = config
+            .collect_tool_configs()
+            .into_iter()
+            .map(|(id, _)| id)
+            .collect();
+        assert!(ids.contains(&"copaw".to_string()));
+        assert!(!ids.contains(&"qwenpaw".to_string()));
+
+        // Without the sibling, `.qwenpaw` is a normal target again.
+        config.tools.remove("copaw");
+        let ids: Vec<String> = config
+            .collect_tool_configs()
+            .into_iter()
+            .map(|(id, _)| id)
+            .collect();
+        assert!(ids.contains(&"qwenpaw".to_string()));
+    }
 
     #[test]
     fn default_marketplace_sources_matches_remote_source_ids() {

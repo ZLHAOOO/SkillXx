@@ -52,6 +52,15 @@ const SKILLS_SUBDIR_OVERRIDES: &[(&str, &str)] = &[
 
 pub const DEFAULT_SKILLS_SUBDIR: &str = "skills";
 
+/// `(tool, other)` pairs where `tool` is hidden as soon as `other` is detected, because the
+/// two directories belong to one product and only `other` is the live install.
+///
+/// `.qwenpaw` is the post-rename working directory, but QwenPaw still defaults to `.copaw`
+/// for anyone who installed before the rename, and it can leave an empty `.qwenpaw` behind.
+/// So whenever `.copaw` exists it is the directory QwenPaw actually reads, and a second card
+/// for `.qwenpaw` would only offer a skill pool nothing ever loads.
+const HIDDEN_WHEN_OTHER_DETECTED: &[(&str, &str)] = &[("qwenpaw", "copaw")];
+
 impl ToolDefinition {
     /// Subdirectory of the tool's config dir that holds its skills.
     pub fn skills_subdir(&self) -> &'static str {
@@ -60,6 +69,14 @@ impl ToolDefinition {
             .find(|(id, _)| *id == self.id)
             .map(|(_, subdir)| *subdir)
             .unwrap_or(DEFAULT_SKILLS_SUBDIR)
+    }
+
+    /// Id of the install that hides this one when both directories exist.
+    pub fn hidden_by(&self) -> Option<&'static str> {
+        HIDDEN_WHEN_OTHER_DETECTED
+            .iter()
+            .find(|(id, _)| *id == self.id)
+            .map(|(_, other)| *other)
     }
 }
 
@@ -343,6 +360,32 @@ mod tests {
         assert_eq!(qwenpaw.name, copaw.name);
         assert_eq!(qwenpaw.skills_subdir(), "skill_pool");
         assert_eq!(copaw.skills_subdir(), "skill_pool");
+    }
+
+    #[test]
+    fn the_renamed_qwenpaw_dir_yields_to_a_live_copaw_install() {
+        let qwenpaw = SUPPORTED_TOOLS
+            .iter()
+            .find(|tool| tool.id == "qwenpaw")
+            .expect("qwenpaw should exist in supported tools");
+        let copaw = SUPPORTED_TOOLS
+            .iter()
+            .find(|tool| tool.id == "copaw")
+            .expect("copaw should exist in supported tools");
+
+        // `.copaw` is the directory QwenPaw actually reads when it exists, so it wins.
+        assert_eq!(qwenpaw.hidden_by(), Some("copaw"));
+        assert_eq!(copaw.hidden_by(), None);
+    }
+
+    #[test]
+    fn ordinary_tools_are_never_hidden_by_another_install() {
+        let claude_code = SUPPORTED_TOOLS
+            .iter()
+            .find(|tool| tool.id == "claude-code")
+            .expect("claude-code should exist in supported tools");
+
+        assert_eq!(claude_code.hidden_by(), None);
     }
 
     #[test]
