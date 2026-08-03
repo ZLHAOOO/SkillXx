@@ -8,7 +8,6 @@ function createTool(id: string, enabled: boolean): Tool {
     id,
     name: id,
     detected: true,
-    cli_available: true,
     source: "builtin",
     icon_path: null,
     config: {

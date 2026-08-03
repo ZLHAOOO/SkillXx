@@ -750,19 +750,6 @@ export function Tools() {
               }}>
                 {tool.detected ? t("tools.detectedStatus") : t("tools.notDetected")}
               </span>
-              {tool.cli_available && (
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: 500,
-                  padding: '2px 8px',
-                  borderRadius: '6px',
-                  backgroundColor: 'var(--background)',
-                  color: 'var(--muted-foreground)',
-                  border: '1px solid var(--border)',
-                }}>
-                  CLI
-                </span>
-              )}
               {isCustom && (
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button

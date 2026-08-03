@@ -29,7 +29,6 @@ function createTool(id: string): Tool {
     id,
     name: id,
     detected: true,
-    cli_available: true,
     source: "builtin",
     icon_path: null,
     config: {

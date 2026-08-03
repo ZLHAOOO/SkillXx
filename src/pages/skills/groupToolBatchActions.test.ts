@@ -12,7 +12,6 @@ function createTool(id: string, overrides?: Partial<Tool>): Tool {
     id,
     name: id,
     detected: true,
-    cli_available: true,
     source: "builtin",
     icon_path: null,
     config: {

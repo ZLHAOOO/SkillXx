@@ -14,7 +14,6 @@ pub struct Tool {
     pub id: String,
     pub name: String,
     pub detected: bool,
-    pub cli_available: bool,
     pub config: ToolConfig,
     pub source: ToolSource,
     #[serde(default)]
@@ -28,7 +27,6 @@ impl Tool {
             id,
             name,
             detected: false,
-            cli_available: false,
             config,
             source: ToolSource::Builtin,
             icon_path: None,
@@ -42,7 +40,6 @@ pub struct ToolDefinition {
     pub name: &'static str,
     pub config_dir: &'static str,
     pub alt_config_dirs: &'static [&'static str],
-    pub cli_command: &'static str,
 }
 
 /// Tools that keep their skills in a subdirectory of `config_dir` other than `skills`.
@@ -64,11 +61,6 @@ impl ToolDefinition {
             .map(|(_, subdir)| *subdir)
             .unwrap_or(DEFAULT_SKILLS_SUBDIR)
     }
-
-    /// Candidate config directories in priority order: the default first, then alternatives.
-    pub fn config_dir_candidates(&self) -> impl Iterator<Item = &'static str> + '_ {
-        std::iter::once(self.config_dir).chain(self.alt_config_dirs.iter().copied())
-    }
 }
 
 pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
@@ -77,203 +69,174 @@ pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
         name: "Claude Code",
         config_dir: ".claude",
         alt_config_dirs: &[],
-        cli_command: "claude",
     },
     ToolDefinition {
         id: "codex",
         name: "Codex",
         config_dir: ".codex",
         alt_config_dirs: &[],
-        cli_command: "codex",
     },
     ToolDefinition {
         id: "codebuddy",
         name: "CodeBuddy",
         config_dir: ".codebuddy",
         alt_config_dirs: &[],
-        cli_command: "codebuddy",
     },
     ToolDefinition {
         id: "opencode",
         name: "OpenCode",
         config_dir: ".config/opencode",
         alt_config_dirs: &[".opencode"],
-        cli_command: "opencode",
     },
     ToolDefinition {
         id: "cursor",
         name: "Cursor",
         config_dir: ".cursor",
         alt_config_dirs: &[],
-        cli_command: "cursor",
     },
     ToolDefinition {
         id: "gemini",
         name: "Gemini CLI",
         config_dir: ".gemini",
         alt_config_dirs: &[],
-        cli_command: "gemini",
     },
     ToolDefinition {
         id: "antigravity",
         name: "Antigravity",
         config_dir: ".antigravity",
         alt_config_dirs: &[],
-        cli_command: "antigravity",
     },
     ToolDefinition {
         id: "windsurf",
         name: "Windsurf",
         config_dir: ".windsurf",
         alt_config_dirs: &[],
-        cli_command: "windsurf",
     },
     ToolDefinition {
         id: "trae",
         name: "Trae",
         config_dir: ".trae",
         alt_config_dirs: &[],
-        cli_command: "trae",
     },
     ToolDefinition {
         id: "droid",
         name: "Droid",
         config_dir: ".factory",
         alt_config_dirs: &[".droid"],
-        cli_command: "droid",
     },
     ToolDefinition {
         id: "augment",
         name: "Augment",
         config_dir: ".augment",
         alt_config_dirs: &[],
-        cli_command: "augment",
     },
     ToolDefinition {
         id: "openclaw",
         name: "OpenClaw",
         config_dir: ".openclaw",
         alt_config_dirs: &[],
-        cli_command: "openclaw",
     },
     ToolDefinition {
         id: "cline",
         name: "Cline",
         config_dir: ".cline",
         alt_config_dirs: &[],
-        cli_command: "cline",
     },
     ToolDefinition {
         id: "vercel-skills",
         name: "Vercel Skills",
         config_dir: ".agents",
         alt_config_dirs: &[".vercel", ".vercel-skills"],
-        cli_command: "vercel",
     },
     ToolDefinition {
         id: "commandcode",
         name: "CommandCode",
         config_dir: ".commandcode",
         alt_config_dirs: &[],
-        cli_command: "commandcode",
     },
     ToolDefinition {
         id: "continue",
         name: "Continue",
         config_dir: ".continue",
         alt_config_dirs: &[],
-        cli_command: "continue",
     },
     ToolDefinition {
         id: "crush",
         name: "Crush",
         config_dir: ".config/crush",
         alt_config_dirs: &[".crush"],
-        cli_command: "crush",
     },
     ToolDefinition {
         id: "goose",
         name: "Goose",
         config_dir: ".config/goose",
         alt_config_dirs: &[".goose"],
-        cli_command: "goose",
     },
     ToolDefinition {
         id: "iflow",
         name: "iFlow",
         config_dir: ".iflow",
         alt_config_dirs: &[],
-        cli_command: "iflow",
     },
     ToolDefinition {
         id: "junie",
         name: "Junie",
         config_dir: ".junie",
         alt_config_dirs: &[],
-        cli_command: "junie",
     },
     ToolDefinition {
         id: "kilo-code",
         name: "Kilo Code",
         config_dir: ".kilocode",
         alt_config_dirs: &[],
-        cli_command: "kilo",
     },
     ToolDefinition {
         id: "kiro",
         name: "Kiro",
         config_dir: ".kiro",
         alt_config_dirs: &[],
-        cli_command: "kiro",
     },
     ToolDefinition {
         id: "qoder",
         name: "Qoder",
         config_dir: ".qoder",
         alt_config_dirs: &[],
-        cli_command: "qoder",
     },
     ToolDefinition {
         id: "qwen-code",
         name: "Qwen Code",
         config_dir: ".qwen",
         alt_config_dirs: &[],
-        cli_command: "qwen",
     },
     ToolDefinition {
         id: "roo-code",
         name: "Roo Code",
         config_dir: ".roo",
         alt_config_dirs: &[],
-        cli_command: "roo",
     },
     ToolDefinition {
         id: "zencoder",
         name: "Zencoder",
         config_dir: ".zencoder",
         alt_config_dirs: &[],
-        cli_command: "zencoder",
     },
     ToolDefinition {
         id: "pi",
         name: "Pi",
         config_dir: ".pi/agent",
         alt_config_dirs: &[],
-        cli_command: "pi",
     },
     ToolDefinition {
         id: "trae-cn",
         name: "Trae CN",
         config_dir: ".trae-cn",
         alt_config_dirs: &[],
-        cli_command: "trae",
     },
     ToolDefinition {
         id: "hermes",
         name: "Hermes",
         config_dir: ".hermes",
         alt_config_dirs: &[],
-        cli_command: "hermes",
     },
     // ---- Lobster / Chinese agent family ----
     ToolDefinition {
@@ -281,21 +244,18 @@ pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
         name: "QClaw (千爪)",
         config_dir: ".qclaw",
         alt_config_dirs: &[],
-        cli_command: "qclaw",
     },
     ToolDefinition {
         id: "easyclaw",
         name: "EasyClaw (简爪)",
         config_dir: ".easyclaw",
         alt_config_dirs: &[".easyclaw-20260322-01"],
-        cli_command: "easyclaw",
     },
     ToolDefinition {
         id: "autoclaw",
         name: "AutoClaw",
         config_dir: ".openclaw-autoclaw",
         alt_config_dirs: &[".autoclaw"],
-        cli_command: "autoclaw",
     },
     ToolDefinition {
         id: "workbuddy",
@@ -305,7 +265,6 @@ pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
         // `<config_dir>/skills` layout.
         config_dir: ".workbuddy/skills-marketplace",
         alt_config_dirs: &[".workbuddy"],
-        cli_command: "workbuddy",
     },
     ToolDefinition {
         id: "qwenpaw",
@@ -319,14 +278,12 @@ pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
         // symlink is enough to register a skill.
         config_dir: ".qwenpaw",
         alt_config_dirs: &[],
-        cli_command: "qwenpaw",
     },
     ToolDefinition {
         id: "copaw",
         name: "QwenPaw",
         config_dir: ".copaw",
         alt_config_dirs: &[],
-        cli_command: "copaw",
     },
     // ---- Well-known Western agents ----
     ToolDefinition {
@@ -334,35 +291,30 @@ pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
         name: "Amp",
         config_dir: ".amp",
         alt_config_dirs: &[],
-        cli_command: "amp",
     },
     ToolDefinition {
         id: "aider",
         name: "Aider",
         config_dir: ".aider",
         alt_config_dirs: &[],
-        cli_command: "aider",
     },
     ToolDefinition {
         id: "copilot",
         name: "GitHub Copilot",
         config_dir: ".copilot",
         alt_config_dirs: &[".config/gh-copilot"],
-        cli_command: "gh",
     },
     ToolDefinition {
         id: "grok",
         name: "Grok",
         config_dir: ".grok",
         alt_config_dirs: &[],
-        cli_command: "grok",
     },
     ToolDefinition {
         id: "ob1",
         name: "OB1",
         config_dir: ".ob1",
         alt_config_dirs: &[],
-        cli_command: "ob1",
     },
 ];
 

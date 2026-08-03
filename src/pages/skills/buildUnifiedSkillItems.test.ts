@@ -16,7 +16,6 @@ const tools: Tool[] = [
     id: "claude",
     name: "Claude",
     detected: true,
-    cli_available: true,
     config: {
       enabled: true,
       detected: true,
@@ -29,7 +28,6 @@ const tools: Tool[] = [
     id: "codex",
     name: "Codex",
     detected: true,
-    cli_available: true,
     config: {
       enabled: true,
       detected: true,

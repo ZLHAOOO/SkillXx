@@ -74,7 +74,6 @@ export interface Tool {
   id: string;
   name: string;
   detected: boolean;
-  cli_available: boolean;
   config: ToolConfig;
   source: "builtin" | "custom";
   icon_path?: string | null;

@@ -12,7 +12,6 @@ function createTool(id: string, options: { detected: boolean; enabled: boolean }
     id,
     name: id,
     detected: options.detected,
-    cli_available: true,
     source: "builtin",
     icon_path: null,
     config: {
