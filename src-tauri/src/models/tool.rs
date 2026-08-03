@@ -241,13 +241,13 @@ pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
     // ---- Lobster / Chinese agent family ----
     ToolDefinition {
         id: "qclaw",
-        name: "QClaw (千爪)",
+        name: "QClaw",
         config_dir: ".qclaw",
         alt_config_dirs: &[],
     },
     ToolDefinition {
         id: "easyclaw",
-        name: "EasyClaw (简爪)",
+        name: "EasyClaw",
         config_dir: ".easyclaw",
         alt_config_dirs: &[".easyclaw-20260322-01"],
     },
@@ -259,7 +259,7 @@ pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
     },
     ToolDefinition {
         id: "workbuddy",
-        name: "WorkBuddy (打工搭子)",
+        name: "WorkBuddy",
         // WorkBuddy stores skills under a `skills-marketplace` subdirectory. We point config_dir
         // at that subdirectory so detection + skills path both resolve correctly with the default
         // `<config_dir>/skills` layout.
