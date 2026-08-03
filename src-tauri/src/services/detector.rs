@@ -7,6 +7,7 @@ use crate::models::{
     CustomToolConfig, Tool, ToolConfig, ToolDefinition, ToolSource, SUPPORTED_TOOLS,
 };
 use crate::services::linker::normalize_path;
+use crate::services::tool_paths::resolve_builtin_tool_paths;
 use crate::services::ConfigManager;
 
 pub struct DetectorService;
@@ -129,21 +130,7 @@ impl DetectorService {
                 normalize_path(&saved.skills_path),
             )
         } else {
-            // Normalize after join to fix mixed separators (e.g. ".config/opencode" on Windows)
-            let mut config_dir = normalize_path(&home_dir.join(definition.config_dir));
-
-            // Prioritize default config_dir, but check alternatives if it doesn't exist
-            if !config_dir.exists() {
-                for alt in definition.alt_config_dirs {
-                    let alt_dir = normalize_path(&home_dir.join(alt));
-                    if alt_dir.exists() {
-                        config_dir = alt_dir;
-                        break;
-                    }
-                }
-            }
-
-            (config_dir.clone(), config_dir.join("skills"))
+            resolve_builtin_tool_paths(definition, &home_dir)
         };
 
         let dir_exists = config_path.exists();

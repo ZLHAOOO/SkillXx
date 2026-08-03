@@ -33,8 +33,15 @@ for (const path in iconModules) {
   selectedPriority[id] = priority;
 }
 
+// Tools that reuse another tool's icon, e.g. the same product registered twice because
+// it ships under two config directories after a rename.
+const iconAliases: Record<string, string> = {
+  copaw: 'qwenpaw',
+};
+
 export const getToolIconUrl = (id: string): string | null => {
-  return toolIconUrls[id] || null;
+  const alias = iconAliases[id];
+  return toolIconUrls[id] || (alias ? toolIconUrls[alias] : null) || null;
 };
 
 // Generic fallback icon component (terminal style)

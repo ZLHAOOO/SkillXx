@@ -50,6 +50,8 @@ export const CUSTOM_TOOL_TEMPLATES: CustomToolTemplate[] = [
   { id: "easyclaw", name: "EasyClaw (简爪)", configRel: ".easyclaw" },
   { id: "autoclaw", name: "AutoClaw", configRel: ".openclaw-autoclaw" },
   { id: "workbuddy", name: "WorkBuddy (打工搭子)", configRel: ".workbuddy/skills-marketplace" },
+  { id: "qwenpaw", name: "QwenPaw", configRel: ".qwenpaw", skillsSubdir: "skill_pool" },
+  { id: "copaw", name: "QwenPaw", configRel: ".copaw", skillsSubdir: "skill_pool" },
   { id: "amp", name: "Amp", configRel: ".amp" },
   { id: "aider", name: "Aider", configRel: ".aider" },
   { id: "copilot", name: "GitHub Copilot", configRel: ".copilot" },

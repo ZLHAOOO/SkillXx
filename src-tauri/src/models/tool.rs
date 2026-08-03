@@ -45,6 +45,32 @@ pub struct ToolDefinition {
     pub cli_command: &'static str,
 }
 
+/// Tools that keep their skills in a subdirectory of `config_dir` other than `skills`.
+/// Everything not listed here uses the default `<config_dir>/skills` layout.
+const SKILLS_SUBDIR_OVERRIDES: &[(&str, &str)] = &[
+    // QwenPaw exposes a shared skill pool instead of a plain `skills` directory.
+    ("qwenpaw", "skill_pool"),
+    ("copaw", "skill_pool"),
+];
+
+pub const DEFAULT_SKILLS_SUBDIR: &str = "skills";
+
+impl ToolDefinition {
+    /// Subdirectory of the tool's config dir that holds its skills.
+    pub fn skills_subdir(&self) -> &'static str {
+        SKILLS_SUBDIR_OVERRIDES
+            .iter()
+            .find(|(id, _)| *id == self.id)
+            .map(|(_, subdir)| *subdir)
+            .unwrap_or(DEFAULT_SKILLS_SUBDIR)
+    }
+
+    /// Candidate config directories in priority order: the default first, then alternatives.
+    pub fn config_dir_candidates(&self) -> impl Iterator<Item = &'static str> + '_ {
+        std::iter::once(self.config_dir).chain(self.alt_config_dirs.iter().copied())
+    }
+}
+
 pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
     ToolDefinition {
         id: "claude-code",
@@ -281,6 +307,27 @@ pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
         alt_config_dirs: &[".workbuddy"],
         cli_command: "workbuddy",
     },
+    ToolDefinition {
+        id: "qwenpaw",
+        name: "QwenPaw",
+        // QwenPaw was renamed from CoPaw. Both working directories are registered as
+        // separate tools sharing one name and icon, because a machine can genuinely hold
+        // two independent installs and each needs its own skill pool managed. Undetected
+        // builtin tools are hidden from the tools page, so only the installs that exist
+        // show up. Skills live in the shared `skill_pool` subdirectory (see
+        // SKILLS_SUBDIR_OVERRIDES), whose manifest QwenPaw rebuilds from disk, so a plain
+        // symlink is enough to register a skill.
+        config_dir: ".qwenpaw",
+        alt_config_dirs: &[],
+        cli_command: "qwenpaw",
+    },
+    ToolDefinition {
+        id: "copaw",
+        name: "QwenPaw",
+        config_dir: ".copaw",
+        alt_config_dirs: &[],
+        cli_command: "copaw",
+    },
     // ---- Well-known Western agents ----
     ToolDefinition {
         id: "amp",
@@ -322,6 +369,39 @@ pub const SUPPORTED_TOOLS: &[ToolDefinition] = &[
 #[cfg(test)]
 mod tests {
     use super::SUPPORTED_TOOLS;
+
+    #[test]
+    fn qwenpaw_and_copaw_are_registered_as_separate_installs() {
+        let qwenpaw = SUPPORTED_TOOLS
+            .iter()
+            .find(|tool| tool.id == "qwenpaw")
+            .expect("qwenpaw should exist in supported tools");
+        let copaw = SUPPORTED_TOOLS
+            .iter()
+            .find(|tool| tool.id == "copaw")
+            .expect("copaw should exist in supported tools");
+
+        assert_eq!(qwenpaw.config_dir, ".qwenpaw");
+        assert_eq!(copaw.config_dir, ".copaw");
+        // Neither may list the other as an alternative, otherwise a machine with only one
+        // install would surface two cards managing the same directory.
+        assert!(qwenpaw.alt_config_dirs.is_empty());
+        assert!(copaw.alt_config_dirs.is_empty());
+        // Same product, so the UI shows one name and one icon for both.
+        assert_eq!(qwenpaw.name, copaw.name);
+        assert_eq!(qwenpaw.skills_subdir(), "skill_pool");
+        assert_eq!(copaw.skills_subdir(), "skill_pool");
+    }
+
+    #[test]
+    fn tools_without_an_override_use_the_default_skills_subdir() {
+        let claude_code = SUPPORTED_TOOLS
+            .iter()
+            .find(|tool| tool.id == "claude-code")
+            .expect("claude-code should exist in supported tools");
+
+        assert_eq!(claude_code.skills_subdir(), "skills");
+    }
 
     #[test]
     fn supported_tools_include_recent_builtins() {

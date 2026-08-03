@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
-use crate::models::{CustomToolConfig, Tool, ToolConfig, SUPPORTED_TOOLS};
+use crate::models::{
+    CustomToolConfig, Tool, ToolConfig, DEFAULT_SKILLS_SUBDIR, SUPPORTED_TOOLS,
+};
 use crate::services::{
     ensure_default_skills_linked_for_tool, AppCache, ConfigManager, DetectorService, LinkerService,
 };
@@ -241,9 +243,14 @@ fn update_tool_paths_with_cache(
         let cfg_path_string = config_path
             .ok_or_else(|| format!("config_path is required to register builtin tool: {}", tool_id))?;
         let cfg_path = PathBuf::from(cfg_path_string);
+        let skills_subdir = SUPPORTED_TOOLS
+            .iter()
+            .find(|def| def.id == tool_id)
+            .map(|def| def.skills_subdir())
+            .unwrap_or(DEFAULT_SKILLS_SUBDIR);
         let skills = skills_path
             .map(PathBuf::from)
-            .unwrap_or_else(|| cfg_path.join("skills"));
+            .unwrap_or_else(|| cfg_path.join(skills_subdir));
         let detected = cfg_path.exists();
         let tool_config = crate::models::ToolConfig {
             enabled: detected,

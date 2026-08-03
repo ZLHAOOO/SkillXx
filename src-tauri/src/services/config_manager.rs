@@ -588,12 +588,12 @@ impl ConfigManager {
         // Auto-add newly supported tools that aren't in the config yet
         for tool_def in SUPPORTED_TOOLS {
             if !config.tools.contains_key(tool_def.id) {
-                let tool_dir = normalize_path(&home_dir.join(tool_def.config_dir));
+                let (tool_dir, skills_path) = crate::services::resolve_builtin_tool_paths(tool_def, &home_dir);
                 let detected = tool_dir.exists();
                 let tool_config = ToolConfig {
                     enabled: detected,
                     detected,
-                    skills_path: tool_dir.join("skills"),
+                    skills_path,
                     config_path: tool_dir,
                 };
                 config.tools.insert(tool_def.id.to_string(), tool_config);
@@ -651,12 +651,12 @@ impl ConfigManager {
         let mut config = AppConfig::default();
 
         for tool_def in SUPPORTED_TOOLS {
-            let tool_dir = normalize_path(&home_dir.join(tool_def.config_dir));
+            let (tool_dir, skills_path) = crate::services::resolve_builtin_tool_paths(tool_def, &home_dir);
             let detected = tool_dir.exists();
             let tool_config = ToolConfig {
                 enabled: detected, // Enable by default if detected
                 detected,
-                skills_path: tool_dir.join("skills"),
+                skills_path,
                 config_path: tool_dir,
             };
             config.tools.insert(tool_def.id.to_string(), tool_config);
