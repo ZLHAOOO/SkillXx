@@ -7,7 +7,7 @@
 > **A unified desktop app for managing AI coding assistant skills.**
 > Write a skill once, use it across **Claude Code, Codex, Gemini, Cursor, Cline** and 20+ AI tools.
 
-![Version](https://img.shields.io/badge/version-3.4.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.5.3-blue) ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
 [中文说明](./README_CN.md) · [Changelog](./CHANGELOG.md)
 
@@ -26,6 +26,40 @@
 - **⚡ High Performance** — Built with Rust + Tauri 2.0; config caching for fast responses.
 - **🔌 Multi-Tool Support** — Claude Code, Codex, Gemini, Cursor, Cline, Kiro, Trae, Iflow, Qwen Code, Hermes, Opencode, and more — plus custom tools with your own paths.
 - **🎨 Modern UI** — React 19 + Tailwind CSS v4 + Radix UI; 10 built-in themes (5 styles × light/dark).
+
+## 📸 Screenshots
+
+### 🛠️ Tool Management — detect every AI agent on your machine
+
+Detects installed AI coding tools and shows their config + skills paths. Built-in agents are detected by directory; custom tools can be added with any path. The Tools page also auto-links default skills to a freshly-enabled tool.
+
+<p align="center">
+  <img src="./assets/preview-tools.png" alt="Tool management showing Claude Code, Codex, OpenCode, OpenClaw, Qoder, Pi, Trae CN, QClaw" width="800" />
+</p>
+
+### 📚 Skills Library — central hub for every skill
+
+All skills live in a single hub directory and are synced to each enabled tool via symlinks. Each card shows which tools a skill is currently enabled for, with a single click to toggle or jump to the editor.
+
+<p align="center">
+  <img src="./assets/preview-skills.png" alt="Skills library with 519 skills, category filters, and per-tool enable indicators" width="800" />
+</p>
+
+### 🤖 Model Marketplace — 20+ LLM providers ready to use
+
+Manage multiple LLM providers side by side (OpenAI, Anthropic, DeepSeek, Qwen, Kimi, GLM, Gemini, Grok, MiniMax, Volcano Engine, StepFun, and more), pick an active one, and bind it to a specific tool. Custom providers are supported with any OpenAI-compatible endpoint.
+
+<p align="center">
+  <img src="./assets/preview-models.png" alt="Model marketplace showing LongCat, Agnes, Step, MiMo, Ark and a list of provider tabs" width="800" />
+</p>
+
+### 🏪 Skill Marketplace — discover and install new skills
+
+Browse curated sources (`skills.sh`, `awesome-claude-skills`, `ClawHub`, `SkillHub`, `Red Skill`) and one-click install. Filters and search help you find what you need across thousands of community skills.
+
+<p align="center">
+  <img src="./assets/preview-marketplace.png" alt="Marketplace with source selector and skill cards" width="800" />
+</p>
 
 ## 📥 Download
 

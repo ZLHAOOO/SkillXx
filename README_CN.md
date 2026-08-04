@@ -7,7 +7,7 @@
 > **一款统一的 AI 编码助手技能管理桌面应用。**
 > 一处编写，处处可用：**Claude Code、Codex、Gemini、Cursor、Cline** 等 20+ AI 工具通用。
 
-![Version](https://img.shields.io/badge/version-3.4.0-blue) ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
+![Version](https://img.shields.io/badge/version-3.5.3-blue) ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey) ![Tech](https://img.shields.io/badge/built%20with-Tauri%202.0%20%2B%20React%2019-orange)
 
 [English](./README.md) · [Changelog](./CHANGELOG.md)
 
@@ -26,6 +26,40 @@
 - **⚡ 高性能**：Rust + Tauri 2.0；配置缓存加速响应。
 - **🔌 多工具支持**：Claude Code、Codex、Gemini、Cursor、Cline、Kiro、Trae、Iflow、Qwen Code、Hermes、Opencode 等，同时支持自定义工具。
 - **🎨 现代界面**：React 19 + Tailwind CSS v4 + Radix UI；内置 5 组主题（明暗共 10 套）。
+
+## 📸 界面预览
+
+### 🛠️ 智能体管理 — 一键识别本机所有 AI 工具
+
+自动检测已安装的 AI 编码工具，显示配置目录和技能路径。内置工具按目录识别，自定义工具支持任意路径。新启用的工具还会自动补全默认技能链接。
+
+<p align="center">
+  <img src="./assets/preview-tools.png" alt="智能体管理页：Claude Code、Codex、OpenCode、OpenClaw、Qoder、Pi、Trae CN、QClaw" width="800" />
+</p>
+
+### 📚 技能库 — 所有技能集中管理
+
+所有技能存放在统一的 Hub 目录，通过软链接同步到每个已启用的工具。卡片上直接显示当前启用了哪些工具，一键开关或跳到编辑器。
+
+<p align="center">
+  <img src="./assets/preview-skills.png" alt="技能库：519 个技能，分类筛选，按工具启用状态" width="800" />
+</p>
+
+### 🤖 大模型市场 — 20+ LLM Provider 即开即用
+
+同时管理多个 LLM Provider（OpenAI、Anthropic、DeepSeek、Qwen、Kimi、GLM、Gemini、Grok、MiniMax、火山引擎、StepFun 等），指定一个为当前激活，并可绑定到具体工具。支持任意 OpenAI 兼容协议的自定义 Provider。
+
+<p align="center">
+  <img src="./assets/preview-models.png" alt="大模型市场：LongCat、Agnes、Step、MiMo、Ark 及 Provider 标签" width="800" />
+</p>
+
+### 🏪 技能市场 — 发现并安装新技能
+
+汇聚多个精选来源（`skills.sh`、`awesome-claude-skills`、`ClawHub`、`SkillHub`、`Red Skill`），一键安装。筛选和搜索帮助你在数千个社区技能里快速找到需要的那一个。
+
+<p align="center">
+  <img src="./assets/preview-marketplace.png" alt="技能市场：来源切换与技能卡片" width="800" />
+</p>
 
 ## 📥 下载
 
